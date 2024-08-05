@@ -31,3 +31,13 @@ let pos_a = Position::new(1, 2);
 
 assert_eq!(pos_a.custom_x_getter(), 1);
 ```
+
+## Features
+
+| Name      | Rect | X-Y | X-Y-Z |
+| :--       | :-:  | :-: | :-:   |
+| `default` |✔|✔| |
+| `all`     |✔|✔|✔|
+| `rect`    |✔| | |
+| `xy`      | |✔| |
+| `xyz`     | | |✔|
