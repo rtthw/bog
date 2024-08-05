@@ -1,0 +1,25 @@
+
+[package]
+name = "bog"
+version = "0.1.0"
+authors = ["Matthew Martin"]
+edition = "2021"
+description = "The highly-modular abstraction standard"
+readme = "README.md"
+homepage = "https://github.com/rtthw/bog"
+repository = "https://github.com/rtthw/bog"
+license-file = "LICENSE"
+# keywords = [""]
+# categories = [""]
+
+
+
+[features]
+default = ["rect"]
+rect = ["xy"]
+xy = []
+xyz = []
+
+
+
+[dependencies]
