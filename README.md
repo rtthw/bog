@@ -1,3 +1,20 @@
+<details>
+<summary>Table of Contents</summary>
+
+- [Bog](#ratatui)
+  - [Usage](#usage)
+  - [Features](#features)
+
+</details>
+
+<!-- cargo-rdme start -->
+
+<div align="center">
+
+<br>[![Crate Badge]][Crate] [![Docs Badge]][Docs] [![License Badge]](./LICENSE)
+
+</div>
+
 # Bog
 
 The highly-modular abstraction standard.
@@ -41,3 +58,9 @@ assert_eq!(pos_a.custom_x_getter(), 1);
 | `rect`    |✔| | |
 | `xy`      | |✔| |
 | `xyz`     | | |✔|
+
+[Crate]: https://crates.io/crates/bog
+[Crate Badge]: https://img.shields.io/crates/v/bog?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
+[Docs Badge]: https://img.shields.io/docsrs/bog?logo=rust&style=flat-square&logoColor=E05D44
+[Docs]: https://docs.rs/bog
+[License Badge]: https://img.shields.io/crates/l/bog?style=flat-square&color=1370D3
