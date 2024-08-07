@@ -15,7 +15,7 @@ license-file = "LICENSE"
 
 
 [features]
-default = ["rect"]
+default = ["all"]
 all = ["rect", "xy", "xyz"]
 geo2d = ["rect", "xy"]
 geo3d = ["rect", "xy", "xyz"]

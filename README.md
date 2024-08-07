@@ -1,9 +1,10 @@
 <details>
 <summary>Table of Contents</summary>
 
-- [Bog](#ratatui)
+- [Bog](#bog)
   - [Usage](#usage)
   - [Features](#features)
+  - [License](#license)
 
 </details>
 
@@ -24,18 +25,18 @@ The highly-modular abstraction standard.
 The recommended design pattern to be used with this library is the basic type definition wrapper...
 
 ```rust
-type Position = bog::Xy<u16>;
+type Position = bog::xy::Xy<u16>;
 ```
 
 And implementing custom features should be done through extension traits...
 
 ```rust
 trait PositionImpl {
-    fn custom_x_getter(&self) -> u16;
+    fn column(&self) -> u16;
 }
 
 impl PositionImpl for Position {
-    fn custom_x_getter(&self) -> u16 {
+    fn column(&self) -> u16 {
         self.x
     }
 }
@@ -46,7 +47,7 @@ With the following results...
 ```rust
 let pos_a = Position::new(1, 2);
 
-assert_eq!(pos_a.custom_x_getter(), 1);
+assert_eq!(pos_a.column(), 1);
 ```
 
 ## Features
@@ -58,6 +59,10 @@ assert_eq!(pos_a.custom_x_getter(), 1);
 | `rect`    |✔| | |
 | `xy`      | |✔| |
 | `xyz`     | | |✔|
+
+## License
+
+[MIT](./LICENSE)
 
 [Crate]: https://crates.io/crates/bog
 [Crate Badge]: https://img.shields.io/crates/v/bog?logo=rust&style=flat-square&logoColor=E05D44&color=E05D44
