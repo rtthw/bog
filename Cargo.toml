@@ -12,17 +12,16 @@ license-file = "LICENSE"
 # keywords = [""]
 # categories = [""]
 
-
 [features]
 default = ["all"]
-all = ["color", "rect", "xy", "xyz"]
+all = ["color", "easing", "rect", "xy", "xyz"]
 geo2d = ["rect", "xy"]
 geo3d = ["rect", "xy", "xyz"]
 
 color = []
+easing = []
 rect = ["xy"]
 xy = []
 xyz = []
-
 
 [dependencies]
