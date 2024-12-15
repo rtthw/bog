@@ -13,17 +13,16 @@ license-file = "LICENSE"
 # categories = [""]
 
 
-
 [features]
 default = ["all"]
-all = ["rect", "xy", "xyz"]
+all = ["color", "rect", "xy", "xyz"]
 geo2d = ["rect", "xy"]
 geo3d = ["rect", "xy", "xyz"]
 
+color = []
 rect = ["xy"]
 xy = []
 xyz = []
-
 
 
 [dependencies]
