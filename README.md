@@ -52,13 +52,18 @@ assert_eq!(pos_a.column(), 1);
 
 ## Features
 
-| Name      | Rect | X-Y | X-Y-Z |
-| :--       | :-:  | :-: | :-:   |
-| `default` |✔|✔| |
-| `all`     |✔|✔|✔|
-| `rect`    |✔| | |
-| `xy`      | |✔| |
-| `xyz`     | | |✔|
+By default, all features are enabled, but you can disable this by setting `default-features` to false and manually selecting which features you want in your project's Cargo.toml:
+
+```text
+bog = { version = "*", default-features = false, features = ["rect"] }
+```
+
+- `all`, all of the following features.
+- `color`, the `Color` type for working with visuals.
+- `easing`, a set of functions that apply easings to inputs.
+- `rect`, a rectangle abstraction.
+- `xy`, an X-Y coordinate value.
+- `xyz`, an X-Y-Z coordinate value.
 
 ## License
 

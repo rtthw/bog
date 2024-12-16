@@ -15,8 +15,6 @@ license-file = "LICENSE"
 [features]
 default = ["all"]
 all = ["color", "easing", "rect", "xy", "xyz"]
-geo2d = ["rect", "xy"]
-geo3d = ["rect", "xy", "xyz"]
 
 color = []
 easing = []
