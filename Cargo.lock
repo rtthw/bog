@@ -7,16 +7,8 @@ name = "bog"
 version = "0.1.0"
 dependencies = [
  "env",
- "window",
 ]
 
 [[package]]
 name = "env"
 version = "0.1.0"
-
-[[package]]
-name = "window"
-version = "0.1.0"
-dependencies = [
- "env",
-]

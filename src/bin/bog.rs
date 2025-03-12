@@ -2,6 +2,7 @@
 
 
 
+use bog::window;
 use env::*;
 
 
@@ -21,7 +22,9 @@ fn main() -> Result<()> {
         }
     };
 
-    window::create(&env)?;
+    let window = window::create(&env)?;
+
+    println!("INFO: Created window {window:?}");
 
     Ok(())
 }

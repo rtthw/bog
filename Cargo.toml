@@ -1,6 +1,3 @@
-[workspace]
-members = ["lib/*"]
-
 [workspace.dependencies]
 env = { path = "env" }
 
@@ -22,8 +19,7 @@ name = "bog"
 default = ["all"]
 all = ["window"]
 
-window = ["dep:window"]
+window = []
 
 [dependencies]
 env = { path = "env" }
-window = { path = "lib/window", optional = true }
