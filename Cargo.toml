@@ -1,6 +1,9 @@
 [workspace]
 members = ["lib/*"]
 
+[workspace.dependencies]
+env = { path = "env" }
+
 [package]
 name = "bog"
 version = "0.1.0"
@@ -22,4 +25,5 @@ all = ["window"]
 window = ["dep:window"]
 
 [dependencies]
+env = { path = "env" }
 window = { path = "lib/window", optional = true }
