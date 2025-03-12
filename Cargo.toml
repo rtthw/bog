@@ -2,24 +2,18 @@
 [package]
 name = "bog"
 version = "0.1.0"
-authors = ["Matthew Martin"]
-edition = "2021"
-description = "The highly-modular abstraction standard"
+authors = ["Matthew Norman"]
+edition = "2024"
+description = "A standard library alternative"
 readme = "README.md"
 homepage = "https://github.com/rtthw/bog"
 repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
-# keywords = [""]
-# categories = [""]
 
 [features]
 default = ["all"]
-all = ["color", "easing", "rect", "xy", "xyz"]
+all = ["xyz"]
 
-color = []
-easing = []
-rect = ["xy"]
-xy = []
 xyz = []
 
 [dependencies]
