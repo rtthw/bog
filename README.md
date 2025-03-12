@@ -1,3 +1,7 @@
+
+> [!WARNING]
+> This library is currently undergoing major revisions. Use at your own risk!
+
 <details>
 <summary>Table of Contents</summary>
 
