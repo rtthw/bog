@@ -5,3 +5,10 @@ version = 4
 [[package]]
 name = "bog"
 version = "0.1.0"
+dependencies = [
+ "window",
+]
+
+[[package]]
+name = "window"
+version = "0.1.0"
