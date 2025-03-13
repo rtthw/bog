@@ -10,6 +10,6 @@ use env::*;
 #[derive(Debug)]
 pub struct Window {}
 
-pub fn create(env: &Env) -> Result<Window> {
+pub fn create(env: &Connection) -> Result<Window> {
     Ok(Window {})
 }
