@@ -4,6 +4,10 @@
 
 
 
+pub use arrayvec::ArrayString;
+
+
+
 #[derive(Debug)]
 pub struct Message {
     pub code: [u8; 4],
@@ -35,8 +39,14 @@ pub struct Request {
 
 #[derive(Debug)]
 pub enum RequestData {
-    EstablishConnection,
-    CreateWindow, // TODO: arrayvec::ArrayString
+    // TODO: There should be some sort of authentication here, and `sender` shouldn't just be the
+    //       process ID.
+    EstablishConnection {
+        // key: [u8; 64],
+    },
+    CreateWindow {
+        title: arrayvec::ArrayString<WINDOW_TITLE_MAX>,
+    },
 }
 
 #[derive(Debug)]
@@ -51,3 +61,7 @@ pub enum ReplyData {
     Null,
     WindowCreated(u32),
 }
+
+
+
+pub const WINDOW_TITLE_MAX: usize = 64;

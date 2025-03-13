@@ -33,6 +33,22 @@ impl Connection {
             }
         }
     }
+
+    pub fn create_window(&mut self, title: &str) -> Result<Reply> {
+        if title.len() > WINDOW_TITLE_MAX {
+            return Err(Error::WindowTitleTooLong);
+        }
+
+        self.request(Request {
+            code: [0, 0, 0, 0],
+            sender: self.id,
+            data: RequestData::CreateWindow {
+                // SAFETY: We just checked the length, and the only way this can error is if the
+                //         length is too long for the backing array.
+                title: ArrayString::from(title).unwrap(),
+            },
+        })
+    }
 }
 
 /// Attempt to create a connection to the environment.
@@ -51,7 +67,7 @@ pub fn connect() -> Result<Connection> {
     let reply = conn.request(Request {
         code: [0, 0, 0, 0],
         sender: id,
-        data: RequestData::EstablishConnection,
+        data: RequestData::EstablishConnection {},
     })?;
 
     if !reply.success {
@@ -69,7 +85,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Io(std::io::Error),
     Shm(ration::Error),
+
     ConnectionDenied,
+    WindowTitleTooLong,
 }
 
 impl From<std::io::Error> for Error {

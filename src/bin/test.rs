@@ -28,11 +28,7 @@ fn main() -> Result<()> {
     println!("\n\tPerforming {} requests...", REQ_COUNT);
 
     for _ in 0..REQ_COUNT {
-        let reply = conn.request(Request {
-            code: [0, 0, 0, 0],
-            sender: conn.id(),
-            data: RequestData::CreateWindow,
-        })?;
+        let reply = conn.create_window("Something")?;
         if !reply.success {
             println!("ERROR");
         }
