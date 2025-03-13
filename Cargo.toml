@@ -21,9 +21,7 @@ name = "test"
 
 [features]
 default = ["all"]
-all = ["window"]
-
-window = []
+all = []
 
 [dependencies]
 bog-types = { workspace = true }
