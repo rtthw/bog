@@ -16,6 +16,9 @@ homepage = "https://github.com/rtthw/bog"
 repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
 
+[[bin]]
+name = "test"
+
 [features]
 default = ["all"]
 all = ["window"]
