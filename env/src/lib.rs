@@ -85,12 +85,29 @@ pub struct Window {
 }
 
 impl Window {
+    pub fn new(id: u64) -> Result<Self> {
+        let input_channel = ration::Array::open(format!("/tmp/BOG_WINDOW_{}_INPUT", id))?;
+
+        Ok(Self {
+            id,
+            input_channel,
+        })
+    }
+
     pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub fn has_input(&self) -> bool {
-        !self.input_channel.is_empty()
+    pub fn wait_for_input(&mut self) -> WindowInput {
+        loop {
+            if let Some(input) = self.poll_for_input() {
+                return input;
+            }
+        }
+    }
+
+    pub fn poll_for_input(&mut self) -> Option<WindowInput> {
+        self.input_channel.pop()
     }
 }
 

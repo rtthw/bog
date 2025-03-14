@@ -75,11 +75,8 @@ pub struct UserInput {}
 
 pub const WINDOW_TITLE_MAX: usize = 64;
 
-pub struct WindowInput {
-    pub data: WindowInputData,
-}
-
-pub enum WindowInputData {
+pub enum WindowInput {
+    Closed,
     Device(DeviceInput),
     User(UserInput),
 }
