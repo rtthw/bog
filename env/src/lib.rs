@@ -80,13 +80,13 @@ pub fn connect() -> Result<Connection> {
 
 
 pub struct Window {
-    handle: WindowHandle,
+    id: u64,
     input_channel: ration::Array<WindowInput>,
 }
 
 impl Window {
-    pub fn handle(&self) -> &WindowHandle {
-        &self.handle
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     pub fn has_input(&self) -> bool {

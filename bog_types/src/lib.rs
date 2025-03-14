@@ -55,7 +55,7 @@ pub struct Reply {
 pub enum ReplyData {
     /// Null reply.
     Null,
-    WindowCreated(WindowHandle),
+    WindowCreated(u64),
 }
 
 
@@ -74,25 +74,6 @@ pub struct UserInput {}
 
 
 pub const WINDOW_TITLE_MAX: usize = 64;
-
-/// A raw handle to a window.
-///
-/// Currently, the fields map directly to the [raw-window-handle] definitions for each supported
-/// platform. Fields *B* and *C* go unused if the platform's handle only requires 1 or 2 fields.
-///
-/// [raw-window-handle]: https://github.com/rust-windowing/raw-window-handle
-#[derive(Debug)]
-pub struct WindowHandle {
-    /// Platform identifier.
-    pub platform: u8,
-    _padding: [u8; 7],
-    /// Field A, see [type-level docs](crate::WindowHandle).
-    pub a: u64,
-    /// Field B, see [type-level docs](crate::WindowHandle).
-    pub b: u64,
-    /// Field C, see [type-level docs](crate::WindowHandle).
-    pub c: u64,
-}
 
 pub struct WindowInput {
     pub data: WindowInputData,
