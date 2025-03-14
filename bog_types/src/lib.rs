@@ -20,10 +20,6 @@ pub enum MessageData {
     Info, // TODO: arrayvec::ArrayString
     Warning, // TODO: arrayvec::ArrayString
     Error, // TODO: arrayvec::ArrayString
-
-    DeviceInput {
-        device_id: u32,
-    },
 }
 
 /// A request is a [message](crate::Message) that expects a response.
@@ -64,6 +60,19 @@ pub enum ReplyData {
 
 
 
+#[derive(Debug)]
+pub struct DeviceInput {
+    pub source: u32,
+    pub device: u32,
+    pub code: u32,
+    pub state: bool,
+}
+
+#[derive(Debug)]
+pub struct UserInput {}
+
+
+
 pub const WINDOW_TITLE_MAX: usize = 64;
 
 /// A raw handle to a window.
@@ -83,4 +92,13 @@ pub struct WindowHandle {
     pub b: u64,
     /// Field C, see [type-level docs](crate::WindowHandle).
     pub c: u64,
+}
+
+pub struct WindowInput {
+    pub data: WindowInputData,
+}
+
+pub enum WindowInputData {
+    Device(DeviceInput),
+    User(UserInput),
 }

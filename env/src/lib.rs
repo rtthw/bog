@@ -79,6 +79,23 @@ pub fn connect() -> Result<Connection> {
 
 
 
+pub struct Window {
+    handle: WindowHandle,
+    input_channel: ration::Array<WindowInput>,
+}
+
+impl Window {
+    pub fn handle(&self) -> &WindowHandle {
+        &self.handle
+    }
+
+    pub fn has_input(&self) -> bool {
+        !self.input_channel.is_empty()
+    }
+}
+
+
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
