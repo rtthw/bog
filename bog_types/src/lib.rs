@@ -4,7 +4,7 @@
 
 
 
-pub use arrayvec::ArrayString;
+pub use arrayvec::{ArrayString, ArrayVec};
 
 
 

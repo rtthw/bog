@@ -10,7 +10,13 @@ fn main() -> Result<()> {
     let mut conn = connect()?;
 
     let mut window = {
-        let window_reply = conn.create_window("Testing Window")?;
+        let window_reply = conn.request(Request {
+            code: [0, 0, 0, 0],
+            sender: conn.id(),
+            data: RequestData::CreateWindow {
+                title: ArrayString::from("Testing Window").unwrap(),
+            },
+        })?;
         if window_reply.success {
             if let ReplyData::WindowCreated(id) = window_reply.data {
                 Window::new(id)
