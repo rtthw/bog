@@ -4,6 +4,9 @@
 
 
 
+mod inclination;
+pub use inclination::*;
+
 pub use arrayvec::{ArrayString, ArrayVec};
 
 
@@ -43,6 +46,9 @@ pub enum RequestData {
     CreateWindow {
         title: arrayvec::ArrayString<WINDOW_TITLE_MAX>,
     },
+    CloseWindow {
+        id: u64,
+    },
 }
 
 #[derive(Debug)]
@@ -69,7 +75,9 @@ pub struct DeviceInput {
 }
 
 #[derive(Debug)]
-pub struct UserInput {}
+pub enum UserInput {
+    Move(Inclination),
+}
 
 
 
