@@ -46,9 +46,12 @@ pub enum RequestData {
     CreateWindow {
         title: arrayvec::ArrayString<WINDOW_TITLE_MAX>,
     },
-    CloseWindow {
-        id: u64,
-    },
+    CloseWindow(u64),
+
+    GetDisplaySize, // TODO: Some sort of display ID.
+    GetWindowSize(u64),
+    GetWindowTitle(u64),
+    GetWindowOwner(u64),
 }
 
 #[derive(Debug)]
@@ -60,8 +63,30 @@ pub struct Reply {
 #[derive(Debug)]
 pub enum ReplyData {
     /// Null reply.
+    ///
+    /// Used when the request fails, or if the request is a no-op. Always check [`Reply::success`].
     Null,
+    /// Insufficient permission to perform the request.
+    Unauthorized,
+
+    /// See [`RequestData::CreateWindow`].
     WindowCreated(u64),
+    /// See [`RequestData::CloseWindow`] and [`ReplyData::WindowAlreadyClosed`].
+    WindowClosed(u64),
+    /// Because a window close request *technically* succeeds when a window has already been
+    /// closed (and the sender is authorized to close it), this is necessary to avoid confusion.
+    ///
+    /// See [`RequestData::CloseWindow`].
+    WindowAlreadyClosed(u64),
+
+    /// See [`RequestData::GetDisplaySize`].
+    DisplaySize(u32, u32),
+    /// See [`RequestData::GetWindowSize`].
+    WindowSize(u32, u32),
+    /// See [`RequestData::GetWindowTitle`].
+    WindowTitle(ArrayString<WINDOW_TITLE_MAX>),
+    /// See [`RequestData::GetWindowOwner`].
+    WindowOwner(u32),
 }
 
 
