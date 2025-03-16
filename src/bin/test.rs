@@ -1,8 +1,8 @@
 
 
 
+use bog::*;
 use bog_types::*;
-use env::*;
 
 
 
@@ -28,6 +28,7 @@ fn main() -> Result<()> {
         }
     }?;
 
+    let mut sent_close_req = false;
     loop {
         match window.wait_for_input() {
             WindowInput::Closed => break,
@@ -36,6 +37,15 @@ fn main() -> Result<()> {
             }
             WindowInput::Device(device_input) => {
                 println!("Got {:?}", device_input);
+                if !sent_close_req {
+                    let reply = conn.request(Request {
+                        code: [0, 0, 0, 0],
+                        sender: conn.id(),
+                        data: RequestData::CloseWindow(window.id()),
+                    })?;
+                    sent_close_req = true;
+                    println!("Got reply: {reply:?}");
+                }
             }
         }
     }

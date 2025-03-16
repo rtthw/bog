@@ -1,10 +1,6 @@
 [workspace]
 members = ["bog_types"]
 
-[workspace.dependencies]
-bog-types = { path = "bog_types" }
-env = { path = "env" }
-
 [package]
 name = "bog"
 version = "0.1.0"
@@ -24,5 +20,5 @@ default = ["all"]
 all = []
 
 [dependencies]
-bog-types = { workspace = true }
-env = { path = "env" }
+bog-types = { path = "bog_types" }
+ration = "*"
