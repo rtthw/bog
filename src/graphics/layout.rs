@@ -103,3 +103,25 @@ impl Into<taffy::Style> for Layout {
         self.0
     }
 }
+
+impl Layout {
+    pub fn width(mut self, width: f32) -> Self {
+        self.0.size.width = taffy::prelude::length(width);
+        self
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.0.size.height = taffy::prelude::length(height);
+        self
+    }
+
+    pub fn fill_width(mut self) -> Self {
+        self.0.size.width = taffy::prelude::percent(1.0);
+        self
+    }
+
+    pub fn fill_height(mut self) -> Self {
+        self.0.size.height = taffy::prelude::percent(1.0);
+        self
+    }
+}

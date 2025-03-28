@@ -29,6 +29,10 @@ impl Fonts {
         let _ = self.map.insert(name.to_string(), font);
         Ok(())
     }
+
+    pub fn get_font(&self, name: &str) -> Option<&Font> {
+        self.map.get(name)
+    }
 }
 
 
@@ -139,6 +143,9 @@ impl Font {
         }
     }
 
+    pub fn row_height(&self) -> f32 {
+        self.row_height
+    }
 }
 
 

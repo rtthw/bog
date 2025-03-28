@@ -5,6 +5,7 @@ use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
 use scene::Scene;
+use three_d::Geometry as _;
 
 
 
@@ -15,10 +16,39 @@ fn main() -> Result<()> {
         .with_inner_size(winit::dpi::LogicalSize::new(1200, 800))
         .build(&event_loop)
         .unwrap();
-    let graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+    let mut graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+
+    graphics.renderer_mut().load_font(
+        "mono",
+        include_bytes!("test_data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
+        20.0,
+    )?;
 
     let mut scene = Scene::default();
-    let mut ui = Ui::new(Layout::default());
+    let mut ui = Ui::new(Layout::default()
+        .fill_width()
+        .fill_height());
+
+    for word in ["This", "is", "a", "test", "for", "text", "rendering", "...", "***", "=>>"] {
+        let mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+        let width = mesh.aabb().size().x;
+        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
+        let material = three_d::ColorMaterial {
+            color: three_d::Srgba::BLACK,
+            ..Default::default()
+        };
+
+        let id = scene.append(mesh, material);
+
+        ui.push_to_root(
+            Layout::default()
+                .width(width)
+                // NOTE: The bounding box could be smaller than the row height, like with lowercase
+                //       letters for example.
+                .height(row_height),
+            id,
+        );
+    }
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();

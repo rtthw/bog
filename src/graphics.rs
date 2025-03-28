@@ -55,9 +55,26 @@ impl std::ops::Deref for Renderer {
     }
 }
 
+// Text rendering.
 impl Renderer {
     pub fn load_font(&mut self, name: &str, bytes: Vec<u8>, size: f32) -> Result<(), Error> {
         Ok(self.fonts.load_font(name, bytes, size)?)
+    }
+
+    pub fn get_font(&self, name: &str) -> Option<&fonts::Font> {
+        self.fonts.get_font(name)
+    }
+
+    pub fn mesh_for_text(
+        &self,
+        font_name: &str,
+        text: &str,
+        line_height: Option<f32>,
+    ) -> Option<Mesh> {
+        let font = self.fonts.get_font(font_name)?;
+        let cpu_mesh = font.cpu_mesh_for_text(text, line_height);
+
+        Some(Mesh::new(&self.context, &cpu_mesh))
     }
 }
 
@@ -229,6 +246,10 @@ impl WindowGraphics {
 impl WindowGraphics {
     pub fn renderer(&self) -> &Renderer {
         &self.renderer
+    }
+
+    pub fn renderer_mut(&mut self) -> &mut Renderer {
+        &mut self.renderer
     }
 
     pub fn resize(&self, physical_size: winit::dpi::PhysicalSize<u32>) {
