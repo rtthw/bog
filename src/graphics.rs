@@ -5,6 +5,13 @@
 pub extern crate three_d;
 pub extern crate winit;
 
+pub mod layout;
+
+pub use three_d::{
+    CpuMesh,
+    Mesh,
+};
+
 use glutin::{
     prelude::{
         GlDisplay as _,
