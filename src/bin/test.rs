@@ -26,6 +26,10 @@ fn main() -> Result<()> {
 
     let mut scene = Scene::default();
     let mut ui = Ui::new(Layout::default()
+        .flex_row()
+        .flex_wrap()
+        .padding(15.0)
+        .gap_x(15.0)
         .fill_width()
         .fill_height());
 
