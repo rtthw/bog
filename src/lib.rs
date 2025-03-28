@@ -2,8 +2,7 @@
 
 
 
-pub mod render;
-pub mod window;
+pub mod graphics;
 
 
 
@@ -11,6 +10,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("window error")]
-    WindowError(#[from] window::WindowError),
+    #[error("graphics error")]
+    GraphicsError(#[from] graphics::Error),
 }

@@ -2,7 +2,7 @@
 
 
 use bog::*;
-use window::*;
+use graphics::*;
 
 
 

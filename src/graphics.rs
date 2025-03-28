@@ -1,7 +1,8 @@
-//! Window
+//! Graphics
 
 
 
+pub extern crate three_d;
 pub extern crate winit;
 
 use glutin::{
@@ -13,12 +14,10 @@ use glutin::{
     surface::*,
 };
 
-use crate::render::Renderer;
-
 
 
 #[derive(thiserror::Error, Debug)]
-pub enum WindowError {
+pub enum Error {
     #[error("glutin error")]
     GlutinError(#[from] glutin::error::Error),
     #[error("winit error")]
@@ -27,6 +26,19 @@ pub enum WindowError {
     ThreeDError(#[from] three_d::CoreError),
     #[error("it's not possible to create a graphics context/surface with the given settings")]
     SurfaceCreationError,
+}
+
+
+
+#[derive(Clone)]
+pub struct Renderer(pub(crate) three_d::Context);
+
+impl std::ops::Deref for Renderer {
+    type Target = three_d::Context;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 
@@ -90,7 +102,7 @@ impl WindowGraphics {
     pub fn from_winit_window(
         window: &winit::window::Window,
         config: GraphicsConfig,
-    ) -> Result<Self, WindowError> {
+    ) -> Result<Self, Error> {
         use raw_window_handle::{HasRawDisplayHandle as _, HasRawWindowHandle as _};
 
         let window_handle = window.raw_window_handle();
@@ -112,7 +124,7 @@ impl WindowGraphics {
         window_handle: raw_window_handle::RawWindowHandle,
         display_handle: raw_window_handle::RawDisplayHandle,
         config: GraphicsConfig,
-    ) -> Result<Self, WindowError> {
+    ) -> Result<Self, Error> {
         // Try EGL and fallback to WGL.
         #[cfg(target_os = "windows")]
         let preference =
@@ -156,7 +168,7 @@ impl WindowGraphics {
             gl_display
                 .find_configs(config_template)?
                 .next()
-                .ok_or(WindowError::SurfaceCreationError)?
+                .ok_or(Error::SurfaceCreationError)?
         };
 
         let context_attributes =
@@ -202,15 +214,15 @@ impl WindowGraphics {
         self.surface.resize(&self.glutin_context, width, height);
     }
 
-    pub fn make_current(&self) -> Result<(), WindowError> {
+    pub fn make_current(&self) -> Result<(), Error> {
         Ok(self.glutin_context.make_current(&self.surface)?)
     }
 
-    pub fn swap_buffers(&self) -> Result<(), WindowError> {
+    pub fn swap_buffers(&self) -> Result<(), Error> {
         Ok(self.surface.swap_buffers(&self.glutin_context)?)
     }
 
-    pub fn set_vsync(&self, use_vsync: bool) -> Result<(), WindowError> {
+    pub fn set_vsync(&self, use_vsync: bool) -> Result<(), Error> {
         let swap_interval = if use_vsync {
             glutin::surface::SwapInterval::Wait(std::num::NonZeroU32::new(1).unwrap())
         } else {
