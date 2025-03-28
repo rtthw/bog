@@ -2,8 +2,7 @@
 
 
 
-pub extern crate three_d;
-
+pub mod render;
 pub mod window;
 
 

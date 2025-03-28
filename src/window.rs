@@ -13,7 +13,7 @@ use glutin::{
     surface::*,
 };
 
-use three_d::Context as RenderContext;
+use crate::render::Renderer;
 
 
 
@@ -79,7 +79,7 @@ impl GraphicsConfig {
 
 
 pub struct WindowGraphics {
-    context: RenderContext,
+    renderer: Renderer,
     surface: Surface<WindowSurface>,
     glutin_context: glutin::context::PossiblyCurrentContext,
 }
@@ -177,14 +177,14 @@ impl WindowGraphics {
         gl_surface.set_swap_interval(&gl_context, swap_interval)?;
 
         Ok(Self {
-            context: three_d::Context::from_gl_context(std::sync::Arc::new(unsafe {
+            renderer: Renderer(three_d::Context::from_gl_context(std::sync::Arc::new(unsafe {
                 three_d::context::Context::from_loader_function(|s| {
                     let s = std::ffi::CString::new(s)
                         .expect("failed to construct C string from string for gl proc address");
 
                     gl_display.get_proc_address(&s)
                 })
-            }))?,
+            }))?),
             glutin_context: gl_context,
             surface: gl_surface,
         })
@@ -192,8 +192,8 @@ impl WindowGraphics {
 }
 
 impl WindowGraphics {
-    pub fn render_context(&self) -> &RenderContext {
-        &self.context
+    pub fn renderer(&self) -> &Renderer {
+        &self.renderer
     }
 
     pub fn resize(&self, physical_size: winit::dpi::PhysicalSize<u32>) {

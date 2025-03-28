@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             winit::event::Event::RedrawRequested(_) => {
                 let (width, height) = window.inner_size().into();
                 let viewport = three_d::Viewport::new_at_origo(width, height);
-                three_d::RenderTarget::screen(graphics.render_context(), width, height)
+                three_d::RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(three_d::ClearState::color_and_depth(0.7, 0.7, 0.7, 1.0, 1.0))
                     .render(&three_d::Camera::new_2d(viewport), empty_objects(), &[]);
                 graphics.swap_buffers().unwrap();
