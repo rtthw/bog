@@ -20,7 +20,7 @@ fn main() -> Result<()> {
 
     graphics.renderer_mut().load_font(
         "mono",
-        include_bytes!("test_data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
+        include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
         20.0,
     )?;
 

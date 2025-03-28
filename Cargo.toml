@@ -1,3 +1,6 @@
+[workspace]
+members = ["testing"]
+
 [package]
 name = "bog"
 version = "0.1.0"
@@ -8,9 +11,6 @@ readme = "README.md"
 homepage = "https://github.com/rtthw/bog"
 repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
-
-[[bin]]
-name = "test"
 
 [features]
 default = ["all"]
