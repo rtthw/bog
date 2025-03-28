@@ -110,7 +110,6 @@ dependencies = [
 name = "bog"
 version = "0.1.0"
 dependencies = [
- "bog-types",
  "glutin",
  "ration",
  "raw-window-handle",
@@ -118,10 +117,6 @@ dependencies = [
  "three-d",
  "winit",
 ]
-
-[[package]]
-name = "bog-types"
-version = "0.1.0"
 
 [[package]]
 name = "bumpalo"
