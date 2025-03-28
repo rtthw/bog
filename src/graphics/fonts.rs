@@ -85,6 +85,60 @@ impl Font {
             })
         }
     }
+
+    pub fn cpu_mesh_for_text(&self, text: &str, line_height: Option<f32>) -> CpuMesh {
+        let mut shape_context = swash::shape::ShapeContext::new();
+        let swash_ref = swash::FontRef {
+            data: (*self.data).as_ref(),
+            offset: self.index,
+            key: self.swash_key,
+        };
+        let mut shaper = shape_context.builder(swash_ref)
+            .size(self.size)
+            // .retain_ignorables(true)
+            .features(&[("calt", 1)])
+            .build();
+        let mut positions = Vec::new();
+        let mut indices = Vec::new();
+        let mut position = three_d::vec2(0.0, 0.0);
+
+        shaper.add_str(text);
+        shaper.shape_with(|cluster| {
+            let t = text.get(cluster.source.to_range());
+            if matches!(t, Some("\n")) {
+                position.y -= self.row_height * line_height.unwrap_or(1.0);
+                position.x = 0.0;
+            }
+            for glyph in cluster.glyphs {
+                let Some(mesh) = self.glyph_map.get(&glyph.id) else {
+                    // TODO: Glyph is likely part of some ligature, but I need to make sure
+                    //       somehow.
+                    // println!("ERROR: Unknown glyph: {:?}", &glyph);
+                    continue;
+                };
+
+                let index_offset = positions.len() as u32;
+                let three_d::Indices::U32(mesh_indices) = &mesh.indices else {
+                    unreachable!()
+                };
+                indices.extend(mesh_indices.iter().map(|i| i + index_offset));
+
+                let position_offset = (position + three_d::vec2(glyph.x, glyph.y)).extend(0.0);
+                let three_d::Positions::F32(mesh_positions) = &mesh.positions else {
+                    unreachable!()
+                };
+                positions.extend(mesh_positions.iter().map(|p| p + position_offset));
+            }
+            position.x += cluster.advance();
+        });
+
+        CpuMesh {
+            positions: three_d::Positions::F32(positions),
+            indices: three_d::Indices::U32(indices),
+            ..Default::default()
+        }
+    }
+
 }
 
 
