@@ -21,4 +21,9 @@ all = []
 
 [dependencies]
 bog-types = { path = "bog_types" }
+glutin = "0.30"
 ration = "*"
+raw-window-handle = "0.5"
+thiserror = "2"
+three-d = { version = "0.18", default-features = false }
+winit = "0.28"
