@@ -5,6 +5,7 @@
 pub extern crate three_d;
 pub extern crate winit;
 
+pub mod fonts;
 pub mod layout;
 pub mod scene;
 
@@ -34,18 +35,29 @@ pub enum Error {
     ThreeDError(#[from] three_d::CoreError),
     #[error("it's not possible to create a graphics context/surface with the given settings")]
     SurfaceCreationError,
+    #[error("font error")]
+    FontError(#[from] fonts::Error),
 }
 
 
 
 #[derive(Clone)]
-pub struct Renderer(pub(crate) three_d::Context);
+pub struct Renderer {
+    pub(crate) context: three_d::Context,
+    fonts: fonts::Fonts,
+}
 
 impl std::ops::Deref for Renderer {
     type Target = three_d::Context;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.context
+    }
+}
+
+impl Renderer {
+    pub fn load_font(&mut self, name: &str, bytes: &[u8], size: f32) -> Result<(), Error> {
+        Ok(self.fonts.load_font(name, bytes, size)?)
     }
 }
 
@@ -197,14 +209,17 @@ impl WindowGraphics {
         gl_surface.set_swap_interval(&gl_context, swap_interval)?;
 
         Ok(Self {
-            renderer: Renderer(three_d::Context::from_gl_context(std::sync::Arc::new(unsafe {
-                three_d::context::Context::from_loader_function(|s| {
-                    let s = std::ffi::CString::new(s)
-                        .expect("failed to construct C string from string for gl proc address");
+            renderer: Renderer {
+                context: three_d::Context::from_gl_context(std::sync::Arc::new(unsafe {
+                    three_d::context::Context::from_loader_function(|s| {
+                        let s = std::ffi::CString::new(s)
+                            .expect("failed to construct C string from string for gl proc address");
 
-                    gl_display.get_proc_address(&s)
-                })
-            }))?),
+                        gl_display.get_proc_address(&s)
+                    })
+                }))?,
+                fonts: fonts::Fonts::default(),
+            },
             glutin_context: gl_context,
             surface: gl_surface,
         })
