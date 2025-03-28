@@ -3,6 +3,7 @@
 
 use bog::*;
 use graphics::*;
+use layout::{Layout, Ui};
 use scene::Scene;
 
 
@@ -16,7 +17,8 @@ fn main() -> Result<()> {
         .unwrap();
     let graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
 
-    let scene = Scene::default();
+    let mut scene = Scene::default();
+    let mut ui = Ui::new(Layout::default());
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
@@ -32,6 +34,8 @@ fn main() -> Result<()> {
                 event: winit::event::WindowEvent::Resized(new_size),
                 ..
             } => {
+                let (width, height): (u32, u32) = new_size.into();
+                ui.resize(&mut scene, width as f32, height as f32);
                 graphics.resize(new_size);
                 window.request_redraw();
             }
