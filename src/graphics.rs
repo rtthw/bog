@@ -56,7 +56,7 @@ impl std::ops::Deref for Renderer {
 }
 
 impl Renderer {
-    pub fn load_font(&mut self, name: &str, bytes: &[u8], size: f32) -> Result<(), Error> {
+    pub fn load_font(&mut self, name: &str, bytes: Vec<u8>, size: f32) -> Result<(), Error> {
         Ok(self.fonts.load_font(name, bytes, size)?)
     }
 }
