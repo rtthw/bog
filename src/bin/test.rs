@@ -3,6 +3,7 @@
 
 use bog::*;
 use graphics::*;
+use scene::Scene;
 
 
 
@@ -14,6 +15,8 @@ fn main() -> Result<()> {
         .build(&event_loop)
         .unwrap();
     let graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+
+    let scene = Scene::default();
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
@@ -37,14 +40,10 @@ fn main() -> Result<()> {
                 let viewport = three_d::Viewport::new_at_origo(width, height);
                 three_d::RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(three_d::ClearState::color_and_depth(0.7, 0.7, 0.7, 1.0, 1.0))
-                    .render(&three_d::Camera::new_2d(viewport), empty_objects(), &[]);
+                    .render(&three_d::Camera::new_2d(viewport), scene.objects(), &[]);
                 graphics.swap_buffers().unwrap();
             }
             _ => {}
         }
     });
-}
-
-fn empty_objects() -> impl Iterator<Item = impl three_d::Object> {
-    core::iter::empty::<three_d::Gm<three_d::Mesh, three_d::ColorMaterial>>()
 }

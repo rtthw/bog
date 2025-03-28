@@ -6,6 +6,7 @@ pub extern crate three_d;
 pub extern crate winit;
 
 pub mod layout;
+pub mod scene;
 
 pub use three_d::{
     CpuMesh,
