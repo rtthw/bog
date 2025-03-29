@@ -28,25 +28,27 @@ fn main() -> Result<()> {
     let mut ui = Ui::new(Layout::default()
         .flex_row()
         .flex_wrap()
-        .gap_x(15.0)
+        .padding(30.0)
         .fill_width()
         .fill_height());
 
-    // let mut button_panes = vec![];
-    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+    for word in ["This"] { //, "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
         let text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
         let text_material = three_d::ColorMaterial {
             color: three_d::Srgba::BLACK,
             ..Default::default()
         };
 
-        let pane_mesh = Mesh::new(graphics.renderer(), &CpuMesh::square());
+        let mut mesh = CpuMesh::square();
+        mesh.transform(three_d::Mat4::from_scale(0.5)).unwrap();
+        let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
         let pane_material = three_d::ColorMaterial {
             color: three_d::Srgba::RED,
             ..Default::default()
         };
 
         let width = text_mesh.aabb().size().x;
+        let height = text_mesh.aabb().size().y;
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
         let pane_id = scene.append(pane_mesh, pane_material);
@@ -54,7 +56,8 @@ fn main() -> Result<()> {
 
         let pane_node = ui.push_to_root(
             Layout::default()
-                // .margin(2.0)
+                .align_content_center()
+                .align_items_center()
                 .width(width)
                 .height(row_height),
             pane_id,
@@ -63,7 +66,7 @@ fn main() -> Result<()> {
         let _text_node = ui.push_to(
             Layout::default()
                 .width(width)
-                .height(row_height),
+                .height(height),
             pane_node,
             text_id,
             false,

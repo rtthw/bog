@@ -46,8 +46,16 @@ impl Ui {
             },
         ).unwrap();
 
+        let root_layout = self.tree.layout(self.root).unwrap();
+        println!("ROOT_LAYOUT: {:?}", root_layout);
         for node in self.tree.children(self.root).unwrap() {
-            do_layout(scene, &self.tree, node, (0.0, 0.0), height);
+            do_layout(
+                scene,
+                &self.tree,
+                node,
+                (root_layout.content_box_x(), root_layout.content_box_y()),
+                height,
+            );
         }
     }
 }
@@ -69,52 +77,41 @@ fn do_layout(
         return;
     };
     let (node_width, node_height) = (
-        layout.content_box_width(),
-        layout.content_box_height(),
+        layout.size.width,
+        layout.size.height,
     );
-    let real_y = layout.location.y + position.1 + node_height;
-    let pos = (
-        layout.location.x + position.0,
+    let real_pos = (
+        layout.content_box_x() + position.0,
+        layout.content_box_y() + position.1,
+    );
+    let pos3d = (
+        real_pos.0,
         // NOTE: `taffy` uses the top-left corner as the origin, but `three-d` uses
         //       the bottom left corner as the origin. So we need to convert here.
-        screen_height - real_y,
-        // layout.location.y + position.1,
+        screen_height - (real_pos.1 + node_height),
     );
 
-    // println!("Updating UI object: {}x{}@{:?}", node_width, node_height, pos);
+    let center = (
+        pos3d.0 + (node_width / 2.0),
+        pos3d.1 + (node_height / 2.0),
+    );
+    println!("Layout @ {id} = ");
+    println!("\tSize = {:?}", layout.content_size);
+    println!("\tLocation = {:?}", layout.location);
+    println!("...Updating UI object: {}x{}@{:?}&{:?}", node_width, node_height, pos3d, center);
 
-    let mut transformation = three_d::Mat3::from_translation(pos.into());
     if *resize {
-        transformation = transformation
-            * three_d::Mat3::from_nonuniform_scale(node_width, node_height);
+        mesh.set_transformation(three_d::Mat4::from_translation((center.0, center.1, 0.0).into())
+            * three_d::Mat4::from_nonuniform_scale(node_width, node_height, 1.0));
+    } else {
+        mesh.set_transformation(three_d::Mat4::from_translation((pos3d.0, pos3d.1, 0.0).into()));
     }
 
-    // See: `three_d::Mesh::set_transformation_2d`
-    mesh.set_transformation(three_d::Mat4::new(
-        transformation.x.x,
-        transformation.x.y,
-        0.0,
-        transformation.x.z,
-        transformation.y.x,
-        transformation.y.y,
-        0.0,
-        transformation.y.z,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        transformation.z.x,
-        transformation.z.y,
-        0.0,
-        transformation.z.z,
-    ));
-
     let Ok(children) = tree.children(node) else {
-        println!("Found no children for {id}");
         return;
     };
     for child in children {
-        do_layout(scene, tree, child, (pos.0, real_y), screen_height);
+        do_layout(scene, tree, child, real_pos, screen_height);
     }
 }
 
@@ -239,6 +236,68 @@ impl Layout {
 
     pub fn flex_wrap_reverse(mut self) -> Self {
         self.0.flex_wrap = taffy::FlexWrap::WrapReverse;
+        self
+    }
+}
+
+impl Layout {
+    pub fn align_items_center(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn align_content_center(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::Center);
+        self
+    }
+
+    pub fn align_self_center(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn justify_items_center(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn justify_content_center(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::Center);
+        self
+    }
+
+    pub fn justify_self_center(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn align_items_start(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Start);
+        self
+    }
+
+    pub fn align_content_start(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::Start);
+        self
+    }
+
+    pub fn align_self_start(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::Start);
+        self
+    }
+
+    pub fn justify_items_start(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::Start);
+        self
+    }
+
+    pub fn justify_content_start(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::Start);
+        self
+    }
+
+    pub fn justify_self_start(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::Start);
         self
     }
 }
