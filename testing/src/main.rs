@@ -1,6 +1,7 @@
 
 
 
+use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
@@ -24,6 +25,7 @@ fn main() -> Result<()> {
         20.0,
     )?;
 
+    let animate = true;
     let bg_color = three_d::Srgba::new_opaque(43, 43, 53);
 
     let mut scene = Scene::default();
@@ -36,7 +38,14 @@ fn main() -> Result<()> {
         .fill_height());
 
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
-        let text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+        let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+        if animate {
+            text_mesh.set_animation(|time| {
+                // let time = time % 2.0;
+                // three_d::Mat4::from_angle_z(three_d::Deg(-time * (360.0 / 3.0)))
+                rotate_z_degrees_repeat(time, -180.0, 2.0)
+            });
+        }
         let text_material = three_d::ColorMaterial {
             color: three_d::Srgba::new_opaque(163, 163, 173),
             ..Default::default()
@@ -76,8 +85,19 @@ fn main() -> Result<()> {
         );
     }
 
+    let start_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
+
+        if animate {
+            let time_since_start = std::time::Instant::now()
+                .duration_since(start_time)
+                .as_secs_f32();
+            for geom in scene.geometries() {
+                geom.animate(time_since_start);
+            }
+            window.request_redraw();
+        }
 
         match event {
             winit::event::Event::WindowEvent {
