@@ -7,7 +7,7 @@ use super::scene::Scene;
 
 
 pub struct Ui {
-    tree: taffy::TaffyTree<usize>,
+    tree: taffy::TaffyTree<(usize, bool)>,
     root: taffy::NodeId,
 }
 
@@ -22,9 +22,18 @@ impl Ui {
         }
     }
 
-    pub fn push_to_root(&mut self, layout: Layout, id: usize) {
-        let node = self.tree.new_leaf_with_context(layout.into(), id).unwrap(); // Cannot fail.
-        self.tree.add_child(self.root, node).unwrap(); // Cannot fail.
+    // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
+    pub fn push_to(&mut self, layout: Layout, parent: taffy::NodeId, id: usize, resize: bool) -> taffy::NodeId {
+        let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
+        self.tree.add_child(parent, node).unwrap();
+        node
+    }
+
+    // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
+    pub fn push_to_root(&mut self, layout: Layout, id: usize, resize: bool) -> taffy::NodeId {
+        let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
+        self.tree.add_child(self.root, node).unwrap();
+        node
     }
 
     // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
@@ -38,52 +47,74 @@ impl Ui {
         ).unwrap();
 
         for node in self.tree.children(self.root).unwrap() {
-            let layout = self.tree.layout(node).unwrap();
-            let Some(id) = self.tree.get_node_context(node) else {
-                println!("ERROR: Attempted to update nonexistent node in UI");
-                continue;
-            };
-            let Some(mesh) = scene.geometry(*id) else {
-                println!("ERROR: Attempted to update nonexistent scene object in UI");
-                continue;
-            };
-            let (_node_width, node_height) = (
-                layout.content_box_width(),
-                layout.content_box_height(),
-            );
-            let center = (
-                layout.content_box_x(),
-                // NOTE: `taffy` uses the top-left corner as the origin, but `three-d` uses
-                //       the bottom left corner as the origin. So we need to convert here. See
-                //       also that `content_box_x` is unchanged.
-                height - (layout.content_box_y() + node_height),
-            );
-
-            // println!("Updating UI object: {}x{}@{:?}", node_width, node_height, center);
-
-            let transformation = three_d::Mat3::from_translation(center.into());
-                // * three_d::Mat3::from_nonuniform_scale(width, height);
-
-            // See: `three_d::Mesh::set_transformation_2d`
-            mesh.set_transformation(three_d::Mat4::new(
-                transformation.x.x,
-                transformation.x.y,
-                0.0,
-                transformation.x.z,
-                transformation.y.x,
-                transformation.y.y,
-                0.0,
-                transformation.y.z,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                transformation.z.x,
-                transformation.z.y,
-                0.0,
-                transformation.z.z,
-            ));
+            do_layout(scene, &self.tree, node, (0.0, 0.0), height);
         }
+    }
+}
+
+fn do_layout(
+    scene: &mut Scene,
+    tree: &taffy::TaffyTree<(usize, bool)>,
+    node: taffy::NodeId,
+    position: (f32, f32),
+    screen_height: f32,
+) {
+    let layout = tree.layout(node).unwrap();
+    let Some((id, resize)) = tree.get_node_context(node) else {
+        println!("ERROR: Attempted to update nonexistent node in UI");
+        return;
+    };
+    let Some(mesh) = scene.geometry(*id) else {
+        println!("ERROR: Attempted to update nonexistent scene object in UI");
+        return;
+    };
+    let (node_width, node_height) = (
+        layout.content_box_width(),
+        layout.content_box_height(),
+    );
+    let real_y = layout.location.y + position.1 + node_height;
+    let pos = (
+        layout.location.x + position.0,
+        // NOTE: `taffy` uses the top-left corner as the origin, but `three-d` uses
+        //       the bottom left corner as the origin. So we need to convert here.
+        screen_height - real_y,
+        // layout.location.y + position.1,
+    );
+
+    // println!("Updating UI object: {}x{}@{:?}", node_width, node_height, pos);
+
+    let mut transformation = three_d::Mat3::from_translation(pos.into());
+    if *resize {
+        transformation = transformation
+            * three_d::Mat3::from_nonuniform_scale(node_width, node_height);
+    }
+
+    // See: `three_d::Mesh::set_transformation_2d`
+    mesh.set_transformation(three_d::Mat4::new(
+        transformation.x.x,
+        transformation.x.y,
+        0.0,
+        transformation.x.z,
+        transformation.y.x,
+        transformation.y.y,
+        0.0,
+        transformation.y.z,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        transformation.z.x,
+        transformation.z.y,
+        0.0,
+        transformation.z.z,
+    ));
+
+    let Ok(children) = tree.children(node) else {
+        println!("Found no children for {id}");
+        return;
+    };
+    for child in children {
+        do_layout(scene, tree, child, (pos.0, real_y), screen_height);
     }
 }
 
@@ -142,6 +173,14 @@ impl Layout {
         self.0.padding.right = taffy::LengthPercentage::Length(amount);
         self.0.padding.top = taffy::LengthPercentage::Length(amount);
         self.0.padding.bottom = taffy::LengthPercentage::Length(amount);
+        self
+    }
+
+    pub fn margin(mut self, amount: f32) -> Self {
+        self.0.margin.left = taffy::LengthPercentageAuto::Length(amount);
+        self.0.margin.right = taffy::LengthPercentageAuto::Length(amount);
+        self.0.margin.top = taffy::LengthPercentageAuto::Length(amount);
+        self.0.margin.bottom = taffy::LengthPercentageAuto::Length(amount);
         self
     }
 }

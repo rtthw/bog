@@ -28,29 +28,45 @@ fn main() -> Result<()> {
     let mut ui = Ui::new(Layout::default()
         .flex_row()
         .flex_wrap()
-        .padding(15.0)
         .gap_x(15.0)
         .fill_width()
         .fill_height());
 
-    for word in ["This", "is", "a", "test", "for", "text", "rendering", "...", "***", "=>>"] {
-        let mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
-        let width = mesh.aabb().size().x;
-        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
-        let material = three_d::ColorMaterial {
+    // let mut button_panes = vec![];
+    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+        let text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+        let text_material = three_d::ColorMaterial {
             color: three_d::Srgba::BLACK,
             ..Default::default()
         };
 
-        let id = scene.append(mesh, material);
+        let pane_mesh = Mesh::new(graphics.renderer(), &CpuMesh::square());
+        let pane_material = three_d::ColorMaterial {
+            color: three_d::Srgba::RED,
+            ..Default::default()
+        };
 
-        ui.push_to_root(
+        let width = text_mesh.aabb().size().x;
+        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
+
+        let pane_id = scene.append(pane_mesh, pane_material);
+        let text_id = scene.append(text_mesh, text_material);
+
+        let pane_node = ui.push_to_root(
+            Layout::default()
+                // .margin(2.0)
+                .width(width)
+                .height(row_height),
+            pane_id,
+            true,
+        );
+        let _text_node = ui.push_to(
             Layout::default()
                 .width(width)
-                // NOTE: The bounding box could be smaller than the row height, like with lowercase
-                //       letters for example.
                 .height(row_height),
-            id,
+            pane_node,
+            text_id,
+            false,
         );
     }
 
