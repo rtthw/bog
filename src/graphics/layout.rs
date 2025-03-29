@@ -47,7 +47,6 @@ impl Ui {
         ).unwrap();
 
         let root_layout = self.tree.layout(self.root).unwrap();
-        println!("ROOT_LAYOUT: {:?}", root_layout);
         for node in self.tree.children(self.root).unwrap() {
             do_layout(
                 scene,
@@ -76,6 +75,7 @@ fn do_layout(
         println!("ERROR: Attempted to update nonexistent scene object in UI");
         return;
     };
+
     let (node_width, node_height) = (
         layout.size.width,
         layout.size.height,
@@ -90,15 +90,15 @@ fn do_layout(
         //       the bottom left corner as the origin. So we need to convert here.
         screen_height - (real_pos.1 + node_height),
     );
-
     let center = (
         pos3d.0 + (node_width / 2.0),
         pos3d.1 + (node_height / 2.0),
     );
-    println!("Layout @ {id} = ");
-    println!("\tSize = {:?}", layout.content_size);
-    println!("\tLocation = {:?}", layout.location);
-    println!("...Updating UI object: {}x{}@{:?}&{:?}", node_width, node_height, pos3d, center);
+
+    // println!("Layout @ {id} = ");
+    // println!("\tSize = {:?}", layout.content_size);
+    // println!("\tLocation = {:?}", layout.location);
+    // println!("...Updating UI object: {}x{}@{:?}&{:?}", node_width, node_height, pos3d, center);
 
     if *resize {
         mesh.set_transformation(three_d::Mat4::from_translation((center.0, center.1, 0.0).into())

@@ -24,18 +24,21 @@ fn main() -> Result<()> {
         20.0,
     )?;
 
+    let bg_color = three_d::Srgba::new_opaque(43, 43, 53);
+
     let mut scene = Scene::default();
     let mut ui = Ui::new(Layout::default()
         .flex_row()
         .flex_wrap()
-        .padding(30.0)
+        .gap_x(19.0)
+        .padding(11.0)
         .fill_width()
         .fill_height());
 
-    for word in ["This"] { //, "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
         let text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
         let text_material = three_d::ColorMaterial {
-            color: three_d::Srgba::BLACK,
+            color: three_d::Srgba::new_opaque(163, 163, 173),
             ..Default::default()
         };
 
@@ -43,7 +46,7 @@ fn main() -> Result<()> {
         mesh.transform(three_d::Mat4::from_scale(0.5)).unwrap();
         let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
         let pane_material = three_d::ColorMaterial {
-            color: three_d::Srgba::RED,
+            color: three_d::Srgba::new_opaque(29, 29, 39),
             ..Default::default()
         };
 
@@ -95,8 +98,9 @@ fn main() -> Result<()> {
             winit::event::Event::RedrawRequested(_) => {
                 let (width, height) = window.inner_size().into();
                 let viewport = three_d::Viewport::new_at_origo(width, height);
+                let [r, g, b, a] = bg_color.into();
                 three_d::RenderTarget::screen(graphics.renderer(), width, height)
-                    .clear(three_d::ClearState::color_and_depth(0.7, 0.7, 0.7, 1.0, 1.0))
+                    .clear(three_d::ClearState::color_and_depth(r, g, b, a, 1.0))
                     .render(&three_d::Camera::new_2d(viewport), scene.objects(), &[]);
                 graphics.swap_buffers().unwrap();
             }

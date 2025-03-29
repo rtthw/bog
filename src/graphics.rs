@@ -65,13 +65,8 @@ impl Renderer {
         self.fonts.get_font(name)
     }
 
-    pub fn mesh_for_text(
-        &self,
-        font_name: &str,
-        text: &str,
-        line_height: Option<f32>,
-    ) -> Option<Mesh> {
-        let font = self.fonts.get_font(font_name)?;
+    pub fn mesh_for_text(&self, font: &str, text: &str, line_height: Option<f32>) -> Option<Mesh> {
+        let font = self.fonts.get_font(font)?;
         let cpu_mesh = font.cpu_mesh_for_text(text, line_height);
 
         Some(Mesh::new(&self.context, &cpu_mesh))
