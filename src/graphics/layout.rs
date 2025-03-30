@@ -2,13 +2,14 @@
 
 
 
-use three_d::Mat3;
+use three_d::{ColorMaterial, Mat3};
 
-use super::scene::Scene;
+use super::{mesh::Mesh, scene::Scene};
 
 
 
 pub struct Ui {
+    scene: Scene,
     tree: taffy::TaffyTree<(usize, bool)>,
     root: taffy::NodeId,
 }
@@ -19,27 +20,41 @@ impl Ui {
         let root = tree.new_with_children(layout.into(), &[]).unwrap();
 
         Self {
+            scene: Scene::default(),
             tree,
             root,
         }
     }
 
     // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
-    pub fn push_to(&mut self, layout: Layout, parent: taffy::NodeId, id: usize, resize: bool) -> taffy::NodeId {
+    pub fn push_to(
+        &mut self,
+        layout: Layout,
+        parent: taffy::NodeId,
+        (mesh, material): (Mesh, ColorMaterial),
+        resize: bool,
+    ) -> taffy::NodeId {
+        let id = self.scene.append(mesh, material);
         let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
         self.tree.add_child(parent, node).unwrap();
         node
     }
 
     // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
-    pub fn push_to_root(&mut self, layout: Layout, id: usize, resize: bool) -> taffy::NodeId {
+    pub fn push_to_root(
+        &mut self,
+        layout: Layout,
+        (mesh, material): (Mesh, ColorMaterial),
+        resize: bool,
+    ) -> taffy::NodeId {
+        let id = self.scene.append(mesh, material);
         let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
         self.tree.add_child(self.root, node).unwrap();
         node
     }
 
     // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
-    pub fn resize(&mut self, scene: &mut Scene, width: f32, height: f32) {
+    pub fn resize(&mut self, width: f32, height: f32) {
         self.tree.compute_layout(
             self.root,
             taffy::Size {
@@ -51,7 +66,7 @@ impl Ui {
         let root_layout = self.tree.layout(self.root).unwrap();
         for node in self.tree.children(self.root).unwrap() {
             do_layout(
-                scene,
+                &mut self.scene,
                 &self.tree,
                 node,
                 (root_layout.content_box_x(), root_layout.content_box_y()),
@@ -115,6 +130,20 @@ fn do_layout(
     for child in children {
         do_layout(scene, tree, child, real_pos, screen_height);
     }
+}
+
+impl Ui {
+    pub fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+        self.scene.objects()
+    }
+
+    pub fn handle_animations(&mut self, seconds_since_start: f32) {
+        for geom in self.scene.geometries() {
+            geom.perform_animation(seconds_since_start);
+        }
+    }
+
+    pub fn handle_cursor_moved(&mut self, x: f32, y: f32) {}
 }
 
 

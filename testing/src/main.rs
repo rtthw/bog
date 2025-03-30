@@ -6,7 +6,6 @@ use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
 use mesh::{CpuMesh, Mat4, Mesh};
-use scene::Scene;
 
 
 
@@ -28,7 +27,6 @@ fn main() -> Result<()> {
     let animate = true;
     let bg_color = Srgba::new_opaque(43, 43, 53);
 
-    let mut scene = Scene::default();
     let mut ui = Ui::new(Layout::default()
         .flex_row()
         .flex_wrap()
@@ -63,16 +61,13 @@ fn main() -> Result<()> {
         let height = text_mesh.aabb().size().y;
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
-        let pane_id = scene.append(pane_mesh, pane_material);
-        let text_id = scene.append(text_mesh, text_material);
-
         let pane_node = ui.push_to_root(
             Layout::default()
                 .align_content_center()
                 .align_items_center()
                 .width(width)
                 .height(row_height),
-            pane_id,
+            (pane_mesh, pane_material),
             true,
         );
         let _text_node = ui.push_to(
@@ -80,7 +75,7 @@ fn main() -> Result<()> {
                 .width(width)
                 .height(height),
             pane_node,
-            text_id,
+            (text_mesh, text_material),
             false,
         );
     }
@@ -90,30 +85,32 @@ fn main() -> Result<()> {
         control_flow.set_wait();
 
         if animate {
-            let time_since_start = std::time::Instant::now()
+            let seconds_since_start = std::time::Instant::now()
                 .duration_since(start_time)
                 .as_secs_f32();
-            for geom in scene.geometries() {
-                geom.perform_animation(time_since_start);
-            }
+            ui.handle_animations(seconds_since_start);
             window.request_redraw();
         }
 
         match event {
-            winit::event::Event::WindowEvent {
-                event: winit::event::WindowEvent::CloseRequested,
-                ..
-            } => {
-                control_flow.set_exit();
-            }
-            winit::event::Event::WindowEvent {
-                event: winit::event::WindowEvent::Resized(new_size),
-                ..
-            } => {
-                let (width, height): (u32, u32) = new_size.into();
-                ui.resize(&mut scene, width as f32, height as f32);
-                graphics.resize(new_size);
-                window.request_redraw();
+            winit::event::Event::WindowEvent { event, .. } => match event {
+                winit::event::WindowEvent::CloseRequested => {
+                    control_flow.set_exit();
+                }
+                winit::event::WindowEvent::Resized(new_size) => {
+                    let (width, height): (u32, u32) = new_size.into();
+                    ui.resize(width as f32, height as f32);
+                    graphics.resize(new_size);
+                    window.request_redraw();
+                }
+                winit::event::WindowEvent::CursorMoved { position, .. } => {
+                    let (x, y): (f32, f32) = position.into();
+                    ui.handle_cursor_moved(x, y);
+                }
+                // winit::event::WindowEvent::MouseInput { state, button, .. } => {
+                //     ui.handle_mouse_down(..);
+                // }
+                _ => {}
             }
             winit::event::Event::RedrawRequested(_) => {
                 let (width, height) = window.inner_size().into();
@@ -121,7 +118,7 @@ fn main() -> Result<()> {
                 let [r, g, b, a] = bg_color.into();
                 RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
-                    .render(&Camera::new_2d(viewport), scene.objects(), &[]);
+                    .render(&Camera::new_2d(viewport), ui.objects(), &[]);
                 graphics.swap_buffers().unwrap();
             }
             _ => {}
