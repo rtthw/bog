@@ -86,6 +86,16 @@ pub trait Render {
     fn objects(&self) -> impl Iterator<Item = impl three_d::Object>;
 }
 
+pub trait RenderOne {
+    fn object(&self) -> impl three_d::Object;
+}
+
+impl<T: RenderOne> Render for T {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+        std::iter::once(self.object())
+    }
+}
+
 
 
 /// Configuration variables used to initialize a [`WindowGraphics`] instance.

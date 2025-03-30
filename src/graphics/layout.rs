@@ -2,9 +2,9 @@
 
 
 
-use three_d::{ColorMaterial, Mat3};
+use three_d::Mat3;
 
-use super::{mesh::Mesh, scene::Scene, Render};
+use super::{mesh::Mesh, scene::Scene, Render, RenderOne};
 
 
 
@@ -31,7 +31,7 @@ impl Ui {
         &mut self,
         layout: Layout,
         parent: taffy::NodeId,
-        (mesh, material): (Mesh, ColorMaterial),
+        object: impl RenderOne,
         resize: bool,
     ) -> taffy::NodeId {
         let id = self.scene.append(mesh, material);
@@ -44,7 +44,7 @@ impl Ui {
     pub fn push_to_root(
         &mut self,
         layout: Layout,
-        (mesh, material): (Mesh, ColorMaterial),
+        object: impl RenderOne,
         resize: bool,
     ) -> taffy::NodeId {
         let id = self.scene.append(mesh, material);

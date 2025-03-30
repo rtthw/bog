@@ -5,7 +5,7 @@ use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
-use mesh::{CpuMesh, Mat4, Mesh};
+use mesh::{ColoredMesh, CpuMesh, Mat4, Mesh};
 
 
 
@@ -44,17 +44,17 @@ fn main() -> Result<()> {
                 rotate_z_degrees_repeat(time, -180.0, 2.0)
             });
         }
-        let text_material = ColorMaterial {
+        let text_obj = ColoredMesh {
+            mesh: text_mesh,
             color: Srgba::new_opaque(163, 163, 173),
-            ..Default::default()
         };
 
         let mut mesh = CpuMesh::square();
         mesh.transform(Mat4::from_scale(0.5)).unwrap();
         let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
-        let pane_material = ColorMaterial {
+        let pane_obj = ColoredMesh {
+            mesh: pane_mesh,
             color: Srgba::new_opaque(29, 29, 39),
-            ..Default::default()
         };
 
         let width = text_mesh.aabb().size().x;
@@ -67,7 +67,7 @@ fn main() -> Result<()> {
                 .align_items_center()
                 .width(width)
                 .height(row_height),
-            (pane_mesh, pane_material),
+            pane_obj,
             true,
         );
         let _text_node = ui.push_to(
@@ -75,7 +75,7 @@ fn main() -> Result<()> {
                 .width(width)
                 .height(height),
             pane_node,
-            (text_mesh, text_material),
+            text_obj,
             false,
         );
     }

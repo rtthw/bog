@@ -4,9 +4,9 @@
 
 pub use three_d::{CpuMesh, Mat2, Mat3, Mat4};
 
-use three_d::Geometry as _;
+use three_d::{Geometry as _, Srgba};
 
-use super::Renderer;
+use super::{Render, Renderer};
 
 
 
@@ -76,5 +76,24 @@ impl Mesh {
 impl Mesh {
     pub fn aabb(&self) -> three_d::AxisAlignedBoundingBox {
         self.inner.aabb()
+    }
+}
+
+
+
+pub struct ColoredMesh {
+    pub mesh: Mesh,
+    pub color: Srgba,
+}
+
+impl Render for ColoredMesh {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+        std::iter::once(three_d::Gm::new(
+            &self.mesh.inner,
+            three_d::ColorMaterial {
+                color: self.color,
+                ..Default::default()
+            },
+        ))
     }
 }
