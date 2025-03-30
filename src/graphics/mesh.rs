@@ -2,9 +2,9 @@
 
 
 
-pub use three_d::{CpuMesh, Mat2, Mat3, Mat4};
+pub use three_d::CpuMesh;
 
-use three_d::{Geometry as _, Srgba};
+use three_d::{vec3, Geometry as _, Mat3, Mat4, Srgba};
 
 use super::{RenderOne, Renderer};
 
@@ -76,6 +76,11 @@ impl Mesh {
 impl Mesh {
     pub fn aabb(&self) -> three_d::AxisAlignedBoundingBox {
         self.inner.aabb()
+    }
+
+    pub fn contains_2d_point(&self, x: f32, y: f32) -> bool {
+        let aabb = self.aabb();
+        aabb.is_inside(vec3(x, y, aabb.max().z))
     }
 }
 

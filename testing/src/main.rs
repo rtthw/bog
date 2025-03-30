@@ -5,15 +5,17 @@ use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
-use mesh::{ColoredMesh, CpuMesh, Mat4, Mesh};
+use math::Mat4;
+use mesh::{ColoredMesh, CpuMesh, Mesh};
 
 
 
 fn main() -> Result<()> {
+    let (mut screen_width, mut screen_height) = (1200.0, 800.0);
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()
         .with_title("Bog Testing")
-        .with_inner_size(winit::dpi::LogicalSize::new(1200, 800))
+        .with_inner_size(winit::dpi::LogicalSize::new(screen_width, screen_height))
         .build(&event_loop)
         .unwrap();
     let mut graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
@@ -100,14 +102,14 @@ fn main() -> Result<()> {
                     control_flow.set_exit();
                 }
                 winit::event::WindowEvent::Resized(new_size) => {
-                    let (width, height): (u32, u32) = new_size.into();
-                    ui.resize(width as f32, height as f32);
+                    (screen_width, screen_height) = new_size.into();
+                    ui.resize(screen_width, screen_height);
                     graphics.resize(new_size);
                     window.request_redraw();
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let (x, y): (f32, f32) = position.into();
-                    ui.handle_cursor_moved(x, y);
+                    ui.handle_cursor_moved(x, screen_height - y);
                 }
                 // winit::event::WindowEvent::MouseInput { state, button, .. } => {
                 //     ui.handle_mouse_down(..);

@@ -143,7 +143,21 @@ impl Ui {
         }
     }
 
-    pub fn handle_cursor_moved(&mut self, x: f32, y: f32) {}
+    pub fn handle_cursor_moved(&mut self, x: f32, y: f32) {
+        let hovered_meshes = self.scene.geometries()
+            .iter()
+            .enumerate()
+            .filter(|(_id, geom)| geom.contains_2d_point(x, y))
+            .collect::<Vec<_>>();
+
+        if !hovered_meshes.is_empty() {
+            if hovered_meshes.len() == 1 {
+                println!("Hovering a single mesh: {:?}", hovered_meshes.first().unwrap().0);
+            } else {
+                println!("Hovering multiple meshes");
+            }
+        }
+    }
 }
 
 

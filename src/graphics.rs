@@ -8,6 +8,7 @@ pub extern crate winit;
 pub mod animation;
 pub mod fonts;
 pub mod layout;
+pub mod math;
 pub mod mesh;
 pub mod scene;
 
