@@ -6,7 +6,7 @@ pub use three_d::{CpuMesh, Mat2, Mat3, Mat4};
 
 use three_d::{Geometry as _, Srgba};
 
-use super::{Render, Renderer};
+use super::{RenderOne, Renderer};
 
 
 
@@ -86,14 +86,24 @@ pub struct ColoredMesh {
     pub color: Srgba,
 }
 
-impl Render for ColoredMesh {
-    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
-        std::iter::once(three_d::Gm::new(
+impl RenderOne for ColoredMesh {
+    fn object(&self) -> impl three_d::Object {
+        three_d::Gm::new(
             &self.mesh.inner,
             three_d::ColorMaterial {
                 color: self.color,
                 ..Default::default()
             },
-        ))
+        )
+    }
+
+    fn destructure(self) -> (Mesh, three_d::ColorMaterial) {
+        (
+            self.mesh,
+            three_d::ColorMaterial {
+                color: self.color,
+                ..Default::default()
+            },
+        )
     }
 }

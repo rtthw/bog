@@ -37,6 +37,11 @@ fn main() -> Result<()> {
 
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
         let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+
+        let width = text_mesh.aabb().size().x;
+        let height = text_mesh.aabb().size().y;
+        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
+
         if animate {
             text_mesh.animate(|time| {
                 // let time = time % 2.0;
@@ -44,6 +49,7 @@ fn main() -> Result<()> {
                 rotate_z_degrees_repeat(time, -180.0, 2.0)
             });
         }
+
         let text_obj = ColoredMesh {
             mesh: text_mesh,
             color: Srgba::new_opaque(163, 163, 173),
@@ -56,10 +62,6 @@ fn main() -> Result<()> {
             mesh: pane_mesh,
             color: Srgba::new_opaque(29, 29, 39),
         };
-
-        let width = text_mesh.aabb().size().x;
-        let height = text_mesh.aabb().size().y;
-        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
         let pane_node = ui.push_to_root(
             Layout::default()

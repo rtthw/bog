@@ -88,6 +88,7 @@ pub trait Render {
 
 pub trait RenderOne {
     fn object(&self) -> impl three_d::Object;
+    fn destructure(self) -> (Mesh, ColorMaterial);
 }
 
 impl<T: RenderOne> Render for T {

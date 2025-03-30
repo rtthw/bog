@@ -4,7 +4,7 @@
 
 use three_d::Mat3;
 
-use super::{mesh::Mesh, scene::Scene, Render, RenderOne};
+use super::{scene::Scene, Render, RenderOne};
 
 
 
@@ -34,6 +34,7 @@ impl Ui {
         object: impl RenderOne,
         resize: bool,
     ) -> taffy::NodeId {
+        let (mesh, material) = object.destructure();
         let id = self.scene.append(mesh, material);
         let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
         self.tree.add_child(parent, node).unwrap();
@@ -47,10 +48,7 @@ impl Ui {
         object: impl RenderOne,
         resize: bool,
     ) -> taffy::NodeId {
-        let id = self.scene.append(mesh, material);
-        let node = self.tree.new_leaf_with_context(layout.into(), (id, resize)).unwrap();
-        self.tree.add_child(self.root, node).unwrap();
-        node
+        self.push_to(layout, self.root, object, resize)
     }
 
     // SAFETY: It appears that none of `taffy`'s methods can fail, so the unwraps are fine.
