@@ -143,6 +143,10 @@ impl Font {
         }
     }
 
+    pub fn cpu_mesh_for_glyph(&self, glyph: u16) -> Option<&CpuMesh> {
+        self.glyph_map.get(&glyph)
+    }
+
     pub fn row_height(&self) -> f32 {
         self.row_height
     }

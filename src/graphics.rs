@@ -10,6 +10,7 @@ pub mod fonts;
 pub mod layout;
 pub mod math;
 pub mod mesh;
+pub mod paint;
 pub mod scene;
 
 pub use three_d::{
@@ -78,6 +79,13 @@ impl Renderer {
         let cpu_mesh = font.cpu_mesh_for_text(text, line_height);
 
         Some(Mesh::new(&self, &cpu_mesh))
+    }
+
+    pub fn mesh_for_glyph(&self, font: &str, glyph: u16) -> Option<Mesh> {
+        let font = self.fonts.get_font(font)?;
+        let cpu_mesh = font.cpu_mesh_for_glyph(glyph)?;
+
+        Some(Mesh::new(&self, cpu_mesh))
     }
 }
 
