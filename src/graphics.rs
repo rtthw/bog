@@ -8,12 +8,8 @@ pub extern crate winit;
 pub mod animation;
 pub mod fonts;
 pub mod layout;
+pub mod mesh;
 pub mod scene;
-
-pub use three_d::{
-    CpuMesh,
-    Mesh,
-};
 
 use glutin::{
     prelude::{
@@ -23,6 +19,7 @@ use glutin::{
     },
     surface::*,
 };
+use mesh::Mesh;
 
 
 
@@ -70,7 +67,7 @@ impl Renderer {
         let font = self.fonts.get_font(font)?;
         let cpu_mesh = font.cpu_mesh_for_text(text, line_height);
 
-        Some(Mesh::new(&self.context, &cpu_mesh))
+        Some(Mesh::new(&self, &cpu_mesh))
     }
 }
 

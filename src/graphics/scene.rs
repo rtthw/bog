@@ -2,7 +2,9 @@
 
 
 
-use three_d::{ColorMaterial, Mesh};
+use three_d::ColorMaterial;
+
+use super::mesh::Mesh;
 
 
 
@@ -17,7 +19,7 @@ pub struct Scene {
 impl Scene {
     pub fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
         self.geometries.iter().zip(self.materials.iter())
-            .map(|(g, m)| three_d::Gm::new(g, m))
+            .map(|(g, m)| three_d::Gm::new(&g.inner, m))
     }
 
     pub fn geometries(&mut self) -> &mut Vec<Mesh> {

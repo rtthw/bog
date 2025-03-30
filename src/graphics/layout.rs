@@ -2,6 +2,8 @@
 
 
 
+use three_d::Mat3;
+
 use super::scene::Scene;
 
 
@@ -101,10 +103,10 @@ fn do_layout(
     // println!("...Updating UI object: {}x{}@{:?}&{:?}", node_width, node_height, pos3d, center);
 
     if *resize {
-        mesh.set_transformation(three_d::Mat4::from_translation((center.0, center.1, 0.0).into())
-            * three_d::Mat4::from_nonuniform_scale(node_width, node_height, 1.0));
+        mesh.transform_2d(Mat3::from_translation((center.0, center.1).into())
+            * Mat3::from_nonuniform_scale(node_width, node_height));
     } else {
-        mesh.set_transformation(three_d::Mat4::from_translation((pos3d.0, pos3d.1, 0.0).into()));
+        mesh.transform_2d(Mat3::from_translation((pos3d.0, pos3d.1).into()));
     }
 
     let Ok(children) = tree.children(node) else {

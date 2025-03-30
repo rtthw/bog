@@ -5,8 +5,8 @@ use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
+use mesh::{CpuMesh, Mesh};
 use scene::Scene;
-use three_d::Geometry as _;
 
 
 
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
         let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
         if animate {
-            text_mesh.set_animation(|time| {
+            text_mesh.animate(|time| {
                 // let time = time % 2.0;
                 // three_d::Mat4::from_angle_z(three_d::Deg(-time * (360.0 / 3.0)))
                 rotate_z_degrees_repeat(time, -180.0, 2.0)
@@ -94,7 +94,7 @@ fn main() -> Result<()> {
                 .duration_since(start_time)
                 .as_secs_f32();
             for geom in scene.geometries() {
-                geom.animate(time_since_start);
+                geom.perform_animation(time_since_start);
             }
             window.request_redraw();
         }
