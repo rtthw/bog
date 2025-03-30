@@ -2,9 +2,11 @@
 
 
 
+use std::collections::HashMap;
+
 use three_d::{CpuMesh, Mat3, Mat4, Srgba};
 
-use super::{mesh::Mesh, Renderer};
+use super::{mesh::Mesh, Render, Renderer};
 
 
 
@@ -13,25 +15,52 @@ pub struct Painter<'a> {
 }
 
 impl<'a> Painter<'a> {
-    pub fn finish(self, renderer: &Renderer) {
+    pub fn finish(self, renderer: &Renderer) -> Painting {
+        let mut painting = Painting::default();
+        let mut id: usize = 0;
         for paint in self.paints {
             match paint {
-                Paint::Group(nested_paints) => {
-                    for nested_paint in nested_paints {
+                Paint::Group(group_id, nested_paints) => {
+                    if nested_paints.is_empty() {
+                        continue;
+                    }
+
+                    let group_start_id = id;
+                    let mut group_end_id = id;
+                    'inner: for nested_paint in nested_paints {
                         match nested_paint {
                             Paint::ColoredShape(shape, color) => {
                                 let Some(mesh) = mesh_for_shape(shape, renderer) else {
                                     println!("ERROR: Could not generate mesh for shape");
-                                    continue;
+                                    continue 'inner;
                                 };
+                                painting.meshes.push(mesh);
+                                painting.colors.push(color);
                             }
-                            Paint::Group(_) => panic!("Painter encountered nested paint group"),
+                            Paint::Group(_, _) => panic!("encountered nested paint group"),
                         }
+                        group_end_id = id;
+                        id += 1;
                     }
+
+                    painting.groups.insert(group_id, std::ops::Range {
+                        start: group_start_id,
+                        end: group_end_id,
+                    });
                 }
-                Paint::ColoredShape(shape, color) => {}
+                Paint::ColoredShape(shape, color) => {
+                    let Some(mesh) = mesh_for_shape(shape, renderer) else {
+                        println!("ERROR: Could not generate mesh for shape");
+                        continue;
+                    };
+                    painting.meshes.push(mesh);
+                    painting.colors.push(color);
+                    id += 1;
+                }
             }
         }
+
+        painting
     }
 }
 
@@ -56,12 +85,36 @@ fn mesh_for_shape(shape: Shape, renderer: &Renderer) -> Option<Mesh> {
 
 
 
+#[derive(Default)]
+pub struct Painting {
+    meshes: Vec<Mesh>,
+    colors: Vec<Srgba>,
+    groups: HashMap<usize, std::ops::Range<usize>>,
+}
+
+impl Render for Painting {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+        self.meshes.iter().zip(self.colors.iter())
+            .map(|(mesh, color)| {
+                three_d::Gm::new(
+                    &mesh.inner,
+                    three_d::ColorMaterial {
+                        color: *color,
+                        ..Default::default()
+                    },
+                )
+            })
+    }
+}
+
+
+
 pub enum Paint<'a> {
     /// A set of ordered paint commands.
     ///
     /// Groups must not contain other groups. The [`Painter`] will panic if it encounters a
     /// nested group.
-    Group(Vec<Paint<'a>>),
+    Group(usize, Vec<Paint<'a>>),
     ColoredShape(Shape<'a>, Srgba),
 }
 
