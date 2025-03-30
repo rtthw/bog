@@ -5,7 +5,7 @@ use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
-use mesh::{CpuMesh, Mesh};
+use mesh::{CpuMesh, Mat4, Mesh};
 use scene::Scene;
 
 
@@ -26,7 +26,7 @@ fn main() -> Result<()> {
     )?;
 
     let animate = true;
-    let bg_color = three_d::Srgba::new_opaque(43, 43, 53);
+    let bg_color = Srgba::new_opaque(43, 43, 53);
 
     let mut scene = Scene::default();
     let mut ui = Ui::new(Layout::default()
@@ -46,16 +46,16 @@ fn main() -> Result<()> {
                 rotate_z_degrees_repeat(time, -180.0, 2.0)
             });
         }
-        let text_material = three_d::ColorMaterial {
-            color: three_d::Srgba::new_opaque(163, 163, 173),
+        let text_material = ColorMaterial {
+            color: Srgba::new_opaque(163, 163, 173),
             ..Default::default()
         };
 
         let mut mesh = CpuMesh::square();
-        mesh.transform(three_d::Mat4::from_scale(0.5)).unwrap();
+        mesh.transform(Mat4::from_scale(0.5)).unwrap();
         let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
-        let pane_material = three_d::ColorMaterial {
-            color: three_d::Srgba::new_opaque(29, 29, 39),
+        let pane_material = ColorMaterial {
+            color: Srgba::new_opaque(29, 29, 39),
             ..Default::default()
         };
 
@@ -117,11 +117,11 @@ fn main() -> Result<()> {
             }
             winit::event::Event::RedrawRequested(_) => {
                 let (width, height) = window.inner_size().into();
-                let viewport = three_d::Viewport::new_at_origo(width, height);
+                let viewport = Viewport::new_at_origo(width, height);
                 let [r, g, b, a] = bg_color.into();
-                three_d::RenderTarget::screen(graphics.renderer(), width, height)
-                    .clear(three_d::ClearState::color_and_depth(r, g, b, a, 1.0))
-                    .render(&three_d::Camera::new_2d(viewport), scene.objects(), &[]);
+                RenderTarget::screen(graphics.renderer(), width, height)
+                    .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
+                    .render(&Camera::new_2d(viewport), scene.objects(), &[]);
                 graphics.swap_buffers().unwrap();
             }
             _ => {}

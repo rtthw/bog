@@ -2,7 +2,7 @@
 
 
 
-pub extern crate three_d;
+// pub extern crate three_d;
 pub extern crate winit;
 
 pub mod animation;
@@ -10,6 +10,15 @@ pub mod fonts;
 pub mod layout;
 pub mod mesh;
 pub mod scene;
+
+pub use three_d::{
+    Camera,
+    ClearState,
+    ColorMaterial,
+    RenderTarget,
+    Srgba,
+    Viewport,
+};
 
 use glutin::{
     prelude::{
