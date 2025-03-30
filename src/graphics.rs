@@ -82,6 +82,12 @@ impl Renderer {
 
 
 
+pub trait Render {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object>;
+}
+
+
+
 /// Configuration variables used to initialize a [`WindowGraphics`] instance.
 pub struct GraphicsConfig {
     /// Whether vertical syncing should be used, which would limit the FPS to the display's

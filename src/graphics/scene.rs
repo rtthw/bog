@@ -4,7 +4,7 @@
 
 use three_d::ColorMaterial;
 
-use super::mesh::Mesh;
+use super::{mesh::Mesh, Render};
 
 
 
@@ -15,13 +15,15 @@ pub struct Scene {
     materials: Vec<ColorMaterial>,
 }
 
-// Object management.
-impl Scene {
-    pub fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+impl Render for Scene {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
         self.geometries.iter().zip(self.materials.iter())
             .map(|(g, m)| three_d::Gm::new(&g.inner, m))
     }
+}
 
+// Object management.
+impl Scene {
     pub fn geometries(&mut self) -> &mut Vec<Mesh> {
         &mut self.geometries
     }

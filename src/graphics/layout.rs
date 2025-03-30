@@ -4,7 +4,7 @@
 
 use three_d::{ColorMaterial, Mat3};
 
-use super::{mesh::Mesh, scene::Scene};
+use super::{mesh::Mesh, scene::Scene, Render};
 
 
 
@@ -132,11 +132,13 @@ fn do_layout(
     }
 }
 
-impl Ui {
-    pub fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
+impl Render for Ui {
+    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
         self.scene.objects()
     }
+}
 
+impl Ui {
     pub fn handle_animations(&mut self, seconds_since_start: f32) {
         for geom in self.scene.geometries() {
             geom.perform_animation(seconds_since_start);
