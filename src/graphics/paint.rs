@@ -2,7 +2,7 @@
 
 
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use three_d::{CpuMesh, Mat3, Mat4, Srgba};
 
@@ -43,7 +43,7 @@ impl<'a> Painter<'a> {
                         id += 1;
                     }
 
-                    painting.groups.insert(group_id, std::ops::Range {
+                    painting.groups.insert(group_id, Range {
                         start: group_start_id,
                         end: group_end_id,
                     });
@@ -89,7 +89,7 @@ fn mesh_for_shape(shape: Shape, renderer: &Renderer) -> Option<Mesh> {
 pub struct Painting {
     meshes: Vec<Mesh>,
     colors: Vec<Srgba>,
-    groups: HashMap<usize, std::ops::Range<usize>>,
+    groups: HashMap<usize, Range<usize>>,
 }
 
 impl Render for Painting {
