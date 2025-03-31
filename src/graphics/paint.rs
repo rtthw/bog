@@ -12,9 +12,24 @@ use super::{mesh::Mesh, Render, Renderer};
 
 pub struct Painter<'a> {
     pub paints: Vec<Paint<'a>>,
+    pub current_group: Option<Vec<Paint<'a>>>,
 }
 
 impl<'a> Painter<'a> {
+    pub fn start_group(&mut self) {
+        self.current_group = Some(Vec::new());
+    }
+
+    pub fn end_group(&mut self) -> Option<usize> {
+        if let Some(group) = self.current_group.take() {
+            let id = self.paints.len();
+            self.paints.push(Paint::Group(id, group));
+            Some(id)
+        } else {
+            None
+        }
+    }
+
     pub fn finish(self, renderer: &Renderer) -> Painting {
         let mut painting = Painting::default();
         let mut id: usize = 0;
@@ -80,6 +95,24 @@ fn mesh_for_shape(shape: Shape, renderer: &Renderer) -> Option<Mesh> {
 
             Some(mesh)
         }
+    }
+}
+
+impl<'a> Painter<'a> {
+    pub fn push_paint(&mut self, paint: Paint<'a>) {
+        if let Some(paints) = &mut self.current_group {
+            paints.push(paint);
+        } else {
+            self.paints.push(paint);
+        }
+    }
+
+    pub fn rectangle(&mut self, transform: Mat3, color: Srgba) {
+        self.push_paint(Paint::ColoredShape(Shape::Rectangle { transform }, color));
+    }
+
+    pub fn glyph(&mut self, transform: Mat3, font: &'a str, id: u16, color: Srgba) {
+        self.push_paint(Paint::ColoredShape(Shape::Glyph { transform, font, id }, color));
     }
 }
 
