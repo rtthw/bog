@@ -95,6 +95,12 @@ fn mesh_for_shape(shape: Shape, renderer: &Renderer) -> Option<Mesh> {
 
             Some(mesh)
         }
+        Shape::Text { transform, font, text } => {
+            let mut mesh = renderer.mesh_for_text(font, text, None)?;
+            mesh.transform_2d(transform);
+
+            Some(mesh)
+        }
     }
 }
 
@@ -113,6 +119,10 @@ impl<'a> Painter<'a> {
 
     pub fn glyph(&mut self, transform: Mat3, font: &'a str, id: u16, color: Srgba) {
         self.push_paint(Paint::ColoredShape(Shape::Glyph { transform, font, id }, color));
+    }
+
+    pub fn text(&mut self, transform: Mat3, font: &'a str, text: &'a str, color: Srgba) {
+        self.push_paint(Paint::ColoredShape(Shape::Text { transform, font, text }, color));
     }
 }
 
@@ -159,5 +169,10 @@ pub enum Shape<'a> {
         transform: Mat3,
         font: &'a str,
         id: u16,
+    },
+    Text {
+        transform: Mat3,
+        font: &'a str,
+        text: &'a str,
     },
 }

@@ -2,7 +2,7 @@
 
 
 
-use three_d::ColorMaterial;
+use three_d::{ColorMaterial, Srgba};
 
 use super::{mesh::Mesh, Render};
 
@@ -48,4 +48,11 @@ impl Scene {
 
         id
     }
+}
+
+
+
+pub trait Scenic {
+    fn mesh_mut(&mut self, id: usize) -> Option<&mut Mesh>;
+    fn color_mut(&mut self, id: usize) -> Option<&mut Srgba>;
 }
