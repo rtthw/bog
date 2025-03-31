@@ -1,6 +1,8 @@
 
 
 
+pub use winit::event::{DeviceId as Device, MouseButton};
+
 use crate::graphics::{GraphicsConfig, WindowGraphics};
 
 
@@ -38,8 +40,7 @@ impl<W: Window + 'static> SingleWindowProgram<W> {
         } = self;
 
         let event_loop = winit::event_loop::EventLoop::new();
-        let event_loop = winit::event_loop::EventLoop::new();
-        let winit_window = winit::window::WindowBuilder::new()
+        let mut winit_window = winit::window::WindowBuilder::new()
             .with_title(title)
             .with_inner_size(winit::dpi::LogicalSize::new(screen_width, screen_height))
             .build(&event_loop)
@@ -49,23 +50,21 @@ impl<W: Window + 'static> SingleWindowProgram<W> {
             GraphicsConfig::new(screen_width as u32, screen_height as u32),
         ).unwrap();
 
-        let mut handle = WindowHandle {
-            winit_window,
-        };
 
         event_loop.run(move |event, _target, control_flow| {
-            // Single window programs can ignore window IDs entirely.
+            let mut handle = WindowHandle {
+                winit_window: &mut winit_window,
+                graphics: &mut graphics,
+                control_flow
+            };
             match event {
                 winit::event::Event::WindowEvent { event, .. } => {
-                    match event {
-                        winit::event::WindowEvent::CloseRequested => {
-                            control_flow.set_exit();
-                        }
-                        _ => {}
+                    if let Some(event) = translate_winit_window_event(event) {
+                        window.on_event(&mut handle, event);
                     }
                 }
                 winit::event::Event::RedrawRequested(_) => {
-                    window.render(&mut handle);
+                    window.on_event(&mut handle, WindowEvent::RenderRequest);
                 }
                 _ => {}
             }
@@ -73,18 +72,61 @@ impl<W: Window + 'static> SingleWindowProgram<W> {
     }
 }
 
+pub fn translate_winit_window_event(event: winit::event::WindowEvent) -> Option<WindowEvent> {
+    Some(match event {
+        winit::event::WindowEvent::CloseRequested => WindowEvent::CloseRequest,
+        winit::event::WindowEvent::Resized(size) => WindowEvent::Resize(size.into()),
+        winit::event::WindowEvent::MouseInput { device_id, state, button, .. } => {
+            if state == winit::event::ElementState::Pressed {
+                WindowEvent::MouseButtonPress { device: device_id, button }
+            } else {
+                WindowEvent::MouseButtonRelease { device: device_id, button }
+            }
+        }
+        _ => None?,
+    })
+}
+
 
 
 pub trait Window {
-    fn render(&mut self, handle: &mut WindowHandle);
+    fn on_event(&mut self, handle: &mut WindowHandle, event: WindowEvent);
 }
 
-pub struct WindowHandle {
-    winit_window: winit::window::Window,
+pub enum WindowEvent {
+    RenderRequest,
+    CloseRequest,
+    Resize((f32, f32)),
+    MouseButtonPress {
+        device: Device,
+        button: MouseButton,
+    },
+    MouseButtonRelease {
+        device: Device,
+        button: MouseButton,
+    },
 }
 
-impl WindowHandle {
+pub struct WindowHandle<'a> {
+    winit_window: &'a mut winit::window::Window,
+    graphics: &'a mut WindowGraphics,
+    control_flow: &'a mut winit::event_loop::ControlFlow,
+}
+
+impl<'a> WindowHandle<'a> {
+    pub fn graphics(&mut self) -> &mut WindowGraphics {
+        &mut self.graphics
+    }
+
     pub fn set_title(&self, title: &str) {
         self.winit_window.set_title(title);
+    }
+
+    pub fn inner_size(&self) -> (f32, f32) {
+        self.winit_window.inner_size().into()
+    }
+
+    pub fn close(&mut self) {
+        self.control_flow.set_exit();
     }
 }
