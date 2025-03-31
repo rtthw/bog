@@ -12,6 +12,7 @@ pub mod math;
 pub mod mesh;
 pub mod paint;
 pub mod scene;
+pub mod ui;
 
 pub use three_d::{
     Camera,
