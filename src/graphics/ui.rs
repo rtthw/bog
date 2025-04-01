@@ -2,7 +2,6 @@
 
 
 
-
 pub struct Ui {
     tree: taffy::TaffyTree<(usize, bool)>,
     root: taffy::NodeId,
@@ -75,21 +74,24 @@ impl Ui {
     }
 
     pub fn resize(&mut self, width: f32, height: f32) {
-        if self.area != (width, height) {
-            self.area = (width, height);
-            self.tree.compute_layout(
-                self.root,
-                taffy::Size {
-                    width: taffy::AvailableSpace::Definite(width),
-                    height: taffy::AvailableSpace::Definite(height),
-                },
-            ).unwrap();
+        if self.area == (width, height) {
+            return;
         }
+        self.area = (width, height);
+        self.tree.compute_layout(
+            self.root,
+            taffy::Size {
+                width: taffy::AvailableSpace::Definite(width),
+                height: taffy::AvailableSpace::Definite(height),
+            },
+        ).unwrap();
     }
 }
 
 
 
 pub trait UiHandler {
+    fn on_resize(&mut self, node: taffy::NodeId, tree: &mut taffy::TaffyTree<(usize, bool)>);
     fn on_hover(&mut self, node: taffy::NodeId, tree: &mut taffy::TaffyTree<(usize, bool)>);
+    fn on_click(&mut self, node: taffy::NodeId, tree: &mut taffy::TaffyTree<(usize, bool)>);
 }
