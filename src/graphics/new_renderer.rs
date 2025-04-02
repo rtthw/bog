@@ -2,22 +2,16 @@
 
 
 
+use three_d::{Mat3, Mat4, SquareMatrix as _, Vec2};
+
+
+
 pub struct Mesh2D {
     context: three_d::Context,
     indices: three_d::IndexBuffer,
     positions: three_d::VertexBuffer<three_d::Vec2>,
     transform: three_d::Mat4,
     aabb: three_d::AxisAlignedBoundingBox,
-}
-
-impl Mesh2D {
-    pub fn new(context: &three_d::Context, tri_mesh: &three_d::CpuMesh) -> Self {
-        let aabb = tri_mesh.compute_aabb();
-
-        Self {
-            aabb,
-        }
-    }
 }
 
 impl three_d::Geometry for Mesh2D {
@@ -87,5 +81,77 @@ impl three_d::Geometry for Mesh2D {
             color_texture,
             depth_texture,
         );
+    }
+}
+
+
+
+pub trait ToMesh2D {
+    fn to_mesh2d(self, context: &three_d::Context) -> Mesh2D;
+}
+
+
+
+/// A heavily optimized [`Mesh`] for rendering rectangles.
+pub struct RectMesh2D {
+    positions: Vec<Vec2>,
+    transform: Mat3,
+}
+
+impl RectMesh2D {
+    pub fn new() -> Self {
+        let mut rect = Self::square();
+        rect.transform = Mat3::identity() * Mat3::from_scale(0.5);
+        rect
+    }
+
+    pub fn square() -> Self {
+        let positions = vec![
+            Vec2::new(-1.0, -1.0),
+            Vec2::new(1.0, -1.0),
+            Vec2::new(1.0, 1.0),
+            Vec2::new(-1.0, 1.0),
+        ];
+
+        Self {
+            positions,
+            transform: Mat3::identity(),
+        }
+    }
+
+    pub const fn indices() -> [u8; 6] {
+        [0, 1, 2, 2, 3, 0]
+    }
+}
+
+impl ToMesh2D for RectMesh2D {
+    fn to_mesh2d(self, context: &three_d::Context) -> Mesh2D {
+        let mut aabb = three_d::AxisAlignedBoundingBox::EMPTY;
+        aabb.expand(&[three_d::Vec3::new(1.0, 1.0, 0.0), three_d::Vec3::new(-1.0, -1.0, 0.0)]);
+
+        Mesh2D {
+            context: context.clone(),
+            indices: three_d::IndexBuffer::None,
+            positions: three_d::VertexBuffer::new_with_data(context, &self.positions),
+            transform: Mat4::new(
+                self.transform.x.x,
+                self.transform.x.y,
+                0.0,
+                self.transform.x.z,
+                self.transform.y.x,
+                self.transform.y.y,
+                0.0,
+                self.transform.y.z,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                self.transform.z.x,
+                self.transform.z.y,
+                0.0,
+                self.transform.z.z,
+            ),
+            aabb,
+        }
     }
 }
