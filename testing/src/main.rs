@@ -21,69 +21,69 @@ fn main() -> Result<()> {
         .unwrap();
     let mut graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
 
-    graphics.renderer_mut().load_font(
-        "mono",
-        include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
-        20.0,
-    )?;
+    // graphics.renderer_mut().load_font(
+    //     "mono",
+    //     include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
+    //     20.0,
+    // )?;
 
-    let animate = true;
+    // let animate = true;
     let bg_color = Srgba::new_opaque(43, 43, 53);
 
-    let mut ui = Ui::new(Layout::default()
-        .flex_row()
-        .flex_wrap()
-        .gap_x(19.0)
-        .padding(11.0)
-        .fill_width()
-        .fill_height());
+    // let mut ui = Ui::new(Layout::default()
+    //     .flex_row()
+    //     .flex_wrap()
+    //     .gap_x(19.0)
+    //     .padding(11.0)
+    //     .fill_width()
+    //     .fill_height());
 
-    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
-        let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+    // for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+    //     let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
 
-        let width = text_mesh.aabb().size().x;
-        let height = text_mesh.aabb().size().y;
-        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
+    //     let width = text_mesh.aabb().size().x;
+    //     let height = text_mesh.aabb().size().y;
+    //     let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
-        if animate {
-            text_mesh.animate(|time| {
-                // let time = time % 2.0;
-                // three_d::Mat4::from_angle_z(three_d::Deg(-time * (360.0 / 3.0)))
-                rotate_z_degrees_repeat(time, -180.0, 2.0)
-            });
-        }
+    //     if animate {
+    //         text_mesh.animate(|time| {
+    //             // let time = time % 2.0;
+    //             // three_d::Mat4::from_angle_z(three_d::Deg(-time * (360.0 / 3.0)))
+    //             rotate_z_degrees_repeat(time, -180.0, 2.0)
+    //         });
+    //     }
 
-        let text_obj = ColoredMesh {
-            mesh: text_mesh,
-            color: Srgba::new_opaque(163, 163, 173),
-        };
+    //     let text_obj = ColoredMesh {
+    //         mesh: text_mesh,
+    //         color: Srgba::new_opaque(163, 163, 173),
+    //     };
 
-        let mut mesh = CpuMesh::square();
-        mesh.transform(Mat4::from_scale(0.5)).unwrap();
-        let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
-        let pane_obj = ColoredMesh {
-            mesh: pane_mesh,
-            color: Srgba::new_opaque(29, 29, 39),
-        };
+    //     let mut mesh = CpuMesh::square();
+    //     mesh.transform(Mat4::from_scale(0.5)).unwrap();
+    //     let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
+    //     let pane_obj = ColoredMesh {
+    //         mesh: pane_mesh,
+    //         color: Srgba::new_opaque(29, 29, 39),
+    //     };
 
-        let pane_node = ui.push_to_root(
-            Layout::default()
-                .align_content_center()
-                .align_items_center()
-                .width(width)
-                .height(row_height),
-            pane_obj,
-            true,
-        );
-        let _text_node = ui.push_to(
-            Layout::default()
-                .width(width)
-                .height(height),
-            pane_node,
-            text_obj,
-            false,
-        );
-    }
+    //     let pane_node = ui.push_to_root(
+    //         Layout::default()
+    //             .align_content_center()
+    //             .align_items_center()
+    //             .width(width)
+    //             .height(row_height),
+    //         pane_obj,
+    //         true,
+    //     );
+    //     let _text_node = ui.push_to(
+    //         Layout::default()
+    //             .width(width)
+    //             .height(height),
+    //         pane_node,
+    //         text_obj,
+    //         false,
+    //     );
+    // }
 
     let mut painter = Painter2D::new(graphics.renderer().gl()).unwrap();
     let mut main_mesh = Mesh2D::new();
@@ -99,13 +99,13 @@ fn main() -> Result<()> {
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
 
-        if animate {
-            let seconds_since_start = std::time::Instant::now()
-                .duration_since(start_time)
-                .as_secs_f32();
-            ui.handle_animations(seconds_since_start);
-            window.request_redraw();
-        }
+        // if animate {
+        //     let seconds_since_start = std::time::Instant::now()
+        //         .duration_since(start_time)
+        //         .as_secs_f32();
+        //     ui.handle_animations(seconds_since_start);
+        //     window.request_redraw();
+        // }
 
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
@@ -114,14 +114,14 @@ fn main() -> Result<()> {
                 }
                 winit::event::WindowEvent::Resized(new_size) => {
                     (screen_width, screen_height) = new_size.into();
-                    ui.resize(screen_width, screen_height);
+                    // ui.resize(screen_width, screen_height);
                     graphics.resize(new_size);
                     window.request_redraw();
                 }
-                winit::event::WindowEvent::CursorMoved { position, .. } => {
-                    let (x, y): (f32, f32) = position.into();
-                    ui.handle_cursor_moved(x, screen_height - y);
-                }
+                // winit::event::WindowEvent::CursorMoved { position, .. } => {
+                //     let (x, y): (f32, f32) = position.into();
+                //     ui.handle_cursor_moved(x, screen_height - y);
+                // }
                 // winit::event::WindowEvent::MouseInput { state, button, .. } => {
                 //     ui.handle_mouse_down(..);
                 // }

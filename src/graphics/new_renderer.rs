@@ -2,7 +2,7 @@
 
 
 
-use three_d::{context as gl, HasContext as _, Srgba, Vec2};
+use three_d::{context as gl, HasContext, Srgba, Vec2};
 
 
 
@@ -31,7 +31,6 @@ impl Painter2D {
             return Err("requires OpenGl 2.0+. ".to_string());
         }
 
-        let vertex_shader_source = include_str!("mesh2d.vert");
         let header: &str = if gl.version().is_embedded {
             "#version 300 es
                 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -48,8 +47,8 @@ impl Painter2D {
         } else {
             "#version 330 core\n"
         };
-        let vertex_shader_source = format!("{}{}", header, vertex_shader_source);
-        let fragment_shader_source = format!("{}{}", header, "");
+        let vertex_shader_source = format!("{}{}", header, include_str!("mesh2d.vert"));
+        let fragment_shader_source = format!("{}{}", header, include_str!("mesh2d.frag"));
 
         unsafe {
             let vert_shader = gl
@@ -64,10 +63,26 @@ impl Painter2D {
             gl.compile_shader(vert_shader);
             gl.compile_shader(frag_shader);
 
-            let program = gl.create_program().expect("Failed creating program");
+            let program = gl.create_program().expect("failed to create program");
             gl.attach_shader(program, vert_shader);
             gl.attach_shader(program, frag_shader);
             gl.link_program(program);
+
+            if !gl.get_program_link_status(program) {
+                let log = gl.get_shader_info_log(vert_shader);
+                if !log.is_empty() {
+                    Err(log)?;
+                }
+                let log = gl.get_shader_info_log(frag_shader);
+                if !log.is_empty() {
+                    Err(log)?;
+                }
+                let log = gl.get_program_info_log(program);
+                if !log.is_empty() {
+                    Err(log)?;
+                }
+                Err("could not compile shader".to_string())?;
+            }
 
             gl.detach_shader(program, vert_shader);
             gl.detach_shader(program, frag_shader);
@@ -80,9 +95,12 @@ impl Painter2D {
             gl.bind_buffer(gl::ARRAY_BUFFER, Some(vbo));
             gl.bind_vertex_array(None);
 
-            let pos_loc = gl.get_attrib_location(program, "position").unwrap();
-            // let uv_loc = gl.get_attrib_location(program, "uv").unwrap();
-            let color_loc = gl.get_attrib_location(program, "color").unwrap();
+            gl.error_check().unwrap();
+
+            let pos_loc = gl.get_attrib_location(program, "a_pos").unwrap();
+            // let uv_loc = gl.get_attrib_location(program, "a_uv").unwrap();
+            let color_loc = gl.get_attrib_location(program, "a_color").unwrap();
+
             let stride = std::mem::size_of::<Vertex2D>() as i32;
             let attrs = [
                 (pos_loc, 2, gl::FLOAT, stride, 0x0),
