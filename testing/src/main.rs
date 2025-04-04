@@ -89,10 +89,14 @@ fn main() -> Result<()> {
     let mut main_mesh = Mesh2D::new();
     let mut tesselator = Tessellator;
     tesselator.tessellate_shape(Shape::Rect {
-        pos: vec2(100.0, 50.0),
-        size: vec2(20.0, 20.0),
-        color: Srgba::GREEN,
+        pos: vec2(0.0, 50.0),
+        size: vec2(200.0, 200.0),
+        color: Srgba::new_opaque(163, 163, 173),
     }, &mut main_mesh);
+    println!(
+        "MESH: {:?}",
+        main_mesh,
+    );
     let mut meshes = vec![main_mesh];
 
     let start_time = std::time::Instant::now();
@@ -129,7 +133,7 @@ fn main() -> Result<()> {
             }
             winit::event::Event::RedrawRequested(_) => {
                 let (width, height) = window.inner_size().into();
-                let viewport = Viewport::new_at_origo(width, height);
+                // let viewport = Viewport::new_at_origo(width, height);
                 let [r, g, b, a] = bg_color.into();
                 RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))

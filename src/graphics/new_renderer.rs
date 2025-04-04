@@ -101,22 +101,27 @@ impl Painter2D {
             // let uv_loc = gl.get_attrib_location(program, "a_uv").unwrap();
             let color_loc = gl.get_attrib_location(program, "a_color").unwrap();
 
+            gl.error_check().unwrap();
+
             let stride = std::mem::size_of::<Vertex2D>() as i32;
             let attrs = [
                 (pos_loc, 2, gl::FLOAT, stride, 0x0),
-                (color_loc, 4, gl::UNSIGNED_BYTE, stride, 0x8),
+                (color_loc, 4, gl::FLOAT, stride, 0x8),
             ];
-            for (loc, vsize, dtype, stride, offset) in &attrs {
-                gl.vertex_attrib_pointer_f32(
-                    *loc,
-                    *vsize,
-                    *dtype,
-                    false, // Normalized.
-                    *stride,
-                    *offset,
-                );
-                gl.enable_vertex_attrib_array(*loc);
-            }
+            // for (loc, vsize, dtype, stride, offset) in &attrs {
+            //     gl.vertex_attrib_pointer_f32(
+            //         *loc,
+            //         *vsize,
+            //         *dtype,
+            //         false, // Normalized.
+            //         *stride,
+            //         *offset,
+            //     );
+            //     gl.enable_vertex_attrib_array(*loc);
+            // }
+
+            gl.error_check().unwrap();
+
             let element_array_buffer = gl.create_buffer()?;
 
             Ok(Self {
@@ -135,34 +140,36 @@ impl Painter2D {
             self.prepare(width, height);
         }
         self.paint_meshes(meshes);
+
+        self.gl.error_check().unwrap();
     }
 
     pub unsafe fn prepare(&mut self, width_px: i32, height_px: i32) {
         unsafe {
             self.gl.enable(gl::SCISSOR_TEST);
-            // egui outputs mesh in both winding orders
             self.gl.disable(gl::CULL_FACE);
             self.gl.disable(gl::DEPTH_TEST);
+
+            self.gl.error_check().unwrap();
 
             self.gl.color_mask(true, true, true, true);
 
             self.gl.enable(gl::BLEND);
             self.gl.blend_equation_separate(gl::FUNC_ADD, gl::FUNC_ADD);
             self.gl.blend_func_separate(
-                // egui outputs colors with premultiplied alpha:
                 gl::ONE,
                 gl::ONE_MINUS_SRC_ALPHA,
-                // Less important, but this is technically the correct alpha blend function
-                // when you want to make use of the framebuffer alpha (for screenshots, compositing, etc).
                 gl::ONE_MINUS_DST_ALPHA,
                 gl::ONE,
             );
 
+            // self.gl.disable(gl::FRAMEBUFFER_SRGB);
+
             self.gl.viewport(0, 0, width_px, height_px);
             self.gl.use_program(Some(self.program));
-            self.gl.active_texture(gl::TEXTURE0);
-            self.gl.bind_vertex_array(Some(self.vao));
 
+            self.gl.bind_buffer(gl::ARRAY_BUFFER, Some(self.vbo));
+            self.gl.bind_vertex_array(Some(self.vao));
             for (loc, vsize, dtype, stride, offset) in &self.attrs {
                 self.gl.vertex_attrib_pointer_f32(
                     *loc,
@@ -174,8 +181,11 @@ impl Painter2D {
                 );
                 self.gl.enable_vertex_attrib_array(*loc);
             }
+
             self.gl.bind_buffer(gl::ELEMENT_ARRAY_BUFFER, Some(self.element_array_buffer));
         }
+
+        self.gl.error_check().unwrap();
     }
 
     pub fn paint_meshes<'a>(&self, meshes: impl Iterator<Item = &'a Mesh2D>) {
@@ -184,6 +194,10 @@ impl Painter2D {
         }
         unsafe {
             self.gl.bind_buffer(gl::ELEMENT_ARRAY_BUFFER, None);
+            self.gl.bind_buffer(gl::ARRAY_BUFFER, None);
+            for (loc, _, _, _, _) in &self.attrs {
+                self.gl.disable_vertex_attrib_array(*loc);
+            }
             self.gl.bind_vertex_array(None);
             self.gl.disable(gl::SCISSOR_TEST);
         }
@@ -204,6 +218,8 @@ impl Painter2D {
                 bytemuck::cast_slice(&mesh.indices),
                 gl::STREAM_DRAW,
             );
+        }
+        unsafe {
             self.gl.draw_elements(
                 gl::TRIANGLES,
                 mesh.indices.len() as i32,
@@ -234,7 +250,7 @@ impl Tessellator {
                 out.add_triangle(idx + 0, idx + 1, idx + 2);
                 out.add_triangle(idx + 2, idx + 1, idx + 3);
 
-                let color = color.into();
+                let color = color.to_linear_srgb().into();
                 out.vertices.push(Vertex2D {
                     pos: pos.into(),
                     color,
@@ -256,6 +272,7 @@ impl Tessellator {
     }
 }
 
+#[derive(Debug)]
 pub struct Mesh2D {
     indices: Vec<u32>,
     vertices: Vec<Vertex2D>,
@@ -280,9 +297,9 @@ impl Mesh2D {
 
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[derive(bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex2D {
     pub pos: [f32; 2],
-    pub color: [u8; 4],
+    pub color: [f32; 4],
 }
