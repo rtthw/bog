@@ -11,7 +11,6 @@ pub mod layout;
 pub mod math;
 pub mod mesh;
 pub mod new_renderer;
-pub mod paint;
 pub mod scene;
 pub mod ui;
 
