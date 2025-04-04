@@ -2,8 +2,7 @@
 
 
 
-use three_d::{context as gl, HasContext as _, Mat3, SquareMatrix as _, Srgba, Vec2};
-
+use three_d::{context as gl, HasContext as _, Srgba, Vec2};
 
 
 
@@ -174,7 +173,19 @@ impl Painter2D {
 
     pub fn paint_mesh(&self, mesh: &Mesh2D) {
         unsafe {
+            self.gl.bind_buffer(gl::ARRAY_BUFFER, Some(self.vbo));
+            self.gl.buffer_data_u8_slice(
+                gl::ARRAY_BUFFER,
+                bytemuck::cast_slice(&mesh.vertices),
+                gl::STREAM_DRAW,
+            );
+
             self.gl.bind_buffer(gl::ELEMENT_ARRAY_BUFFER, Some(self.element_array_buffer));
+            self.gl.buffer_data_u8_slice(
+                gl::ELEMENT_ARRAY_BUFFER,
+                bytemuck::cast_slice(&mesh.indices),
+                gl::STREAM_DRAW,
+            );
             self.gl.draw_elements(
                 gl::TRIANGLES,
                 mesh.indices.len() as i32,
@@ -187,48 +198,73 @@ impl Painter2D {
 
 
 
+pub enum Shape {
+    Rect {
+        pos: Vec2,
+        size: Vec2,
+        color: Srgba,
+    },
+}
+
+pub struct Tessellator;
+
+impl Tessellator {
+    pub fn tessellate_shape(&mut self, shape: Shape, out: &mut Mesh2D) {
+        match shape {
+            Shape::Rect { pos, size, color } => {
+                let idx = out.vertices.len() as u32;
+                out.add_triangle(idx + 0, idx + 1, idx + 2);
+                out.add_triangle(idx + 2, idx + 1, idx + 3);
+
+                let color = color.into();
+                out.vertices.push(Vertex2D {
+                    pos: pos.into(),
+                    color,
+                });
+                out.vertices.push(Vertex2D {
+                    pos: [pos.x + size.x, pos.y],
+                    color,
+                });
+                out.vertices.push(Vertex2D {
+                    pos: [pos.x, pos.y + size.y],
+                    color,
+                });
+                out.vertices.push(Vertex2D {
+                    pos: [pos.x + size.x, pos.y + size.y],
+                    color,
+                });
+            }
+        }
+    }
+}
+
 pub struct Mesh2D {
     indices: Vec<u32>,
     vertices: Vec<Vertex2D>,
 }
 
-
-
-/// A heavily optimized [`Mesh`] for rendering rectangles.
-pub struct RectMesh2D {
-    positions: Vec<Vec2>,
-    transform: Mat3,
-}
-
-impl RectMesh2D {
+impl Mesh2D {
     pub fn new() -> Self {
-        let mut rect = Self::square();
-        rect.transform = Mat3::identity() * Mat3::from_scale(0.5);
-        rect
-    }
-
-    pub fn square() -> Self {
-        let positions = vec![
-            Vec2::new(-1.0, -1.0),
-            Vec2::new(1.0, -1.0),
-            Vec2::new(1.0, 1.0),
-            Vec2::new(-1.0, 1.0),
-        ];
-
         Self {
-            positions,
-            transform: Mat3::identity(),
+            indices: Vec::new(),
+            vertices: Vec::new(),
         }
     }
 
-    pub const fn indices() -> [u8; 6] {
-        [0, 1, 2, 2, 3, 0]
+    #[inline(always)]
+    pub fn add_triangle(&mut self, a: u32, b: u32, c: u32) {
+        self.indices.push(a);
+        self.indices.push(b);
+        self.indices.push(c);
     }
 }
 
 
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+#[derive(bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex2D {
-    pub pos: Vec2,
-    pub color: Srgba,
+    pub pos: [f32; 2],
+    pub color: [u8; 4],
 }

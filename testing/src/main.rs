@@ -5,8 +5,9 @@ use animation::*;
 use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
-use math::Mat4;
+use math::{vec2, Mat4};
 use mesh::{ColoredMesh, CpuMesh, Mesh};
+use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
 
 
 
@@ -84,6 +85,16 @@ fn main() -> Result<()> {
         );
     }
 
+    let mut painter = Painter2D::new(graphics.renderer().gl()).unwrap();
+    let mut main_mesh = Mesh2D::new();
+    let mut tesselator = Tessellator;
+    tesselator.tessellate_shape(Shape::Rect {
+        pos: vec2(100.0, 50.0),
+        size: vec2(20.0, 20.0),
+        color: Srgba::GREEN,
+    }, &mut main_mesh);
+    let mut meshes = vec![main_mesh];
+
     let start_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
@@ -122,7 +133,12 @@ fn main() -> Result<()> {
                 let [r, g, b, a] = bg_color.into();
                 RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
-                    .render(&Camera::new_2d(viewport), ui.objects(), &[]);
+                    // .render(&Camera::new_2d(viewport), ui.objects(), &[])
+                    .write(|| -> Result<()> {
+                        painter.render(width as i32, height as i32, meshes.iter());
+                        Ok(())
+                    })
+                    .unwrap();
                 graphics.swap_buffers().unwrap();
             }
             _ => {}

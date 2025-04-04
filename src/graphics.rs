@@ -58,6 +58,12 @@ pub struct Renderer {
     fonts: fonts::Fonts,
 }
 
+impl Renderer {
+    pub fn gl(&self) -> three_d::Context {
+        self.context.clone()
+    }
+}
+
 impl std::ops::Deref for Renderer {
     type Target = three_d::Context;
 

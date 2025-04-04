@@ -17,6 +17,7 @@ default = ["all"]
 all = []
 
 [dependencies]
+bytemuck = "1.7.2"
 glutin = "0.30"
 lyon = "1"
 ration = "*"
