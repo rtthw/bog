@@ -6,7 +6,6 @@ use bog::*;
 use graphics::*;
 use layout::{Layout, Ui};
 use math::{vec2, Mat4};
-use mesh::{ColoredMesh, CpuMesh, Mesh};
 use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
 
 

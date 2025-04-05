@@ -14,6 +14,7 @@ pub mod new_renderer;
 pub mod scene;
 pub mod ui;
 
+use new_renderer::{Mesh2D, Wireframe2D};
 pub use three_d::{
     Camera,
     ClearState,
@@ -81,18 +82,16 @@ impl Renderer {
         self.fonts.get_font(name)
     }
 
-    pub fn mesh_for_text(&self, font: &str, text: &str, line_height: Option<f32>) -> Option<Mesh> {
+    pub fn mesh_for_text(&self, font: &str, text: &str, color: Srgba, line_height: Option<f32>) -> Option<Mesh2D> {
         let font = self.fonts.get_font(font)?;
-        let cpu_mesh = font.cpu_mesh_for_text(text, line_height);
 
-        Some(Mesh::new(&self, &cpu_mesh))
+        Some(font.mesh_for_text(text, color, line_height))
     }
 
-    pub fn mesh_for_glyph(&self, font: &str, glyph: u16) -> Option<Mesh> {
+    pub fn glyph_wireframe(&self, font: &str, glyph: u16) -> Option<&Wireframe2D> {
         let font = self.fonts.get_font(font)?;
-        let cpu_mesh = font.cpu_mesh_for_glyph(glyph)?;
 
-        Some(Mesh::new(&self, cpu_mesh))
+        Some(font.glyph_wireframe(glyph)?)
     }
 }
 

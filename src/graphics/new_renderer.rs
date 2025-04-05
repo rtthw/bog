@@ -74,11 +74,11 @@ impl Tessellator {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Mesh2D {
-    indices: Vec<u32>,
-    positions: Vec<[f32; 2]>,
-    colors: Vec<[f32; 4]>,
+    pub(crate) indices: Vec<u32>,
+    pub(crate) positions: Vec<[f32; 2]>,
+    pub(crate) colors: Vec<[f32; 4]>,
 }
 
 impl Mesh2D {
@@ -96,4 +96,25 @@ impl Mesh2D {
         self.indices.push(b);
         self.indices.push(c);
     }
+
+    pub fn append(&mut self, other: Self) {
+        if self.indices.is_empty() {
+            *self = other;
+        } else {
+            self.append_ref(&other);
+        }
+    }
+
+    pub fn append_ref(&mut self, other: &Self) {
+        let index_offset = self.positions.len() as u32;
+        self.indices.extend(other.indices.iter().map(|index| index + index_offset));
+        self.positions.extend(other.positions.iter());
+        self.colors.extend(other.colors.iter());
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Wireframe2D {
+    pub(crate) indices: Vec<u32>,
+    pub(crate) positions: Vec<[f32; 2]>,
 }

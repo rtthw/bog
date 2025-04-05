@@ -4,7 +4,9 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use three_d::CpuMesh;
+use three_d::{CpuMesh, Srgba};
+
+use super::new_renderer::{Mesh2D, Wireframe2D};
 
 
 
@@ -42,7 +44,7 @@ pub struct Font {
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     swash_key: swash::CacheKey,
     index: u32,
-    glyph_map: HashMap<u16, CpuMesh>,
+    glyph_map: HashMap<u16, Wireframe2D>,
     size: f32,
     row_height: f32,
 }
@@ -90,7 +92,7 @@ impl Font {
         }
     }
 
-    pub fn cpu_mesh_for_text(&self, text: &str, line_height: Option<f32>) -> CpuMesh {
+    pub fn mesh_for_text(&self, text: &str, color: Srgba, line_height: Option<f32>) -> Mesh2D {
         let mut shape_context = swash::shape::ShapeContext::new();
         let swash_ref = swash::FontRef {
             data: (*self.data).as_ref(),
@@ -122,28 +124,26 @@ impl Font {
                 };
 
                 let index_offset = positions.len() as u32;
-                let three_d::Indices::U32(mesh_indices) = &mesh.indices else {
-                    unreachable!()
-                };
-                indices.extend(mesh_indices.iter().map(|i| i + index_offset));
-
-                let position_offset = (position + three_d::vec2(glyph.x, glyph.y)).extend(0.0);
-                let three_d::Positions::F32(mesh_positions) = &mesh.positions else {
-                    unreachable!()
-                };
-                positions.extend(mesh_positions.iter().map(|p| p + position_offset));
+                indices.extend(mesh.indices.iter().map(|i| i + index_offset));
+                let position_offset = position + three_d::vec2(glyph.x, glyph.y);
+                positions.extend(mesh.positions.iter().map(|p| {
+                    [p[0] + position_offset.x, p[1] + position_offset.y]
+                }));
             }
             position.x += cluster.advance();
         });
 
-        CpuMesh {
-            positions: three_d::Positions::F32(positions),
-            indices: three_d::Indices::U32(indices),
-            ..Default::default()
+        let mut colors = Vec::with_capacity(indices.len());
+        colors.fill(color.to_linear_srgb().into());
+
+        Mesh2D {
+            positions,
+            indices,
+            colors,
         }
     }
 
-    pub fn cpu_mesh_for_glyph(&self, glyph: u16) -> Option<&CpuMesh> {
+    pub fn glyph_wireframe(&self, glyph: u16) -> Option<&Wireframe2D> {
         self.glyph_map.get(&glyph)
     }
 
@@ -205,9 +205,9 @@ impl GlyphOutliner {
     }
 }
 
-fn glyph_outline_path_to_mesh(path: lyon::path::Path) -> Result<CpuMesh, Error> {
+fn glyph_outline_path_to_mesh(path: lyon::path::Path) -> Result<Wireframe2D, Error> {
     let mut tessellator = lyon::tessellation::FillTessellator::new();
-    let mut geometry: lyon::tessellation::VertexBuffers<three_d::Vec3, u32>
+    let mut geometry: lyon::tessellation::VertexBuffers<[f32; 2], u32>
         = lyon::tessellation::VertexBuffers::new();
     let options = lyon::tessellation::FillOptions::default();
     tessellator.tessellate_path(
@@ -216,14 +216,13 @@ fn glyph_outline_path_to_mesh(path: lyon::path::Path) -> Result<CpuMesh, Error> 
         &mut lyon::tessellation::BuffersBuilder::new(
             &mut geometry,
             |vertex: lyon::tessellation::FillVertex| {
-                three_d::vec3(vertex.position().x, vertex.position().y, 0.0)
+                [vertex.position().x, vertex.position().y]
             },
         ),
     )?;
 
-    Ok(CpuMesh {
-        positions: three_d::Positions::F32(geometry.vertices),
-        indices: three_d::Indices::U32(geometry.indices),
-        ..Default::default()
+    Ok(Wireframe2D {
+        positions: geometry.vertices,
+        indices: geometry.indices,
     })
 }
