@@ -9,9 +9,7 @@ pub mod animation;
 pub mod fonts;
 pub mod layout;
 pub mod math;
-pub mod mesh;
 pub mod new_renderer;
-pub mod scene;
 pub mod ui;
 
 use new_renderer::{Mesh2D, Wireframe2D};
@@ -32,7 +30,6 @@ use glutin::{
     },
     surface::*,
 };
-use mesh::Mesh;
 
 
 
@@ -92,23 +89,6 @@ impl Renderer {
         let font = self.fonts.get_font(font)?;
 
         Some(font.glyph_wireframe(glyph)?)
-    }
-}
-
-
-
-pub trait Render {
-    fn objects(&self) -> impl Iterator<Item = impl three_d::Object>;
-}
-
-pub trait RenderOne {
-    fn object(&self) -> impl three_d::Object;
-    fn destructure(self) -> (Mesh, ColorMaterial);
-}
-
-impl<T: RenderOne> Render for T {
-    fn objects(&self) -> impl Iterator<Item = impl three_d::Object> {
-        std::iter::once(self.object())
     }
 }
 

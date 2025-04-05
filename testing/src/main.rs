@@ -4,7 +4,7 @@
 use animation::*;
 use bog::*;
 use graphics::*;
-use layout::{Layout, Ui};
+use layout::Layout;
 use math::{vec2, Mat4};
 use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
 
