@@ -7,6 +7,7 @@ use graphics::*;
 use layout::Layout;
 use math::{vec2, Mat4};
 use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
+use ui::Ui;
 
 
 
@@ -20,69 +21,52 @@ fn main() -> Result<()> {
         .unwrap();
     let mut graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
 
-    // graphics.renderer_mut().load_font(
-    //     "mono",
-    //     include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
-    //     20.0,
-    // )?;
+    graphics.renderer_mut().load_font(
+        "mono",
+        include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
+        20.0,
+    )?;
 
-    // let animate = true;
     let bg_color = Srgba::new_opaque(43, 43, 53);
 
-    // let mut ui = Ui::new(Layout::default()
-    //     .flex_row()
-    //     .flex_wrap()
-    //     .gap_x(19.0)
-    //     .padding(11.0)
-    //     .fill_width()
-    //     .fill_height());
+    let mut ui = Ui::new(Layout::default()
+        .flex_row()
+        .flex_wrap()
+        .gap_x(19.0)
+        .padding(11.0)
+        .fill_width()
+        .fill_height());
 
-    // for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
-    //     let mut text_mesh = graphics.renderer().mesh_for_text("mono", word, None).unwrap();
+    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+        let mut text_mesh = graphics.renderer()
+            .mesh_for_text("mono", word, Srgba::new_opaque(163, 163, 173), None)
+            .unwrap();
+        let text_size = text_mesh.compute_size();
+        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
-    //     let width = text_mesh.aabb().size().x;
-    //     let height = text_mesh.aabb().size().y;
-    //     let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
+        let mut pane_mesh = Mesh2D::new();
+        Tessellator.tessellate_shape(Shape::Rect {
+            pos: vec2(0.0, 0.0),
+            size: vec2(text_size[0], text_size[1]),
+            color: Srgba::new_opaque(23, 23, 29),
+        }, &mut pane_mesh);
 
-    //     if animate {
-    //         text_mesh.animate(|time| {
-    //             // let time = time % 2.0;
-    //             // three_d::Mat4::from_angle_z(three_d::Deg(-time * (360.0 / 3.0)))
-    //             rotate_z_degrees_repeat(time, -180.0, 2.0)
-    //         });
-    //     }
-
-    //     let text_obj = ColoredMesh {
-    //         mesh: text_mesh,
-    //         color: Srgba::new_opaque(163, 163, 173),
-    //     };
-
-    //     let mut mesh = CpuMesh::square();
-    //     mesh.transform(Mat4::from_scale(0.5)).unwrap();
-    //     let pane_mesh = Mesh::new(graphics.renderer(), &mesh);
-    //     let pane_obj = ColoredMesh {
-    //         mesh: pane_mesh,
-    //         color: Srgba::new_opaque(29, 29, 39),
-    //     };
-
-    //     let pane_node = ui.push_to_root(
-    //         Layout::default()
-    //             .align_content_center()
-    //             .align_items_center()
-    //             .width(width)
-    //             .height(row_height),
-    //         pane_obj,
-    //         true,
-    //     );
-    //     let _text_node = ui.push_to(
-    //         Layout::default()
-    //             .width(width)
-    //             .height(height),
-    //         pane_node,
-    //         text_obj,
-    //         false,
-    //     );
-    // }
+        let pane_node = ui.push_to_root(
+            Layout::default()
+                .align_content_center()
+                .align_items_center()
+                .width(text_size[0])
+                .height(row_height),
+            pane_mesh,
+        );
+        let _text_node = ui.push_to(
+            Layout::default()
+                .width(text_size[0])
+                .height(text_size[1]),
+            pane_node,
+            text_mesh,
+        );
+    }
 
     let mut painter = Painter2D::new(graphics.renderer().gl());
     let mut main_mesh = Mesh2D::new();
@@ -116,7 +100,7 @@ fn main() -> Result<()> {
                 }
                 winit::event::WindowEvent::Resized(new_size) => {
                     (screen_width, screen_height) = new_size.into();
-                    // ui.resize(screen_width, screen_height);
+                    ui.resized(screen_width, screen_height);
                     graphics.resize(new_size);
                     window.request_redraw();
                 }

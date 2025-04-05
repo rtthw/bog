@@ -90,6 +90,23 @@ impl Mesh2D {
         }
     }
 
+    pub fn compute_size(&self) -> [f32; 2] {
+        let mut min_x = 0.0_f32;
+        let mut min_y = 0.0_f32;
+        let mut max_x = 0.0_f32;
+        let mut max_y = 0.0_f32;
+
+        for p in &self.positions {
+            min_x = min_x.min(p[0]);
+            min_y = min_y.min(p[1]);
+
+            max_x = max_x.max(p[0]);
+            max_y = max_y.max(p[1]);
+        }
+
+        [max_x - min_x, max_y - min_y]
+    }
+
     #[inline(always)]
     pub fn add_triangle(&mut self, a: u32, b: u32, c: u32) {
         self.indices.push(a);
