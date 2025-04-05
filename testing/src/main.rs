@@ -1,13 +1,12 @@
 
 
 
-use animation::*;
 use bog::*;
 use graphics::*;
 use layout::Layout;
-use math::{vec2, Mat4};
+use math::vec2;
 use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
-use ui::Ui;
+use ui::{Ui, UiHandler, UiModel};
 
 
 
@@ -36,9 +35,10 @@ fn main() -> Result<()> {
         .padding(11.0)
         .fill_width()
         .fill_height());
+    let mut ui_handler = MyUiHandler {};
 
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
-        let mut text_mesh = graphics.renderer()
+        let text_mesh = graphics.renderer()
             .mesh_for_text("mono", word, Srgba::new_opaque(163, 163, 173), None)
             .unwrap();
         let text_size = text_mesh.compute_size();
@@ -57,14 +57,12 @@ fn main() -> Result<()> {
                 .align_items_center()
                 .width(text_size[0])
                 .height(row_height),
-            pane_mesh,
         );
-        let _text_node = ui.push_to(
+        let text_node = ui.push_to(
             Layout::default()
                 .width(text_size[0])
                 .height(text_size[1]),
             pane_node,
-            text_mesh,
         );
     }
 
@@ -76,22 +74,9 @@ fn main() -> Result<()> {
         size: vec2(200.0, 200.0),
         color: Srgba::new_opaque(163, 163, 173),
     }, &mut main_mesh);
-    println!(
-        "MESH: {:?}",
-        main_mesh,
-    );
 
-    let start_time = std::time::Instant::now();
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
-
-        // if animate {
-        //     let seconds_since_start = std::time::Instant::now()
-        //         .duration_since(start_time)
-        //         .as_secs_f32();
-        //     ui.handle_animations(seconds_since_start);
-        //     window.request_redraw();
-        // }
 
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
@@ -104,10 +89,10 @@ fn main() -> Result<()> {
                     graphics.resize(new_size);
                     window.request_redraw();
                 }
-                // winit::event::WindowEvent::CursorMoved { position, .. } => {
-                //     let (x, y): (f32, f32) = position.into();
-                //     ui.handle_cursor_moved(x, screen_height - y);
-                // }
+                winit::event::WindowEvent::CursorMoved { position, .. } => {
+                    let (x, y): (f32, f32) = position.into();
+                    ui.mouse_moved(&mut ui_handler, x, screen_height - y);
+                }
                 // winit::event::WindowEvent::MouseInput { state, button, .. } => {
                 //     ui.handle_mouse_down(..);
                 // }
@@ -130,4 +115,20 @@ fn main() -> Result<()> {
             _ => {}
         }
     });
+}
+
+
+
+struct MyUiHandler {}
+
+impl UiHandler for MyUiHandler {
+    fn on_resize(&mut self, element: u64, _model: &mut UiModel) {
+        println!("on_resize({element});");
+    }
+    fn on_hover(&mut self, element: u64, _model: &mut UiModel) {
+        println!("on_hover({element});");
+    }
+    fn on_click(&mut self, element: u64, _model: &mut UiModel) {
+        println!("on_click({element});");
+    }
 }

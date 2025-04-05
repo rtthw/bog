@@ -7,7 +7,7 @@ use super::layout::Layout;
 
 
 pub struct Ui {
-    tree: taffy::TaffyTree<ElementObject>,
+    tree: UiModel,
     root: taffy::NodeId,
 
     // Known state.
@@ -17,10 +17,6 @@ pub struct Ui {
 }
 
 impl Ui {
-    fn next_id(&self) -> usize {
-        self.tree.total_node_count()
-    }
-
     pub fn new(layout: Layout) -> Self {
         let mut tree = taffy::TaffyTree::new();
         let root = tree.new_with_children(layout.into(), &[]).unwrap();
@@ -35,15 +31,15 @@ impl Ui {
         }
     }
 
-    pub fn push_to(&mut self, layout: Layout, parent: u64, element: ElementObject) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), element).unwrap();
+    pub fn push_to(&mut self, layout: Layout, parent: u64) -> u64 {
+        let id = self.tree.new_leaf_with_context(layout.into(), ()).unwrap();
         self.tree.add_child(parent.into(), id).unwrap();
 
         id.into()
     }
 
-    pub fn push_to_root(&mut self, layout: Layout, element: ElementObject) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), element).unwrap();
+    pub fn push_to_root(&mut self, layout: Layout) -> u64 {
+        let id = self.tree.new_leaf_with_context(layout.into(), ()).unwrap();
         self.tree.add_child(self.root, id).unwrap();
 
         id.into()
@@ -66,15 +62,13 @@ impl Ui {
             }
             let nested = self.tree.children(child).unwrap();
             if nested.is_empty() {
-                let elem = self.tree.get_node_context(child).unwrap();
-                if elem.is_responsive() {
-                    if let Some(hovered) = self.hovered_element.take() {
-                        if hovered != child.into() {
-                            hover_changed_to = Some(child);
-                        }
-                    } else {
+                let _elem = self.tree.get_node_context(child).unwrap();
+                if let Some(hovered) = self.hovered_element.take() {
+                    if hovered != child.into() {
                         hover_changed_to = Some(child);
                     }
+                } else {
+                    hover_changed_to = Some(child);
                 }
             } else {
                 for nested in nested {
@@ -86,15 +80,13 @@ impl Ui {
                     {
                         continue;
                     }
-                    let elem = self.tree.get_node_context(nested).unwrap();
-                    if elem.is_responsive() {
-                        if let Some(hovered) = self.hovered_element.take() {
-                            if hovered != nested.into() {
-                                hover_changed_to = Some(nested);
-                            }
-                        } else {
+                    let _elem = self.tree.get_node_context(nested).unwrap();
+                    if let Some(hovered) = self.hovered_element.take() {
+                        if hovered != nested.into() {
                             hover_changed_to = Some(nested);
                         }
+                    } else {
+                        hover_changed_to = Some(nested);
                     }
                 }
             }
@@ -122,16 +114,10 @@ impl Ui {
 
 
 
+pub type UiModel = taffy::TaffyTree<()>;
+
 pub trait UiHandler {
-    fn on_resize(&mut self, element: u64, tree: &mut taffy::TaffyTree<ElementObject>);
-    fn on_hover(&mut self, element: u64, tree: &mut taffy::TaffyTree<ElementObject>);
-    fn on_click(&mut self, element: u64, tree: &mut taffy::TaffyTree<ElementObject>);
+    fn on_resize(&mut self, element: u64, model: &mut UiModel);
+    fn on_hover(&mut self, element: u64, model: &mut UiModel);
+    fn on_click(&mut self, element: u64, model: &mut UiModel);
 }
-
-
-
-pub trait Element {
-    fn is_responsive(&self) -> bool;
-}
-
-pub type ElementObject = Box<dyn Element>;

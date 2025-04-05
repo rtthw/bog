@@ -4,7 +4,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use three_d::{CpuMesh, Srgba};
+use three_d::Srgba;
 
 use super::new_renderer::{Mesh2D, Wireframe2D};
 
