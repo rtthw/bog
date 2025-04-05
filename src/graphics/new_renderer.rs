@@ -90,21 +90,25 @@ impl Mesh2D {
         }
     }
 
-    pub fn compute_size(&self) -> [f32; 2] {
-        let mut min_x = 0.0_f32;
-        let mut min_y = 0.0_f32;
-        let mut max_x = 0.0_f32;
-        let mut max_y = 0.0_f32;
+    pub fn compute_info(&self) -> ([f32; 2], [f32; 2], [f32; 2]) {
+        if let Some(first_pos) = self.positions.first() {
+            let mut min_x = first_pos[0];
+            let mut min_y = first_pos[1];
+            let mut max_x = first_pos[0];
+            let mut max_y = first_pos[1];
 
-        for p in &self.positions {
-            min_x = min_x.min(p[0]);
-            min_y = min_y.min(p[1]);
+            for p in &self.positions {
+                min_x = min_x.min(p[0]);
+                min_y = min_y.min(p[1]);
 
-            max_x = max_x.max(p[0]);
-            max_y = max_y.max(p[1]);
+                max_x = max_x.max(p[0]);
+                max_y = max_y.max(p[1]);
+            }
+
+            ([max_x - min_x, max_y - min_y], [min_x, min_y], [max_x, max_y])
+        } else {
+            ([0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
         }
-
-        [max_x - min_x, max_y - min_y]
     }
 
     #[inline(always)]
@@ -127,6 +131,13 @@ impl Mesh2D {
         self.indices.extend(other.indices.iter().map(|index| index + index_offset));
         self.positions.extend(other.positions.iter());
         self.colors.extend(other.colors.iter());
+    }
+
+    pub fn translate(&mut self, x: f32, y: f32) {
+        for pos in &mut self.positions {
+            pos[0] += x;
+            pos[1] += y;
+        }
     }
 }
 

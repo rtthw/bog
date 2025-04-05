@@ -45,7 +45,7 @@ impl Ui {
         id.into()
     }
 
-    pub fn mouse_moved(&mut self, handler: &mut impl UiHandler, x: f32, y: f32) {
+    pub fn handle_mouse_move(&mut self, handler: &mut impl UiHandler, x: f32, y: f32) {
         if self.mouse_pos == (x, y) {
             return;
         }
@@ -97,7 +97,7 @@ impl Ui {
         }
     }
 
-    pub fn resized(&mut self, width: f32, height: f32) {
+    pub fn handle_resize(&mut self, handler: &mut impl UiHandler, width: f32, height: f32) {
         if self.area == (width, height) {
             return;
         }
@@ -109,12 +109,19 @@ impl Ui {
                 height: taffy::AvailableSpace::Definite(height),
             },
         ).unwrap();
+        for node in self.tree.children(self.root).unwrap() {
+            handler.on_resize(node.into(), &mut self.tree);
+            for child_node in self.tree.children(node).unwrap() {
+                handler.on_resize(child_node.into(), &mut self.tree);
+            }
+        }
     }
 }
 
 
 
 pub type UiModel = taffy::TaffyTree<()>;
+pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
     fn on_resize(&mut self, element: u64, model: &mut UiModel);

@@ -1,6 +1,8 @@
 
 
 
+use std::collections::HashMap;
+
 use bog::*;
 use graphics::*;
 use layout::Layout;
@@ -35,13 +37,16 @@ fn main() -> Result<()> {
         .padding(11.0)
         .fill_width()
         .fill_height());
-    let mut ui_handler = MyUiHandler {};
+    let mut something = Something {
+        painter: Painter2D::new(graphics.renderer().gl()),
+        meshes: HashMap::with_capacity(10),
+    };
 
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
         let text_mesh = graphics.renderer()
             .mesh_for_text("mono", word, Srgba::new_opaque(163, 163, 173), None)
             .unwrap();
-        let text_size = text_mesh.compute_size();
+        let (text_size, _, _) = text_mesh.compute_info();
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
         let mut pane_mesh = Mesh2D::new();
@@ -64,16 +69,10 @@ fn main() -> Result<()> {
                 .height(text_size[1]),
             pane_node,
         );
-    }
 
-    let mut painter = Painter2D::new(graphics.renderer().gl());
-    let mut main_mesh = Mesh2D::new();
-    let mut tesselator = Tessellator;
-    tesselator.tessellate_shape(Shape::Rect {
-        pos: vec2(0.0, 0.0),
-        size: vec2(200.0, 200.0),
-        color: Srgba::new_opaque(163, 163, 173),
-    }, &mut main_mesh);
+        something.meshes.insert(pane_node, pane_mesh);
+        something.meshes.insert(text_node, text_mesh);
+    }
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
@@ -85,13 +84,13 @@ fn main() -> Result<()> {
                 }
                 winit::event::WindowEvent::Resized(new_size) => {
                     (screen_width, screen_height) = new_size.into();
-                    ui.resized(screen_width, screen_height);
+                    ui.handle_resize(&mut something, screen_width, screen_height);
                     graphics.resize(new_size);
                     window.request_redraw();
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let (x, y): (f32, f32) = position.into();
-                    ui.mouse_moved(&mut ui_handler, x, screen_height - y);
+                    ui.handle_mouse_move(&mut something, x, screen_height - y);
                 }
                 // winit::event::WindowEvent::MouseInput { state, button, .. } => {
                 //     ui.handle_mouse_down(..);
@@ -104,9 +103,11 @@ fn main() -> Result<()> {
                 let [r, g, b, a] = bg_color.into();
                 RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
-                    // .render(&Camera::new_2d(viewport), ui.objects(), &[])
                     .write(|| -> Result<()> {
-                        painter.render(viewport, &main_mesh);
+                        for mesh in something.meshes.values() {
+                            something.painter.render(viewport, mesh);
+                        }
+
                         Ok(())
                     })
                     .unwrap();
@@ -119,15 +120,24 @@ fn main() -> Result<()> {
 
 
 
-struct MyUiHandler {}
+struct Something {
+    painter: Painter2D,
+    meshes: HashMap<u64, Mesh2D>,
+}
 
-impl UiHandler for MyUiHandler {
-    fn on_resize(&mut self, element: u64, _model: &mut UiModel) {
-        println!("on_resize({element});");
+impl UiHandler for Something {
+    fn on_resize(&mut self, element: u64, model: &mut UiModel,) {
+        if let Some(mesh) = self.meshes.get_mut(&element) {
+            let layout = model.layout(element.into()).unwrap();
+            let (_size, min_pos, _max_pos) = mesh.compute_info();
+            mesh.translate(layout.content_box_x() - min_pos[0], layout.content_box_y() - min_pos[1]);
+        }
     }
+
     fn on_hover(&mut self, element: u64, _model: &mut UiModel) {
         println!("on_hover({element});");
     }
+
     fn on_click(&mut self, element: u64, _model: &mut UiModel) {
         println!("on_click({element});");
     }
