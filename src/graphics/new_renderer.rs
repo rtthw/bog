@@ -2,7 +2,7 @@
 
 
 
-use three_d::{vec2, Srgba, Vec2, Vec4};
+use three_d::{vec2, Mat3, SquareMatrix, Srgba, Vec2, Vec4};
 
 
 
@@ -71,6 +71,74 @@ impl Tessellator {
                 out.positions.push(vec2(pos.x + size.x, pos.y + size.y));
             }
         }
+    }
+}
+
+
+
+pub struct Transform2D {
+    pub(crate) inner: Mat3,
+}
+
+impl Transform2D {
+    pub fn set(&mut self, transform: Mat3) {
+        self.inner = transform;
+    }
+}
+
+
+
+pub struct Bounds2D {
+    pub(crate) min: Vec2,
+    pub(crate) max: Vec2,
+}
+
+impl Bounds2D {
+    pub const EMPTY: Self = Self {
+        min: vec2(0.0, 0.0),
+        max: vec2(0.0, 0.0),
+    };
+
+    pub fn new(positions: &[Vec2]) -> Self {
+        if let Some(first_pos) = positions.first() {
+            let mut min = *first_pos;
+            let mut max = *first_pos;
+
+            for p in positions {
+                min.x = min.x.min(p.x);
+                min.y = min.y.min(p.y);
+
+                max.x = max.x.max(p.x);
+                max.y = max.y.max(p.y);
+            }
+
+            Self {
+                min,
+                max,
+            }
+        } else {
+            Self::EMPTY
+        }
+    }
+
+    pub fn size(&self) -> Vec2 {
+        self.max - self.min
+    }
+
+    pub fn top_left(&self) -> Vec2 {
+        self.min
+    }
+
+    pub fn top_right(&self) -> Vec2 {
+        vec2(self.max.x, self.min.y)
+    }
+
+    pub fn bottom_left(&self) -> Vec2 {
+        vec2(self.min.x, self.max.y)
+    }
+
+    pub fn bottom_right(&self) -> Vec2 {
+        self.max
     }
 }
 
