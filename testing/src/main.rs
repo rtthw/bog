@@ -36,16 +36,18 @@ fn main() -> Result<()> {
         .gap_x(19.0)
         .padding(11.0)
         .fill_width()
-        .fill_height());
+        .fill_height()
+        .align_content_center());
     let mut something = Something {
         painter: Painter2D::new(graphics.renderer().gl()),
         meshes: HashMap::with_capacity(10),
     };
 
     for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
-        let text_mesh = graphics.renderer()
-            .mesh_for_text("mono", word, Srgba::new_opaque(163, 163, 173), None)
+        let text_wireframe = graphics.renderer()
+            .text_wireframe("mono", word, None)
             .unwrap();
+        let text_mesh = Mesh2D::from_wireframe(text_wireframe, Srgba::new_opaque(163, 163, 173));
         let (text_size, _, _) = text_mesh.compute_info();
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
@@ -59,7 +61,6 @@ fn main() -> Result<()> {
         let pane_node = ui.push_to_root(
             Layout::default()
                 .align_content_center()
-                .align_items_center()
                 .width(text_size[0])
                 .height(row_height),
         );
@@ -126,11 +127,15 @@ struct Something {
 }
 
 impl UiHandler for Something {
-    fn on_resize(&mut self, element: u64, model: &mut UiModel,) {
+    fn on_resize(&mut self, element: u64, model: &mut UiModel) {
         if let Some(mesh) = self.meshes.get_mut(&element) {
             let layout = model.layout(element.into()).unwrap();
+            let parent_layout = model.layout(model.parent(element.into()).unwrap()).unwrap();
             let (_size, min_pos, _max_pos) = mesh.compute_info();
-            mesh.translate(layout.content_box_x() - min_pos[0], layout.content_box_y() - min_pos[1]);
+            mesh.translate(
+                (parent_layout.location.x + layout.location.x) - min_pos[0],
+                (parent_layout.location.y + layout.location.y) - min_pos[1],
+            );
         }
     }
 

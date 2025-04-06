@@ -4,9 +4,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use three_d::Srgba;
-
-use super::new_renderer::{Mesh2D, Wireframe2D};
+use super::new_renderer::Wireframe2D;
 
 
 
@@ -92,7 +90,7 @@ impl Font {
         }
     }
 
-    pub fn mesh_for_text(&self, text: &str, color: Srgba, line_height: Option<f32>) -> Mesh2D {
+    pub fn text_wireframe(&self, text: &str, line_height: Option<f32>) -> Wireframe2D {
         let mut shape_context = swash::shape::ShapeContext::new();
         let swash_ref = swash::FontRef {
             data: (*self.data).as_ref(),
@@ -133,12 +131,9 @@ impl Font {
             position.x += cluster.advance();
         });
 
-        let colors = [color.to_linear_srgb().into()].repeat(indices.len());
-
-        Mesh2D {
+        Wireframe2D {
             positions,
             indices,
-            colors,
         }
     }
 

@@ -90,6 +90,16 @@ impl Mesh2D {
         }
     }
 
+    pub fn from_wireframe(wireframe: Wireframe2D, color: Srgba) -> Self {
+        let colors = [color.to_linear_srgb().into()].repeat(wireframe.indices.len());
+
+        Self {
+            indices: wireframe.indices,
+            positions: wireframe.positions,
+            colors,
+        }
+    }
+
     pub fn compute_info(&self) -> ([f32; 2], [f32; 2], [f32; 2]) {
         if let Some(first_pos) = self.positions.first() {
             let mut min_x = first_pos[0];

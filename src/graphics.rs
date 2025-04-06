@@ -12,7 +12,7 @@ pub mod math;
 pub mod new_renderer;
 pub mod ui;
 
-use new_renderer::{Mesh2D, Wireframe2D};
+use new_renderer::Wireframe2D;
 pub use three_d::{
     Camera,
     ClearState,
@@ -79,10 +79,10 @@ impl Renderer {
         self.fonts.get_font(name)
     }
 
-    pub fn mesh_for_text(&self, font: &str, text: &str, color: Srgba, line_height: Option<f32>) -> Option<Mesh2D> {
+    pub fn text_wireframe(&self, font: &str, text: &str, line_height: Option<f32>) -> Option<Wireframe2D> {
         let font = self.fonts.get_font(font)?;
 
-        Some(font.mesh_for_text(text, color, line_height))
+        Some(font.text_wireframe(text, line_height))
     }
 
     pub fn glyph_wireframe(&self, font: &str, glyph: u16) -> Option<&Wireframe2D> {
