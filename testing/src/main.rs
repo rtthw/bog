@@ -43,24 +43,26 @@ fn main() -> Result<()> {
         meshes: HashMap::with_capacity(10),
     };
 
-    for word in ["This", "is", "@_ |>", "test", "for", "text", "#_(o)", "...", "***", "=>>"] {
+    for word in ["┃ This", "is", "@_ |>", "test", "for", "text", "#_(o)", "┃ ...", "***", "=>>"] {
         let text_wireframe = graphics.renderer()
             .text_wireframe("mono", word, None)
             .unwrap();
-        let text_mesh = Mesh2D::from_wireframe(text_wireframe, Srgba::new_opaque(163, 163, 173));
+        let mut text_mesh = Mesh2D::from_wireframe(text_wireframe, Srgba::new_opaque(163, 163, 173));
+        text_mesh.invert_y();
         let (text_size, _, _) = text_mesh.compute_info();
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
 
         let mut pane_mesh = Mesh2D::new();
         Tessellator.tessellate_shape(Shape::Rect {
             pos: vec2(0.0, 0.0),
-            size: vec2(text_size[0], text_size[1]),
+            size: vec2(text_size[0], row_height),
             color: Srgba::new_opaque(23, 23, 29),
         }, &mut pane_mesh);
+        // pane_mesh.invert_y();
 
         let pane_node = ui.push_to_root(
             Layout::default()
-                .align_content_center()
+                .align_items_center()
                 .width(text_size[0])
                 .height(row_height),
         );
@@ -133,8 +135,8 @@ impl UiHandler for Something {
             let parent_layout = model.layout(model.parent(element.into()).unwrap()).unwrap();
             let (_size, min_pos, _max_pos) = mesh.compute_info();
             mesh.translate(
-                (parent_layout.location.x + layout.location.x) - min_pos[0],
-                (parent_layout.location.y + layout.location.y) - min_pos[1],
+                (parent_layout.location.x + layout.content_box_x()) - min_pos[0],
+                (parent_layout.location.y + layout.content_box_y()) - min_pos[1],
             );
         }
     }

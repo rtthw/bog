@@ -149,6 +149,12 @@ impl Mesh2D {
             pos[1] += y;
         }
     }
+
+    pub fn invert_y(&mut self) {
+        for pos in &mut self.positions {
+            pos[1] *= -1.0;
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
