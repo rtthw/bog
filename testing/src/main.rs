@@ -48,7 +48,10 @@ fn main() -> Result<()> {
         let text_wireframe = graphics.renderer()
             .text_wireframe("mono", word, None)
             .unwrap();
-        let mut text_mesh = Mesh2D::from_wireframe(text_wireframe, Srgba::new_opaque(163, 163, 173));
+        let mut text_mesh = Mesh2D::from_wireframe(
+            text_wireframe,
+            Srgba::new_opaque(163, 163, 173),
+        );
         text_mesh.invert_y();
         let (text_size, _, _) = text_mesh.compute_info();
         let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
@@ -133,10 +136,10 @@ struct Something {
 }
 
 impl UiHandler for Something {
-    fn on_resize(&mut self, element: u64, model: &mut UiModel) {
-        if let Some(mesh) = self.meshes.get_mut(&element) {
-            let layout = model.layout(element.into()).unwrap();
-            let parent_layout = model.layout(model.parent(element.into()).unwrap()).unwrap();
+    fn on_resize(&mut self, node: u64, model: &mut UiModel) {
+        if let Some(mesh) = self.meshes.get_mut(&node) {
+            let layout = model.layout(node.into()).unwrap();
+            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
             let (_size, min_pos, _max_pos) = mesh.compute_info();
             mesh.translate(
                 (parent_layout.location.x + layout.content_box_x()) - min_pos[0],
@@ -145,19 +148,26 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_hover(&mut self, element: u64, _model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&element) {
+    fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
+        if let Some(obj) = self.objects.get(&node) {
             let Object::TextBox { pane_node, text_node } = obj; // else { return; };
             if let Some(text_mesh) = self.meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
-            } else {
-                println!("Could not update text");
             }
         }
     }
 
-    fn on_click(&mut self, element: u64, _model: &mut UiModel) {
-        println!("on_click({element});");
+    fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
+        if let Some(obj) = self.objects.get(&node) {
+            let Object::TextBox { pane_node, text_node } = obj; // else { return; };
+            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+                text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
+            }
+        }
+    }
+
+    fn on_click(&mut self, node: u64, _model: &mut UiModel) {
+        println!("on_click({node});");
     }
 }
 

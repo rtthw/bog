@@ -13,7 +13,7 @@ pub struct Ui {
     // Known state.
     area: (f32, f32),
     mouse_pos: (f32, f32),
-    hovered_element: Option<u64>,
+    hovered_node: Option<u64>,
 }
 
 impl Ui {
@@ -27,7 +27,7 @@ impl Ui {
 
             area: (1.0, 1.0),
             mouse_pos: (0.0, 0.0),
-            hovered_element: None,
+            hovered_node: None,
         }
     }
 
@@ -51,59 +51,43 @@ impl Ui {
         }
         self.mouse_pos = (x, y);
         let mut hover_changed_to = None;
-        let root_layout = self.tree.layout(self.root).unwrap();
-        for child in self.tree.children(self.root).unwrap() {
-            let layout = self.tree.layout(child).unwrap();
-            let abs_pos = [
-                layout.location.x + root_layout.location.x,
-                layout.location.y + root_layout.location.y,
-            ];
-            if abs_pos[0] > x
-                || abs_pos[1] > y
-                || abs_pos[0] + layout.size.width < x
-                || abs_pos[1] + layout.size.height < y
-            {
-                continue;
+
+        let mut parent_layout = self.tree.layout(self.root).unwrap();
+        let mut known_parent = self.root;
+        for_each_node(&self.tree, self.root, &mut |node, parent| {
+            if parent != known_parent {
+                parent_layout = self.tree.layout(parent).unwrap();
+                known_parent = parent;
             }
-            let nested = self.tree.children(child).unwrap();
-            if nested.is_empty() {
-                let _elem = self.tree.get_node_context(child).unwrap();
-                if let Some(hovered) = self.hovered_element.take() {
-                    if hovered != child.into() {
-                        hover_changed_to = Some(child);
-                    }
-                } else {
-                    hover_changed_to = Some(child);
+            let layout = self.tree.layout(node).unwrap();
+            let (abs_x, abs_y) = (
+                parent_layout.location.x + layout.location.x,
+                parent_layout.location.y + layout.location.y,
+            );
+
+            if abs_x > x
+                || abs_y > y
+                || abs_x + layout.size.width < x
+                || abs_y + layout.size.height < y
+            {
+                return; // Breaks out of `for_each_node`.
+            }
+            let _elem = self.tree.get_node_context(node).unwrap();
+            if let Some(hovered) = self.hovered_node {
+                if hovered != node.into() {
+                    hover_changed_to = Some(node);
                 }
             } else {
-                for nested in nested {
-                    let nested_layout = self.tree.layout(nested).unwrap();
-                    let abs_pos = [
-                        layout.location.x + nested_layout.location.x,
-                        layout.location.y + nested_layout.location.y,
-                    ];
-                    if abs_pos[0] > x
-                        || abs_pos[1] > y
-                        || abs_pos[0] + nested_layout.size.width < x
-                        || abs_pos[1] + nested_layout.size.height < y
-                    {
-                        continue;
-                    }
-                    let _elem = self.tree.get_node_context(nested).unwrap();
-                    if let Some(hovered) = self.hovered_element.take() {
-                        if hovered != nested.into() {
-                            hover_changed_to = Some(nested);
-                        }
-                    } else {
-                        hover_changed_to = Some(nested);
-                    }
-                }
+                hover_changed_to = Some(node);
             }
-        }
-        if let Some(newly_hovered) = hover_changed_to {
-            println!("Hovered: {:?}", newly_hovered);
-            handler.on_hover(newly_hovered.into(), &mut self.tree);
-            self.hovered_element = Some(newly_hovered.into());
+        });
+
+        if let Some(entered_node) = hover_changed_to {
+            if let Some(left_node) = self.hovered_node {
+                handler.on_mouse_leave(left_node, &mut self.tree);
+            }
+            handler.on_mouse_enter(entered_node.into(), &mut self.tree);
+            self.hovered_node = Some(entered_node.into());
         }
     }
 
@@ -128,13 +112,23 @@ impl Ui {
     }
 }
 
+fn for_each_node<F>(tree: &UiModel, node: taffy::NodeId, func: &mut F)
+where F: FnMut(taffy::NodeId, taffy::NodeId),
+{
+    for child in tree.children(node).unwrap().into_iter() {
+        func(child, node);
+        for_each_node(tree, child, func);
+    }
+}
+
 
 
 pub type UiModel = taffy::TaffyTree<()>;
 pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
-    fn on_resize(&mut self, element: u64, model: &mut UiModel);
-    fn on_hover(&mut self, element: u64, model: &mut UiModel);
-    fn on_click(&mut self, element: u64, model: &mut UiModel);
+    fn on_resize(&mut self, node: u64, model: &mut UiModel);
+    fn on_mouse_enter(&mut self, node: u64, model: &mut UiModel);
+    fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
+    fn on_click(&mut self, node: u64, model: &mut UiModel);
 }
