@@ -2,18 +2,53 @@
 
 
 
-use three_d::{vec2, Mat3, SquareMatrix, Srgba, Vec2, Vec4};
+use three_d::{vec2, Mat3, Srgba, Vec2, Vec4};
 
 
 
-pub struct Painter2D {
+pub struct SolidRenderer2D {
+    program: three_d::Program,
+    positions: three_d::VertexBuffer<Vec2>,
+    elements: three_d::ElementBuffer<u32>,
+}
+
+impl SolidRenderer2D {
+    pub fn new(gl: three_d::Context) -> Self {
+        let program = three_d::Program::from_source(
+            &gl,
+            include_str!("shaders/solid_vert2d.glsl"),
+            include_str!("shaders/frag2d.glsl"),
+        ).unwrap();
+        let positions = three_d::VertexBuffer::new(&gl);
+        let elements = three_d::ElementBuffer::new(&gl);
+
+        Self {
+            program,
+            positions,
+            elements,
+        }
+    }
+
+    pub fn render(&mut self, viewport: three_d::Viewport, wireframe: &Wireframe2D, color: Srgba) {
+        self.positions.fill(&wireframe.positions);
+        self.elements.fill(&wireframe.indices);
+        self.program.use_uniform("u_screen_size", vec2(viewport.width as f32, viewport.height as f32));
+        self.program.use_uniform("u_color", color.to_linear_srgb());
+        self.program.use_vertex_attribute("a_pos", &self.positions);
+        self.program.draw_elements(three_d::RenderStates::default(), viewport, &self.elements);
+    }
+}
+
+
+
+pub struct Renderer2D {
     program: three_d::Program,
     positions: three_d::VertexBuffer<Vec2>,
     colors: three_d::VertexBuffer<Vec4>,
     elements: three_d::ElementBuffer<u32>,
 }
 
-impl Painter2D {
+impl Renderer2D {
     pub fn new(gl: three_d::Context) -> Self {
         let program = three_d::Program::from_source(
             &gl,

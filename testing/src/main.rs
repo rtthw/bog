@@ -7,7 +7,7 @@ use bog::*;
 use graphics::*;
 use layout::Layout;
 use math::vec2;
-use new_renderer::{Mesh2D, Painter2D, Shape, Tessellator};
+use new_renderer::{Mesh2D, Renderer2D, Shape, Tessellator};
 use ui::{Ui, UiHandler, UiModel};
 
 
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
         .fill_height()
         .align_content_center());
     let mut something = Something {
-        painter: Painter2D::new(graphics.renderer().gl()),
+        renderer: Renderer2D::new(graphics.renderer().gl()),
         meshes: HashMap::with_capacity(10),
         objects: HashMap::with_capacity(10),
     };
@@ -116,7 +116,7 @@ fn main() -> Result<()> {
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
                     .write(|| -> Result<()> {
                         for mesh in something.meshes.values() {
-                            something.painter.render(viewport, mesh);
+                            something.renderer.render(viewport, mesh);
                         }
 
                         Ok(())
@@ -132,7 +132,7 @@ fn main() -> Result<()> {
 
 
 struct Something {
-    painter: Painter2D,
+    renderer: Renderer2D,
     meshes: HashMap<u64, Mesh2D>,
     objects: HashMap<u64, Object>,
 }
