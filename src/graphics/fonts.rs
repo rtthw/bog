@@ -4,6 +4,8 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use three_d::{vec2, Vec2};
+
 use super::new_renderer::Wireframe2D;
 
 
@@ -114,7 +116,7 @@ impl Font {
                 position.x = 0.0;
             }
             for glyph in cluster.glyphs {
-                let Some(mesh) = self.glyph_map.get(&glyph.id) else {
+                let Some(wireframe) = self.glyph_map.get(&glyph.id) else {
                     // TODO: Glyph is likely part of some ligature, but I need to make sure
                     //       somehow.
                     // println!("ERROR: Unknown glyph: {:?}", &glyph);
@@ -122,11 +124,9 @@ impl Font {
                 };
 
                 let index_offset = positions.len() as u32;
-                indices.extend(mesh.indices.iter().map(|i| i + index_offset));
+                indices.extend(wireframe.indices.iter().map(|i| i + index_offset));
                 let position_offset = position + three_d::vec2(glyph.x, glyph.y);
-                positions.extend(mesh.positions.iter().map(|p| {
-                    [p[0] + position_offset.x, p[1] + position_offset.y]
-                }));
+                positions.extend(wireframe.positions.iter().map(|p| p + position_offset));
             }
             position.x += cluster.advance();
         });
@@ -201,7 +201,7 @@ impl GlyphOutliner {
 
 fn glyph_outline_path_to_mesh(path: lyon::path::Path) -> Result<Wireframe2D, Error> {
     let mut tessellator = lyon::tessellation::FillTessellator::new();
-    let mut geometry: lyon::tessellation::VertexBuffers<[f32; 2], u32>
+    let mut geometry: lyon::tessellation::VertexBuffers<Vec2, u32>
         = lyon::tessellation::VertexBuffers::new();
     let options = lyon::tessellation::FillOptions::default();
     tessellator.tessellate_path(
@@ -210,7 +210,7 @@ fn glyph_outline_path_to_mesh(path: lyon::path::Path) -> Result<Wireframe2D, Err
         &mut lyon::tessellation::BuffersBuilder::new(
             &mut geometry,
             |vertex: lyon::tessellation::FillVertex| {
-                [vertex.position().x, vertex.position().y]
+                vec2(vertex.position().x, vertex.position().y)
             },
         ),
     )?;

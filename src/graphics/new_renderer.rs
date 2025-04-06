@@ -2,14 +2,14 @@
 
 
 
-use three_d::{vec2, Srgba, Vec2};
+use three_d::{vec2, Srgba, Vec2, Vec4};
 
 
 
 pub struct Painter2D {
     program: three_d::Program,
-    positions: three_d::VertexBuffer<[f32; 2]>,
-    colors: three_d::VertexBuffer<[f32; 4]>,
+    positions: three_d::VertexBuffer<Vec2>,
+    colors: three_d::VertexBuffer<Vec4>,
     elements: three_d::ElementBuffer<u32>,
 }
 
@@ -63,22 +63,27 @@ impl Tessellator {
                 out.add_triangle(idx + 0, idx + 1, idx + 2);
                 out.add_triangle(idx + 2, idx + 1, idx + 3);
 
-                let color: [f32; 4] = color.to_linear_srgb().into();
+                let color = color.to_linear_srgb();
                 out.colors.extend([color].repeat(4));
                 out.positions.push(pos.into());
-                out.positions.push([pos.x + size.x, pos.y]);
-                out.positions.push([pos.x, pos.y + size.y]);
-                out.positions.push([pos.x + size.x, pos.y + size.y]);
+                out.positions.push(vec2(pos.x + size.x, pos.y));
+                out.positions.push(vec2(pos.x, pos.y + size.y));
+                out.positions.push(vec2(pos.x + size.x, pos.y + size.y));
             }
         }
     }
 }
 
+
+
+/// Representation of a 2D object with vertex position and color data.
+///
+/// See [`Wireframe2D`] for a minimal version of this with no color data.
 #[derive(Clone, Debug)]
 pub struct Mesh2D {
     pub(crate) indices: Vec<u32>,
-    pub(crate) positions: Vec<[f32; 2]>,
-    pub(crate) colors: Vec<[f32; 4]>,
+    pub(crate) positions: Vec<Vec2>,
+    pub(crate) colors: Vec<Vec4>,
 }
 
 impl Mesh2D {
@@ -90,6 +95,7 @@ impl Mesh2D {
         }
     }
 
+    /// See also: [`Wireframe2D::to_mesh`].
     pub fn from_wireframe(wireframe: Wireframe2D, color: Srgba) -> Self {
         let colors = [color.to_linear_srgb().into()].repeat(wireframe.indices.len());
 
@@ -100,24 +106,22 @@ impl Mesh2D {
         }
     }
 
-    pub fn compute_info(&self) -> ([f32; 2], [f32; 2], [f32; 2]) {
+    pub fn compute_info(&self) -> (Vec2, Vec2, Vec2) {
         if let Some(first_pos) = self.positions.first() {
-            let mut min_x = first_pos[0];
-            let mut min_y = first_pos[1];
-            let mut max_x = first_pos[0];
-            let mut max_y = first_pos[1];
+            let mut min_pos = *first_pos;
+            let mut max_pos = *first_pos;
 
             for p in &self.positions {
-                min_x = min_x.min(p[0]);
-                min_y = min_y.min(p[1]);
+                min_pos.x = min_pos.x.min(p.x);
+                min_pos.y = min_pos.y.min(p.y);
 
-                max_x = max_x.max(p[0]);
-                max_y = max_y.max(p[1]);
+                max_pos.x = max_pos.x.max(p.x);
+                max_pos.y = max_pos.y.max(p.y);
             }
 
-            ([max_x - min_x, max_y - min_y], [min_x, min_y], [max_x, max_y])
+            (max_pos - min_pos, min_pos, max_pos)
         } else {
-            ([0.0, 0.0], [0.0, 0.0], [0.0, 0.0])
+            (vec2(0.0, 0.0), vec2(0.0, 0.0), vec2(0.0, 0.0))
         }
     }
 
@@ -157,8 +161,35 @@ impl Mesh2D {
     }
 }
 
+
+
+/// A minimal representation of a 2D object.
+///
+/// Can be easily transformed to (and from) a [`Mesh2D`].
 #[derive(Clone, Debug)]
 pub struct Wireframe2D {
     pub(crate) indices: Vec<u32>,
-    pub(crate) positions: Vec<[f32; 2]>,
+    pub(crate) positions: Vec<Vec2>,
+}
+
+impl Wireframe2D {
+    /// See also: [`Mesh2D::from_wireframe`].
+    pub fn to_mesh(self, color: Srgba) -> Mesh2D {
+        let colors = [color.to_linear_srgb()].repeat(self.indices.len());
+
+        Mesh2D {
+            indices: self.indices,
+            positions: self.positions,
+            colors,
+        }
+    }
+}
+
+impl From<Mesh2D> for Wireframe2D {
+    fn from(value: Mesh2D) -> Self {
+        Self {
+            indices: value.indices,
+            positions: value.positions,
+        }
+    }
 }
