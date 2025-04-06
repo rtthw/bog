@@ -17,8 +17,8 @@ impl Painter2D {
     pub fn new(gl: three_d::Context) -> Self {
         let program = three_d::Program::from_source(
             &gl,
-            include_str!("mesh2d.vert"),
-            include_str!("mesh2d.frag"),
+            include_str!("shaders/vert2d.glsl"),
+            include_str!("shaders/frag2d.glsl"),
         ).unwrap();
         let positions = three_d::VertexBuffer::new(&gl);
         let colors = three_d::VertexBuffer::new(&gl);

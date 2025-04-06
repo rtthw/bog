@@ -133,8 +133,7 @@ impl Font {
             position.x += cluster.advance();
         });
 
-        let mut colors = Vec::with_capacity(indices.len());
-        colors.fill(color.to_linear_srgb().into());
+        let colors = [color.to_linear_srgb().into()].repeat(indices.len());
 
         Mesh2D {
             positions,
