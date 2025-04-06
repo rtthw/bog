@@ -69,17 +69,19 @@ fn main() -> Result<()> {
                 .align_items_center()
                 .width(text_size[0])
                 .height(row_height),
+            true,
         );
         let text_node = ui.push_to(
             Layout::default()
                 .width(text_size[0])
                 .height(text_size[1]),
             pane_node,
+            false,
         );
 
         something.meshes.insert(pane_node, pane_mesh);
         something.meshes.insert(text_node, text_mesh);
-        something.objects.insert(text_node, Object::TextBox { pane_node, text_node });
+        something.objects.insert(pane_node, Object::TextBox { pane_node, text_node });
     }
 
     event_loop.run(move |event, _, control_flow| {

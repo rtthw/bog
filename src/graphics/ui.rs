@@ -31,15 +31,15 @@ impl Ui {
         }
     }
 
-    pub fn push_to(&mut self, layout: Layout, parent: u64) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), ()).unwrap();
+    pub fn push_to(&mut self, layout: Layout, parent: u64, accepts_input: bool) -> u64 {
+        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
         self.tree.add_child(parent.into(), id).unwrap();
 
         id.into()
     }
 
-    pub fn push_to_root(&mut self, layout: Layout) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), ()).unwrap();
+    pub fn push_to_root(&mut self, layout: Layout, accepts_input: bool) -> u64 {
+        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
         self.tree.add_child(self.root, id).unwrap();
 
         id.into()
@@ -50,6 +50,7 @@ impl Ui {
             return;
         }
         self.mouse_pos = (x, y);
+
         let mut hover_changed_to = None;
 
         let mut parent_layout = self.tree.layout(self.root).unwrap();
@@ -72,20 +73,28 @@ impl Ui {
             {
                 return; // Breaks out of `for_each_node`.
             }
-            let _elem = self.tree.get_node_context(node).unwrap();
-            if let Some(hovered) = self.hovered_node {
-                if hovered != node.into() {
-                    hover_changed_to = Some(node);
-                }
-            } else {
-                hover_changed_to = Some(node);
+
+            let accepts_input = self.tree.get_node_context(node).unwrap();
+            if !*accepts_input {
+                return; // Breaks out of `for_each_node`.
             }
+
+            // TODO: See if there should be some multi-hovering system.
+            hover_changed_to = Some(node);
+
+            // if let Some(hovered) = self.hovered_node {
+            //     if hovered != node.into() {
+            //         hover_changed_to = Some(node);
+            //     }
+            // } else {
+            //     hover_changed_to = Some(node);
+            // }
         });
 
+        if let Some(left_node) = self.hovered_node {
+            handler.on_mouse_leave(left_node, &mut self.tree);
+        }
         if let Some(entered_node) = hover_changed_to {
-            if let Some(left_node) = self.hovered_node {
-                handler.on_mouse_leave(left_node, &mut self.tree);
-            }
             handler.on_mouse_enter(entered_node.into(), &mut self.tree);
             self.hovered_node = Some(entered_node.into());
         }
@@ -123,7 +132,7 @@ where F: FnMut(taffy::NodeId, taffy::NodeId),
 
 
 
-pub type UiModel = taffy::TaffyTree<()>;
+pub type UiModel = taffy::TaffyTree<bool>;
 pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
