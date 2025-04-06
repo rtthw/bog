@@ -159,6 +159,10 @@ impl Mesh2D {
             pos[1] *= -1.0;
         }
     }
+
+    pub fn change_color(&mut self, color: Srgba) {
+        self.colors.fill(color.to_linear_srgb());
+    }
 }
 
 

@@ -51,12 +51,17 @@ impl Ui {
         }
         self.mouse_pos = (x, y);
         let mut hover_changed_to = None;
+        let root_layout = self.tree.layout(self.root).unwrap();
         for child in self.tree.children(self.root).unwrap() {
             let layout = self.tree.layout(child).unwrap();
-            if layout.location.x > x
-                || layout.location.y > y
-                || layout.location.x + layout.size.width < x
-                || layout.location.y + layout.size.height < y
+            let abs_pos = [
+                layout.location.x + root_layout.location.x,
+                layout.location.y + root_layout.location.y,
+            ];
+            if abs_pos[0] > x
+                || abs_pos[1] > y
+                || abs_pos[0] + layout.size.width < x
+                || abs_pos[1] + layout.size.height < y
             {
                 continue;
             }
@@ -72,11 +77,15 @@ impl Ui {
                 }
             } else {
                 for nested in nested {
-                    let layout = self.tree.layout(nested).unwrap();
-                    if layout.location.x > x
-                        || layout.location.y > y
-                        || layout.location.x + layout.size.width < x
-                        || layout.location.y + layout.size.height < y
+                    let nested_layout = self.tree.layout(nested).unwrap();
+                    let abs_pos = [
+                        layout.location.x + nested_layout.location.x,
+                        layout.location.y + nested_layout.location.y,
+                    ];
+                    if abs_pos[0] > x
+                        || abs_pos[1] > y
+                        || abs_pos[0] + nested_layout.size.width < x
+                        || abs_pos[1] + nested_layout.size.height < y
                     {
                         continue;
                     }
@@ -92,6 +101,7 @@ impl Ui {
             }
         }
         if let Some(newly_hovered) = hover_changed_to {
+            println!("Hovered: {:?}", newly_hovered);
             handler.on_hover(newly_hovered.into(), &mut self.tree);
             self.hovered_element = Some(newly_hovered.into());
         }

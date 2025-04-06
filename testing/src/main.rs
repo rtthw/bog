@@ -13,7 +13,7 @@ use ui::{Ui, UiHandler, UiModel};
 
 
 fn main() -> Result<()> {
-    let (mut screen_width, mut screen_height) = (1200.0, 800.0);
+    let (screen_width, screen_height) = (1200.0, 800.0);
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()
         .with_title("Bog Testing")
@@ -41,6 +41,7 @@ fn main() -> Result<()> {
     let mut something = Something {
         painter: Painter2D::new(graphics.renderer().gl()),
         meshes: HashMap::with_capacity(10),
+        objects: HashMap::with_capacity(10),
     };
 
     for word in ["┃ This", "is", "@_ |>", "test", "for", "text", "#_(o)", "┃ ...", "***", "=>>"] {
@@ -75,6 +76,7 @@ fn main() -> Result<()> {
 
         something.meshes.insert(pane_node, pane_mesh);
         something.meshes.insert(text_node, text_mesh);
+        something.objects.insert(text_node, Object::TextBox { pane_node, text_node });
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -86,14 +88,15 @@ fn main() -> Result<()> {
                     control_flow.set_exit();
                 }
                 winit::event::WindowEvent::Resized(new_size) => {
-                    (screen_width, screen_height) = new_size.into();
-                    ui.handle_resize(&mut something, screen_width, screen_height);
+                    let (width, height) = new_size.into();
+                    ui.handle_resize(&mut something, width, height);
                     graphics.resize(new_size);
                     window.request_redraw();
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let (x, y): (f32, f32) = position.into();
-                    ui.handle_mouse_move(&mut something, x, screen_height - y);
+                    ui.handle_mouse_move(&mut something, x, y);
+                    window.request_redraw();
                 }
                 // winit::event::WindowEvent::MouseInput { state, button, .. } => {
                 //     ui.handle_mouse_down(..);
@@ -126,6 +129,7 @@ fn main() -> Result<()> {
 struct Something {
     painter: Painter2D,
     meshes: HashMap<u64, Mesh2D>,
+    objects: HashMap<u64, Object>,
 }
 
 impl UiHandler for Something {
@@ -142,10 +146,24 @@ impl UiHandler for Something {
     }
 
     fn on_hover(&mut self, element: u64, _model: &mut UiModel) {
-        println!("on_hover({element});");
+        if let Some(obj) = self.objects.get(&element) {
+            let Object::TextBox { pane_node, text_node } = obj; // else { return; };
+            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+                text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
+            } else {
+                println!("Could not update text");
+            }
+        }
     }
 
     fn on_click(&mut self, element: u64, _model: &mut UiModel) {
         println!("on_click({element});");
     }
+}
+
+enum Object {
+    TextBox {
+        pane_node: u64,
+        text_node: u64,
+    },
 }
