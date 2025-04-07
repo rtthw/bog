@@ -13,6 +13,7 @@ pub struct Ui {
     // Known state.
     area: (f32, f32),
     mouse_pos: (f32, f32),
+    lmb_down_at: Option<(f32, f32)>,
     hovered_node: Option<u64>,
 }
 
@@ -27,6 +28,7 @@ impl Ui {
 
             area: (1.0, 1.0),
             mouse_pos: (0.0, 0.0),
+            lmb_down_at: None,
             hovered_node: None,
         }
     }
@@ -105,6 +107,15 @@ impl Ui {
         handler: &mut impl UiHandler,
         button: winit::event::MouseButton,
     ) {
+        if let Some(node) = self.hovered_node {
+            handler.on_mouse_down(node, &mut self.tree);
+        }
+        match button {
+            winit::event::MouseButton::Left => {
+                self.lmb_down_at = Some(self.mouse_pos);
+            }
+            _ => {}
+        }
     }
 
     pub fn handle_mouse_up(
@@ -112,6 +123,19 @@ impl Ui {
         handler: &mut impl UiHandler,
         button: winit::event::MouseButton,
     ) {
+        if let Some(node) = self.hovered_node {
+            handler.on_mouse_up(node, &mut self.tree);
+        }
+        match button {
+            winit::event::MouseButton::Left => {
+                if let Some(_down_pos) = self.lmb_down_at.take() {
+                    if let Some(node) = self.hovered_node {
+                        handler.on_click(node, &mut self.tree);
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     pub fn handle_resize(&mut self, handler: &mut impl UiHandler, width: f32, height: f32) {
@@ -153,5 +177,7 @@ pub trait UiHandler {
     fn on_resize(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_enter(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
+    fn on_mouse_down(&mut self, node: u64, model: &mut UiModel);
+    fn on_mouse_up(&mut self, node: u64, model: &mut UiModel);
     fn on_click(&mut self, node: u64, model: &mut UiModel);
 }

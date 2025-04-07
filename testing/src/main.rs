@@ -73,6 +73,7 @@ fn main() -> Result<()> {
                     } else {
                         ui.handle_mouse_up(&mut something, button);
                     }
+                    window.request_redraw();
                 }
                 _ => {}
             }
@@ -120,7 +121,10 @@ impl UiHandler for Something {
 
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node: _, text_node } = obj; // else { return; };
+            let Object::Button { pane_node, text_node } = obj; // else { return; };
+            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+                pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
+            }
             if let Some(text_mesh) = self.meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
             }
@@ -129,9 +133,40 @@ impl UiHandler for Something {
 
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node: _, text_node } = obj; // else { return; };
+            let Object::Button { pane_node, text_node } = obj; // else { return; };
+            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+                pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
+            }
             if let Some(text_mesh) = self.meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
+            }
+        }
+    }
+
+    fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
+        if let Some(obj) = self.objects.get(&node) {
+            let Object::Button { pane_node, text_node } = obj; // else { return; };
+            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+                pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
+                pane_mesh.translate(0.0, 1.0);
+            }
+            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+                text_mesh.change_color(Srgba::new_opaque(139, 139, 149));
+                text_mesh.translate(0.0, 1.0);
+            }
+        }
+    }
+
+    fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
+        if let Some(obj) = self.objects.get(&node) {
+            let Object::Button { pane_node, text_node } = obj; // else { return; };
+            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+                pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
+                pane_mesh.translate(0.0, -1.0);
+            }
+            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+                text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
+                text_mesh.translate(0.0, -1.0);
             }
         }
     }
