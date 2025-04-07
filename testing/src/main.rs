@@ -113,32 +113,54 @@ struct Something {
 
 impl UiHandler for Something {
     fn on_resize(&mut self, node: u64, model: &mut UiModel) {
-        if let Some(mesh) = self.pane_meshes.get_mut(&node) {
+        if let Some(obj) = self.objects.get(&node) {
+            let Object::Button { row_height } = obj; // else { return; };
             let layout = model.layout(node.into()).unwrap();
             let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
-            let (_size, min_pos, _max_pos) = mesh.compute_info();
-            mesh.translate(
-                (parent_layout.location.x + layout.content_box_x()) - min_pos[0],
-                (parent_layout.location.y + layout.content_box_y()) - min_pos[1],
-            );
-        } else if let Some(mesh) = self.text_meshes.get_mut(&node) {
-            let layout = model.layout(node.into()).unwrap();
-            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
-            let (_size, min_pos, _max_pos) = mesh.compute_info();
-            mesh.translate(
-                (parent_layout.location.x + layout.content_box_x()) - min_pos[0],
-                (parent_layout.location.y + layout.content_box_y()) - min_pos[1],
-            );
+            if let Some(mesh) = self.pane_meshes.get_mut(&node) {
+                let mut new_mesh = Mesh2D::new();
+                Tessellator.tessellate_shape(Shape::Rect {
+                    pos: vec2(
+                        parent_layout.location.x + layout.location.x,
+                        parent_layout.location.y + layout.location.y,
+                    ),
+                    size: vec2(
+                        layout.size.width
+                            + layout.margin.horizontal_components().sum()
+                            + layout.border.horizontal_components().sum(),
+                        layout.size.height
+                            + layout.margin.vertical_components().sum()
+                            + layout.border.vertical_components().sum(),
+                    ),
+                    color: Srgba::new_opaque(23, 23, 29),
+                }, &mut new_mesh);
+                std::mem::swap(mesh, &mut new_mesh);
+            }
+            if let Some(mesh) = self.text_meshes.get_mut(&node) {
+                let (size, min_pos, _max_pos) = mesh.compute_info();
+                let y_offset = row_height - size.y;
+                mesh.translate(
+                    (parent_layout.location.x
+                        + layout.content_box_x()
+                        + layout.margin.left)
+                    - min_pos.x,
+                    (parent_layout.location.y
+                        + y_offset
+                        + layout.content_box_y()
+                        + layout.margin.top)
+                    - min_pos.y,
+                );
+            }
         }
     }
 
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
+            let Object::Button { row_height: _ } = obj; // else { return; };
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
             }
-            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
             }
         }
@@ -146,11 +168,11 @@ impl UiHandler for Something {
 
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
+            let Object::Button { row_height: _ } = obj; // else { return; };
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
             }
-            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
             }
         }
@@ -158,12 +180,12 @@ impl UiHandler for Something {
 
     fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
+            let Object::Button { row_height: _ } = obj; // else { return; };
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
                 pane_mesh.translate(0.0, 1.0);
             }
-            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Srgba::new_opaque(139, 139, 149));
                 text_mesh.translate(0.0, 1.0);
             }
@@ -172,12 +194,12 @@ impl UiHandler for Something {
 
     fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
+            let Object::Button { row_height: _ } = obj; // else { return; };
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
                 pane_mesh.translate(0.0, -1.0);
             }
-            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
                 text_mesh.translate(0.0, -1.0);
             }
@@ -205,35 +227,27 @@ impl Something {
         let mut pane_mesh = Mesh2D::new();
         Tessellator.tessellate_shape(Shape::Rect {
             pos: vec2(0.0, 0.0),
-            size: vec2(text_size[0], row_height),
+            size: vec2(text_size.x, row_height),
             color: Srgba::new_opaque(23, 23, 29),
         }, &mut pane_mesh);
         // pane_mesh.invert_y();
 
-        let pane_node = ui.push_to_root(
+        let node = ui.push_to_root(
             Layout::default()
-                .align_items_center()
-                .width(text_size[0])
-                .height(row_height),
+                .width(text_size.x)
+                .height(row_height)
+                .margin(3.0),
             true,
         );
-        let text_node = ui.push_to(
-            Layout::default()
-                .width(text_size[0])
-                .height(text_size[1]),
-            pane_node,
-            false,
-        );
 
-        self.pane_meshes.insert(pane_node, pane_mesh);
-        self.text_meshes.insert(text_node, text_mesh);
-        self.objects.insert(pane_node, Object::Button { pane_node, text_node });
+        self.pane_meshes.insert(node, pane_mesh);
+        self.text_meshes.insert(node, text_mesh);
+        self.objects.insert(node, Object::Button { row_height });
     }
 }
 
 enum Object {
     Button {
-        pane_node: u64,
-        text_node: u64,
+        row_height: f32,
     },
 }
