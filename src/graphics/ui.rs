@@ -100,6 +100,20 @@ impl Ui {
         }
     }
 
+    pub fn handle_mouse_down(
+        &mut self,
+        handler: &mut impl UiHandler,
+        button: winit::event::MouseButton,
+    ) {
+    }
+
+    pub fn handle_mouse_up(
+        &mut self,
+        handler: &mut impl UiHandler,
+        button: winit::event::MouseButton,
+    ) {
+    }
+
     pub fn handle_resize(&mut self, handler: &mut impl UiHandler, width: f32, height: f32) {
         if self.area == (width, height) {
             return;

@@ -45,43 +45,7 @@ fn main() -> Result<()> {
     };
 
     for word in ["┃ This", "is", "@_ |>", "test", "for", "text", "#_(o)", "┃ ...", "***", "=>>"] {
-        let text_wireframe = graphics.renderer()
-            .text_wireframe("mono", word, None)
-            .unwrap();
-        let mut text_mesh = Mesh2D::from_wireframe(
-            text_wireframe,
-            Srgba::new_opaque(163, 163, 173),
-        );
-        text_mesh.invert_y();
-        let (text_size, _, _) = text_mesh.compute_info();
-        let row_height = graphics.renderer().get_font("mono").unwrap().row_height();
-
-        let mut pane_mesh = Mesh2D::new();
-        Tessellator.tessellate_shape(Shape::Rect {
-            pos: vec2(0.0, 0.0),
-            size: vec2(text_size[0], row_height),
-            color: Srgba::new_opaque(23, 23, 29),
-        }, &mut pane_mesh);
-        // pane_mesh.invert_y();
-
-        let pane_node = ui.push_to_root(
-            Layout::default()
-                .align_items_center()
-                .width(text_size[0])
-                .height(row_height),
-            true,
-        );
-        let text_node = ui.push_to(
-            Layout::default()
-                .width(text_size[0])
-                .height(text_size[1]),
-            pane_node,
-            false,
-        );
-
-        something.meshes.insert(pane_node, pane_mesh);
-        something.meshes.insert(text_node, text_mesh);
-        something.objects.insert(pane_node, Object::TextBox { pane_node, text_node });
+        something.spawn_button(&mut ui, graphics.renderer(), word);
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -103,9 +67,13 @@ fn main() -> Result<()> {
                     ui.handle_mouse_move(&mut something, x, y);
                     window.request_redraw();
                 }
-                // winit::event::WindowEvent::MouseInput { state, button, .. } => {
-                //     ui.handle_mouse_down(..);
-                // }
+                winit::event::WindowEvent::MouseInput { state, button, .. } => {
+                    if state == winit::event::ElementState::Pressed {
+                        ui.handle_mouse_down(&mut something, button);
+                    } else {
+                        ui.handle_mouse_up(&mut something, button);
+                    }
+                }
                 _ => {}
             }
             winit::event::Event::RedrawRequested(_) => {
@@ -152,7 +120,7 @@ impl UiHandler for Something {
 
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::TextBox { pane_node, text_node } = obj; // else { return; };
+            let Object::Button { pane_node: _, text_node } = obj; // else { return; };
             if let Some(text_mesh) = self.meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
             }
@@ -161,7 +129,7 @@ impl UiHandler for Something {
 
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::TextBox { pane_node, text_node } = obj; // else { return; };
+            let Object::Button { pane_node: _, text_node } = obj; // else { return; };
             if let Some(text_mesh) = self.meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
             }
@@ -173,8 +141,50 @@ impl UiHandler for Something {
     }
 }
 
+impl Something {
+    fn spawn_button(&mut self, ui: &mut Ui, renderer: &Renderer, text: &str) {
+        let text_wireframe = renderer
+            .text_wireframe("mono", text, None)
+            .unwrap();
+        let mut text_mesh = Mesh2D::from_wireframe(
+            text_wireframe,
+            Srgba::new_opaque(163, 163, 173),
+        );
+        text_mesh.invert_y();
+        let (text_size, _, _) = text_mesh.compute_info();
+        let row_height = renderer.get_font("mono").unwrap().row_height();
+
+        let mut pane_mesh = Mesh2D::new();
+        Tessellator.tessellate_shape(Shape::Rect {
+            pos: vec2(0.0, 0.0),
+            size: vec2(text_size[0], row_height),
+            color: Srgba::new_opaque(23, 23, 29),
+        }, &mut pane_mesh);
+        // pane_mesh.invert_y();
+
+        let pane_node = ui.push_to_root(
+            Layout::default()
+                .align_items_center()
+                .width(text_size[0])
+                .height(row_height),
+            true,
+        );
+        let text_node = ui.push_to(
+            Layout::default()
+                .width(text_size[0])
+                .height(text_size[1]),
+            pane_node,
+            false,
+        );
+
+        self.meshes.insert(pane_node, pane_mesh);
+        self.meshes.insert(text_node, text_mesh);
+        self.objects.insert(pane_node, Object::Button { pane_node, text_node });
+    }
+}
+
 enum Object {
-    TextBox {
+    Button {
         pane_node: u64,
         text_node: u64,
     },
