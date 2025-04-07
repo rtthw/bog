@@ -40,7 +40,8 @@ fn main() -> Result<()> {
         .align_content_center());
     let mut something = Something {
         renderer: Renderer2D::new(graphics.renderer().gl()),
-        meshes: HashMap::with_capacity(10),
+        pane_meshes: HashMap::with_capacity(10),
+        text_meshes: HashMap::with_capacity(10),
         objects: HashMap::with_capacity(10),
     };
 
@@ -84,7 +85,10 @@ fn main() -> Result<()> {
                 RenderTarget::screen(graphics.renderer(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
                     .write(|| -> Result<()> {
-                        for mesh in something.meshes.values() {
+                        for mesh in something.text_meshes.values() {
+                            something.renderer.render(viewport, mesh);
+                        }
+                        for mesh in something.pane_meshes.values() {
                             something.renderer.render(viewport, mesh);
                         }
 
@@ -102,13 +106,22 @@ fn main() -> Result<()> {
 
 struct Something {
     renderer: Renderer2D,
-    meshes: HashMap<u64, Mesh2D>,
+    pane_meshes: HashMap<u64, Mesh2D>,
+    text_meshes: HashMap<u64, Mesh2D>,
     objects: HashMap<u64, Object>,
 }
 
 impl UiHandler for Something {
     fn on_resize(&mut self, node: u64, model: &mut UiModel) {
-        if let Some(mesh) = self.meshes.get_mut(&node) {
+        if let Some(mesh) = self.pane_meshes.get_mut(&node) {
+            let layout = model.layout(node.into()).unwrap();
+            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
+            let (_size, min_pos, _max_pos) = mesh.compute_info();
+            mesh.translate(
+                (parent_layout.location.x + layout.content_box_x()) - min_pos[0],
+                (parent_layout.location.y + layout.content_box_y()) - min_pos[1],
+            );
+        } else if let Some(mesh) = self.text_meshes.get_mut(&node) {
             let layout = model.layout(node.into()).unwrap();
             let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
             let (_size, min_pos, _max_pos) = mesh.compute_info();
@@ -122,10 +135,10 @@ impl UiHandler for Something {
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
             }
-            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
             }
         }
@@ -134,10 +147,10 @@ impl UiHandler for Something {
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
             }
-            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
             }
         }
@@ -146,11 +159,11 @@ impl UiHandler for Something {
     fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
                 pane_mesh.translate(0.0, 1.0);
             }
-            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(139, 139, 149));
                 text_mesh.translate(0.0, 1.0);
             }
@@ -160,11 +173,11 @@ impl UiHandler for Something {
     fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { pane_node, text_node } = obj; // else { return; };
-            if let Some(pane_mesh) = self.meshes.get_mut(pane_node) {
+            if let Some(pane_mesh) = self.pane_meshes.get_mut(pane_node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
                 pane_mesh.translate(0.0, -1.0);
             }
-            if let Some(text_mesh) = self.meshes.get_mut(text_node) {
+            if let Some(text_mesh) = self.text_meshes.get_mut(text_node) {
                 text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
                 text_mesh.translate(0.0, -1.0);
             }
@@ -212,8 +225,8 @@ impl Something {
             false,
         );
 
-        self.meshes.insert(pane_node, pane_mesh);
-        self.meshes.insert(text_node, text_mesh);
+        self.pane_meshes.insert(pane_node, pane_mesh);
+        self.text_meshes.insert(text_node, text_mesh);
         self.objects.insert(pane_node, Object::Button { pane_node, text_node });
     }
 }
