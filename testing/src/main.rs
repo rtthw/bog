@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use bog::*;
 use graphics::*;
-use layout::Layout;
+use layout::*;
 use math::vec2;
 use new_renderer::{Mesh2D, Renderer2D, Shape, Tessellator};
 use ui::{Ui, UiHandler, UiModel};

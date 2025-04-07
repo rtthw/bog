@@ -7,10 +7,8 @@ pub extern crate winit;
 
 pub mod animation;
 pub mod fonts;
-pub mod layout;
 pub mod math;
 pub mod new_renderer;
-pub mod ui;
 
 use new_renderer::Wireframe2D;
 pub use three_d::{
