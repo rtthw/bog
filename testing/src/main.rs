@@ -117,6 +117,7 @@ impl UiHandler for Something {
             let Object::Button { row_height } = obj; // else { return; };
             let layout = model.layout(node.into()).unwrap();
             let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
+
             if let Some(mesh) = self.pane_meshes.get_mut(&node) {
                 let mut new_mesh = Mesh2D::new();
                 Tessellator.tessellate_shape(Shape::Rect {
@@ -138,14 +139,15 @@ impl UiHandler for Something {
             }
             if let Some(mesh) = self.text_meshes.get_mut(&node) {
                 let (size, min_pos, _max_pos) = mesh.compute_info();
-                let y_offset = row_height - size.y;
                 mesh.translate(
                     (parent_layout.location.x
+                        // + text_offset.x
                         + layout.content_box_x()
                         + layout.margin.left)
                     - min_pos.x,
                     (parent_layout.location.y
-                        + y_offset
+                        // + text_offset.y
+                        + ((row_height - size.y) / 2.0)
                         + layout.content_box_y()
                         + layout.margin.top)
                     - min_pos.y,
@@ -156,7 +158,7 @@ impl UiHandler for Something {
 
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { row_height: _ } = obj; // else { return; };
+            let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
             }
@@ -168,7 +170,7 @@ impl UiHandler for Something {
 
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { row_height: _ } = obj; // else { return; };
+            let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
             }
@@ -180,7 +182,7 @@ impl UiHandler for Something {
 
     fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { row_height: _ } = obj; // else { return; };
+            let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
                 pane_mesh.translate(0.0, 1.0);
@@ -194,7 +196,7 @@ impl UiHandler for Something {
 
     fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
         if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { row_height: _ } = obj; // else { return; };
+            let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
                 pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
                 pane_mesh.translate(0.0, -1.0);
@@ -220,8 +222,8 @@ impl Something {
             text_wireframe,
             Srgba::new_opaque(163, 163, 173),
         );
-        text_mesh.invert_y();
         let (text_size, _, _) = text_mesh.compute_info();
+        text_mesh.invert_y();
         let row_height = renderer.get_font("mono").unwrap().row_height();
 
         let mut pane_mesh = Mesh2D::new();
@@ -236,7 +238,7 @@ impl Something {
             Layout::default()
                 .width(text_size.x)
                 .height(row_height)
-                .margin(3.0),
+                .margin(13.0),
             true,
         );
 

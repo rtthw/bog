@@ -107,7 +107,6 @@ impl Font {
         let mut positions = Vec::new();
         let mut indices = Vec::new();
         let mut position = three_d::vec2(0.0, 0.0);
-
         shaper.add_str(text);
         shaper.shape_with(|cluster| {
             let t = text.get(cluster.source.to_range());

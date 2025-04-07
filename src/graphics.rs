@@ -77,7 +77,12 @@ impl Renderer {
         self.fonts.get_font(name)
     }
 
-    pub fn text_wireframe(&self, font: &str, text: &str, line_height: Option<f32>) -> Option<Wireframe2D> {
+    pub fn text_wireframe(
+        &self,
+        font: &str,
+        text: &str,
+        line_height: Option<f32>,
+    ) -> Option<Wireframe2D> {
         let font = self.fonts.get_font(font)?;
 
         Some(font.text_wireframe(text, line_height))
