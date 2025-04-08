@@ -2,7 +2,9 @@
 
 
 
-use three_d::{vec2, Mat3, Srgba, Vec2, Vec4};
+use three_d::{vec2, Mat3, Vec2, Vec4};
+
+use super::color::Color;
 
 
 
@@ -29,7 +31,7 @@ impl SolidRenderer2D {
         }
     }
 
-    pub fn render(&mut self, viewport: three_d::Viewport, wireframe: &Wireframe2D, color: Srgba) {
+    pub fn render(&mut self, viewport: three_d::Viewport, wireframe: &Wireframe2D, color: Color) {
         self.positions.fill(&wireframe.positions);
         self.elements.fill(&wireframe.indices);
         self.program.use_uniform("u_screen_size", vec2(viewport.width as f32, viewport.height as f32));
@@ -84,7 +86,7 @@ pub enum Shape {
     Rect {
         pos: Vec2,
         size: Vec2,
-        color: Srgba,
+        color: Color,
     },
 }
 
@@ -199,7 +201,7 @@ impl Mesh2D {
     }
 
     /// See also: [`Wireframe2D::to_mesh`].
-    pub fn from_wireframe(wireframe: Wireframe2D, color: Srgba) -> Self {
+    pub fn from_wireframe(wireframe: Wireframe2D, color: Color) -> Self {
         let colors = [color.to_linear_srgb().into()].repeat(wireframe.indices.len());
 
         Self {
@@ -263,7 +265,7 @@ impl Mesh2D {
         }
     }
 
-    pub fn change_color(&mut self, color: Srgba) {
+    pub fn change_color(&mut self, color: Color) {
         self.colors.fill(color.to_linear_srgb());
     }
 }
@@ -281,7 +283,7 @@ pub struct Wireframe2D {
 
 impl Wireframe2D {
     /// See also: [`Mesh2D::from_wireframe`].
-    pub fn to_mesh(self, color: Srgba) -> Mesh2D {
+    pub fn to_mesh(self, color: Color) -> Mesh2D {
         let colors = [color.to_linear_srgb()].repeat(self.indices.len());
 
         Mesh2D {

@@ -17,7 +17,6 @@ pub use three_d::{
     ClearState,
     ColorMaterial,
     RenderTarget,
-    Srgba,
     Viewport,
 };
 

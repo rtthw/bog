@@ -14,6 +14,10 @@ impl Color {
         self.0.to_linear_srgb()
     }
 
+    pub fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        Self(Srgba::new_opaque(r, g, b))
+    }
+
     pub fn from_hsl(h: f32, s: f32, l: f32) -> Self {
         // Clamp input values to valid ranges.
         let h = h.clamp(0.0, 360.0);
@@ -23,6 +27,24 @@ impl Color {
         hsl_to_rgb(h / 360.0, s / 100.0, l / 100.0)
     }
 }
+
+impl Into<[u8; 4]> for Color {
+    fn into(self) -> [u8; 4] {
+        self.0.into()
+    }
+}
+
+impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        self.0.into()
+    }
+}
+
+
+
+// ---
+
+
 
 fn hsl_to_rgb(hue: f32, saturation: f32, lightness: f32) -> Color {
     let red: f32;

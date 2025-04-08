@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use bog::*;
+use color::Color;
 use graphics::*;
 use layout::*;
 use math::vec2;
@@ -28,7 +29,7 @@ fn main() -> Result<()> {
         20.0,
     )?;
 
-    let bg_color = Srgba::new_opaque(43, 43, 53);
+    let bg_color = Color::from_rgb(43, 43, 53);
 
     let mut ui = Ui::new(Layout::default()
         .flex_row()
@@ -133,7 +134,7 @@ impl UiHandler for Something {
                             + layout.margin.vertical_components().sum()
                             + layout.border.vertical_components().sum(),
                     ),
-                    color: Srgba::new_opaque(23, 23, 29),
+                    color: Color::from_rgb(23, 23, 29),
                 }, &mut new_mesh);
                 std::mem::swap(mesh, &mut new_mesh);
             }
@@ -160,10 +161,10 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
+                pane_mesh.change_color(Color::from_rgb(59, 59, 67));
             }
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Srgba::new_opaque(191, 191, 197));
+                text_mesh.change_color(Color::from_rgb(191, 191, 197));
             }
         }
     }
@@ -172,10 +173,10 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
+                pane_mesh.change_color(Color::from_rgb(23, 23, 29));
             }
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
+                text_mesh.change_color(Color::from_rgb(163, 163, 173));
             }
         }
     }
@@ -184,11 +185,11 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Srgba::new_opaque(59, 59, 67));
+                pane_mesh.change_color(Color::from_rgb(59, 59, 67));
                 pane_mesh.translate(0.0, 1.0);
             }
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Srgba::new_opaque(139, 139, 149));
+                text_mesh.change_color(Color::from_rgb(139, 139, 149));
                 text_mesh.translate(0.0, 1.0);
             }
         }
@@ -198,11 +199,11 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get(&node) {
             let Object::Button { .. } = obj; // else { return; };
             if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Srgba::new_opaque(23, 23, 29));
+                pane_mesh.change_color(Color::from_rgb(23, 23, 29));
                 pane_mesh.translate(0.0, -1.0);
             }
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Srgba::new_opaque(163, 163, 173));
+                text_mesh.change_color(Color::from_rgb(163, 163, 173));
                 text_mesh.translate(0.0, -1.0);
             }
         }
@@ -220,7 +221,7 @@ impl Something {
             .unwrap();
         let mut text_mesh = Mesh2D::from_wireframe(
             text_wireframe,
-            Srgba::new_opaque(163, 163, 173),
+            Color::from_rgb(163, 163, 173),
         );
         let (text_size, _, _) = text_mesh.compute_info();
         text_mesh.invert_y();
@@ -230,7 +231,7 @@ impl Something {
         Tessellator.tessellate_shape(Shape::Rect {
             pos: vec2(0.0, 0.0),
             size: vec2(text_size.x, row_height),
-            color: Srgba::new_opaque(23, 23, 29),
+            color: Color::from_rgb(23, 23, 29),
         }, &mut pane_mesh);
         // pane_mesh.invert_y();
 
