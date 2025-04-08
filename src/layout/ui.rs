@@ -70,8 +70,8 @@ impl Ui {
 
             if abs_x > x
                 || abs_y > y
-                || abs_x + layout.size.width < x
-                || abs_y + layout.size.height < y
+                || abs_x + layout.size.width + layout.padding.horizontal_components().sum() < x
+                || abs_y + layout.size.height + layout.padding.vertical_components().sum() < y
             {
                 return; // Breaks out of `for_each_node`.
             }

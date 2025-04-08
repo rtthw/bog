@@ -36,8 +36,8 @@ fn main() -> Result<()> {
     let mut ui = Ui::new(Layout::default()
         .flex_row()
         .flex_wrap()
-        .gap_x(19.0)
-        .padding(11.0)
+        .gap_x(11.0)
+        .margin(11.0)
         .fill_width()
         .fill_height()
         .align_content_center());
@@ -131,10 +131,10 @@ impl UiHandler for Something {
                     ),
                     size: vec2(
                         layout.size.width
-                            + layout.margin.horizontal_components().sum()
+                            + layout.padding.horizontal_components().sum()
                             + layout.border.horizontal_components().sum(),
                         layout.size.height
-                            + layout.margin.vertical_components().sum()
+                            + layout.padding.vertical_components().sum()
                             + layout.border.vertical_components().sum(),
                     ),
                     color: Color::from_rgb(23, 23, 29),
@@ -146,14 +146,12 @@ impl UiHandler for Something {
                 mesh.translate(
                     (parent_layout.location.x
                         // + text_offset.x
-                        + layout.content_box_x()
-                        + layout.margin.left)
+                        + layout.content_box_x())
                     - min_pos.x,
                     (parent_layout.location.y
                         // + text_offset.y
                         + ((row_height - size.y) / 2.0)
-                        + layout.content_box_y()
-                        + layout.margin.top)
+                        + layout.content_box_y())
                     - min_pos.y,
                 );
             }
@@ -240,7 +238,7 @@ impl Something {
             Layout::default()
                 .width(text_size.x)
                 .height(row_height)
-                .margin(13.0),
+                .padding(3.0),
             true,
         );
 
