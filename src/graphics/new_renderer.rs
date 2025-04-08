@@ -51,15 +51,15 @@ pub struct Renderer2D {
 }
 
 impl Renderer2D {
-    pub fn new(gl: three_d::Context) -> Self {
+    pub fn new(gl: &three_d::Context) -> Self {
         let program = three_d::Program::from_source(
-            &gl,
+            gl,
             include_str!("shaders/vert2d.glsl"),
             include_str!("shaders/frag2d.glsl"),
         ).unwrap();
-        let positions = three_d::VertexBuffer::new(&gl);
-        let colors = three_d::VertexBuffer::new(&gl);
-        let elements = three_d::ElementBuffer::new(&gl);
+        let positions = three_d::VertexBuffer::new(gl);
+        let colors = three_d::VertexBuffer::new(gl);
+        let elements = three_d::ElementBuffer::new(gl);
 
         Self {
             program,

@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use bog::*;
 use color::Color;
+use fonts::{Font, Fonts};
 use graphics::*;
 use layout::*;
 use math::vec2;
@@ -21,13 +22,14 @@ fn main() -> Result<()> {
         .with_inner_size(winit::dpi::LogicalSize::new(screen_width, screen_height))
         .build(&event_loop)
         .unwrap();
-    let mut graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+    let graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+    let mut fonts = Fonts::default();
 
-    graphics.renderer_mut().load_font(
+    fonts.load_font(
         "mono",
         include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
         20.0,
-    )?;
+    ).unwrap();
 
     let bg_color = Color::from_rgb(43, 43, 53);
 
@@ -40,14 +42,15 @@ fn main() -> Result<()> {
         .fill_height()
         .align_content_center());
     let mut something = Something {
-        renderer: Renderer2D::new(graphics.renderer().gl()),
+        renderer: Renderer2D::new(graphics.context()),
         pane_meshes: HashMap::with_capacity(10),
         text_meshes: HashMap::with_capacity(10),
         objects: HashMap::with_capacity(10),
     };
 
+    let font = fonts.get_font("mono").unwrap();
     for word in ["┃ This", "is", "@_ |>", "test", "for", "text", "#_(o)", "┃ ...", "***", "=>>"] {
-        something.spawn_button(&mut ui, graphics.renderer(), word);
+        something.spawn_button(&mut ui, &font, word);
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -83,7 +86,7 @@ fn main() -> Result<()> {
                 let (width, height) = window.inner_size().into();
                 let viewport = Viewport::new_at_origo(width, height);
                 let [r, g, b, a] = bg_color.into();
-                RenderTarget::screen(graphics.renderer(), width, height)
+                RenderTarget::screen(graphics.context(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
                     .write(|| -> Result<()> {
                         for mesh in something.text_meshes.values() {
@@ -215,17 +218,15 @@ impl UiHandler for Something {
 }
 
 impl Something {
-    fn spawn_button(&mut self, ui: &mut Ui, renderer: &Renderer, text: &str) {
-        let text_wireframe = renderer
-            .text_wireframe("mono", text, None)
-            .unwrap();
+    fn spawn_button(&mut self, ui: &mut Ui, font: &Font, text: &str) {
+        let text_wireframe = font.text_wireframe(text, None);
         let mut text_mesh = Mesh2D::from_wireframe(
             text_wireframe,
             Color::from_rgb(163, 163, 173),
         );
         let (text_size, _, _) = text_mesh.compute_info();
         text_mesh.invert_y();
-        let row_height = renderer.get_font("mono").unwrap().row_height();
+        let row_height = font.row_height();
 
         let mut pane_mesh = Mesh2D::new();
         Tessellator.tessellate_shape(Shape::Rect {

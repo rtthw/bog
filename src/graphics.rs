@@ -11,7 +11,6 @@ pub mod fonts;
 pub mod math;
 pub mod new_renderer;
 
-use new_renderer::Wireframe2D;
 pub use three_d::{
     Camera,
     ClearState,
@@ -48,50 +47,15 @@ pub enum Error {
 
 
 #[derive(Clone)]
-pub struct Renderer {
+pub struct GraphicsContext {
     pub(crate) context: three_d::Context,
-    fonts: fonts::Fonts,
 }
 
-impl Renderer {
-    pub fn gl(&self) -> three_d::Context {
-        self.context.clone()
-    }
-}
-
-impl std::ops::Deref for Renderer {
+impl std::ops::Deref for GraphicsContext {
     type Target = three_d::Context;
 
     fn deref(&self) -> &Self::Target {
         &self.context
-    }
-}
-
-// Text rendering.
-impl Renderer {
-    pub fn load_font(&mut self, name: &str, bytes: Vec<u8>, size: f32) -> Result<(), Error> {
-        Ok(self.fonts.load_font(name, bytes, size)?)
-    }
-
-    pub fn get_font(&self, name: &str) -> Option<&fonts::Font> {
-        self.fonts.get_font(name)
-    }
-
-    pub fn text_wireframe(
-        &self,
-        font: &str,
-        text: &str,
-        line_height: Option<f32>,
-    ) -> Option<Wireframe2D> {
-        let font = self.fonts.get_font(font)?;
-
-        Some(font.text_wireframe(text, line_height))
-    }
-
-    pub fn glyph_wireframe(&self, font: &str, glyph: u16) -> Option<&Wireframe2D> {
-        let font = self.fonts.get_font(font)?;
-
-        Some(font.glyph_wireframe(glyph)?)
     }
 }
 
@@ -145,7 +109,7 @@ impl GraphicsConfig {
 
 
 pub struct WindowGraphics {
-    renderer: Renderer,
+    graphics_context: GraphicsContext,
     surface: Surface<WindowSurface>,
     glutin_context: glutin::context::PossiblyCurrentContext,
 }
@@ -243,7 +207,7 @@ impl WindowGraphics {
         gl_surface.set_swap_interval(&gl_context, swap_interval)?;
 
         Ok(Self {
-            renderer: Renderer {
+            graphics_context: GraphicsContext {
                 context: three_d::Context::from_gl_context(std::sync::Arc::new(unsafe {
                     three_d::context::Context::from_loader_function(|s| {
                         let s = std::ffi::CString::new(s)
@@ -252,7 +216,6 @@ impl WindowGraphics {
                         gl_display.get_proc_address(&s)
                     })
                 }))?,
-                fonts: fonts::Fonts::default(),
             },
             glutin_context: gl_context,
             surface: gl_surface,
@@ -261,12 +224,12 @@ impl WindowGraphics {
 }
 
 impl WindowGraphics {
-    pub fn renderer(&self) -> &Renderer {
-        &self.renderer
+    pub fn context(&self) -> &GraphicsContext {
+        &self.graphics_context
     }
 
-    pub fn renderer_mut(&mut self) -> &mut Renderer {
-        &mut self.renderer
+    pub fn context_mut(&mut self) -> &mut GraphicsContext {
+        &mut self.graphics_context
     }
 
     pub fn resize(&self, physical_size: winit::dpi::PhysicalSize<u32>) {
