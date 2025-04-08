@@ -6,6 +6,7 @@
 pub extern crate winit;
 
 pub mod animation;
+pub mod color;
 pub mod fonts;
 pub mod math;
 pub mod new_renderer;
