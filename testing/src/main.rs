@@ -29,6 +29,7 @@ fn main() -> Result<()> {
         "mono",
         include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
         20.0,
+        false, // Don't load all glyphs on each run.
     ).unwrap();
 
     let bg_color = Color::from_rgb(43, 43, 53);
@@ -47,7 +48,10 @@ fn main() -> Result<()> {
         objects: HashMap::with_capacity(10),
     };
 
-    let font = fonts.get_font("mono").unwrap();
+    let font = fonts.get_font_mut("mono").unwrap();
+
+    // Only load the glyphs we use.
+    font.load_text_glyphs("┃ This is @_ |> test for text #_(o) ┃ ... *** =>>").unwrap();
     for word in ["┃ This", "is", "@_ |>", "test", "for", "text", "#_(o)", "┃ ...", "***", "=>>"] {
         something.spawn_button(&mut ui, &font, word);
     }

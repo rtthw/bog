@@ -26,14 +26,24 @@ pub struct Fonts {
 }
 
 impl Fonts {
-    pub fn load_font(&mut self, name: &str, bytes: Vec<u8>, size: f32) -> Result<(), Error> {
-        let font = Font::load(bytes, size)?;
+    pub fn load_font(
+        &mut self,
+        name: &str,
+        bytes: Vec<u8>,
+        size: f32,
+        preload_all_glyphs: bool,
+    ) -> Result<(), Error> {
+        let font = Font::load(bytes, size, preload_all_glyphs)?;
         let _ = self.map.insert(name.to_string(), font);
         Ok(())
     }
 
     pub fn get_font(&self, name: &str) -> Option<&Font> {
         self.map.get(name)
+    }
+
+    pub fn get_font_mut(&mut self, name: &str) -> Option<&mut Font> {
+        self.map.get_mut(name)
     }
 }
 
@@ -50,7 +60,7 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn load(bytes: Vec<u8>, size: f32) -> Result<Self, Error> {
+    pub fn load(bytes: Vec<u8>, size: f32, preload_all_glyphs: bool) -> Result<Self, Error> {
         let mut glyph_map = HashMap::with_capacity(100);
 
         let font_count = ttf_parser::fonts_in_collection(&bytes).unwrap_or(0);
@@ -61,20 +71,32 @@ impl Font {
             let index = 0;
             let swash_ref = swash::FontRef::from_index(&bytes, index as usize).unwrap();
             let face = ttf_parser::Face::parse(&bytes, index)?;
-            // print_face_info(&face);
             let mut row_height: f32 = 0.0;
             let upe = face.units_per_em() as f32 / size;
-            // TODO: Maybe this shouldn't be pre-outlining every glyph in the font.
-            for glyph_id in 0..face.number_of_glyphs() {
-                let ttf_id = ttf_parser::GlyphId(glyph_id);
-                let _glyph_name = face.glyph_name(ttf_id);
-                let mut outliner = GlyphOutliner::new(upe);
-                if let Some(bbox) = face.outline_glyph(ttf_id, &mut outliner) {
-                    row_height = row_height.max(bbox.height() as f32 / upe);
-                    let path = outliner.finish();
-                    let mesh = glyph_outline_path_to_mesh(path)
-                        .unwrap(); // TODO: Handle individual glyph errors.
-                    let _ = glyph_map.insert(glyph_id, mesh);
+
+            // TODO: Check if the face is monospaced before doing this.
+            let full_glyph_id = face.glyph_index('█').unwrap();
+            let mut outliner = GlyphOutliner::new(upe);
+            if let Some(bbox) = face.outline_glyph(full_glyph_id, &mut outliner) {
+                row_height = row_height.max(bbox.height() as f32 / upe);
+                let path = outliner.finish();
+                let mesh = glyph_outline_path_to_mesh(path)
+                    .unwrap(); // TODO: Handle individual glyph errors.
+                let _ = glyph_map.insert(full_glyph_id.0, mesh);
+            }
+
+            if preload_all_glyphs {
+                for glyph_id in 0..face.number_of_glyphs() {
+                    let ttf_id = ttf_parser::GlyphId(glyph_id);
+                    let _glyph_name = face.glyph_name(ttf_id);
+                    let mut outliner = GlyphOutliner::new(upe);
+                    if let Some(bbox) = face.outline_glyph(ttf_id, &mut outliner) {
+                        row_height = row_height.max(bbox.height() as f32 / upe);
+                        let path = outliner.finish();
+                        let mesh = glyph_outline_path_to_mesh(path)
+                            .unwrap(); // TODO: Handle individual glyph errors.
+                        let _ = glyph_map.insert(glyph_id, mesh);
+                    }
                 }
             }
 
@@ -90,6 +112,39 @@ impl Font {
                 row_height,
             })
         }
+    }
+
+    pub fn load_text_glyphs(&mut self, text: &str) -> Result<(), Error> {
+        let face = ttf_parser::Face::parse((*self.data).as_ref(), self.index)?;
+        let upe = face.units_per_em() as f32 / self.size;
+
+        let mut shape_context = swash::shape::ShapeContext::new();
+        let swash_ref = swash::FontRef {
+            data: (*self.data).as_ref(),
+            offset: self.index,
+            key: self.swash_key,
+        };
+        let mut shaper = shape_context.builder(swash_ref)
+            .size(self.size)
+            // .retain_ignorables(true)
+            .features(&[("calt", 1)])
+            .build();
+
+        shaper.add_str(text);
+        shaper.shape_with(|cluster| {
+            for glyph in cluster.glyphs {
+                let ttf_id = ttf_parser::GlyphId(glyph.id);
+                let mut outliner = GlyphOutliner::new(upe);
+                if let Some(_bbox) = face.outline_glyph(ttf_id, &mut outliner) {
+                    let path = outliner.finish();
+                    let mesh = glyph_outline_path_to_mesh(path)
+                        .unwrap(); // TODO: Handle individual glyph errors.
+                    let _ = self.glyph_map.insert(glyph.id, mesh);
+                }
+            }
+        });
+
+        Ok(())
     }
 
     pub fn text_wireframe(&self, text: &str, line_height: Option<f32>) -> Wireframe2D {
