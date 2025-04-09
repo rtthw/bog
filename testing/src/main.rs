@@ -44,8 +44,6 @@ fn main() -> Result<()> {
     let mut something = Something {
         window,
         renderer: Renderer2D::new(graphics.context()),
-        pane_meshes: HashMap::with_capacity(10),
-        text_meshes: HashMap::with_capacity(10),
         objects: HashMap::with_capacity(10),
     };
 
@@ -90,11 +88,13 @@ fn main() -> Result<()> {
                 RenderTarget::screen(graphics.context(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
                     .write(|| -> Result<()> {
-                        for mesh in something.text_meshes.values() {
-                            something.renderer.render(viewport, mesh);
-                        }
-                        for mesh in something.pane_meshes.values() {
-                            something.renderer.render(viewport, mesh);
+                        for obj in something.objects.values() {
+                            match obj {
+                                Object::Button { text_mesh, pane_mesh, .. } => {
+                                    something.renderer.render(viewport, text_mesh);
+                                    something.renderer.render(viewport, pane_mesh);
+                                }
+                            }
                         }
 
                         Ok(())
@@ -112,105 +112,83 @@ fn main() -> Result<()> {
 struct Something {
     window: winit::window::Window,
     renderer: Renderer2D,
-    pane_meshes: HashMap<u64, Mesh2D>,
-    text_meshes: HashMap<u64, Mesh2D>,
     objects: HashMap<u64, Object>,
 }
 
 impl UiHandler for Something {
     fn on_resize(&mut self, node: u64, model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { row_height } = obj; // else { return; };
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { row_height, text_mesh, pane_mesh } = obj; // else { return; };
             let layout = model.layout(node.into()).unwrap();
             let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
+            let mut new_mesh = Mesh2D::new();
+            Tessellator.tessellate_shape(Shape::Rect {
+                pos: vec2(
+                    parent_layout.location.x + layout.location.x,
+                    parent_layout.location.y + layout.location.y,
+                ),
+                size: vec2(
+                    layout.size.width
+                        + layout.padding.horizontal_components().sum()
+                        + layout.border.horizontal_components().sum(),
+                    layout.size.height
+                        + layout.padding.vertical_components().sum()
+                        + layout.border.vertical_components().sum(),
+                ),
+                color: Color::from_rgb(23, 23, 29),
+            }, &mut new_mesh);
+            std::mem::swap(pane_mesh, &mut new_mesh);
 
-            if let Some(mesh) = self.pane_meshes.get_mut(&node) {
-                let mut new_mesh = Mesh2D::new();
-                Tessellator.tessellate_shape(Shape::Rect {
-                    pos: vec2(
-                        parent_layout.location.x + layout.location.x,
-                        parent_layout.location.y + layout.location.y,
-                    ),
-                    size: vec2(
-                        layout.size.width
-                            + layout.padding.horizontal_components().sum()
-                            + layout.border.horizontal_components().sum(),
-                        layout.size.height
-                            + layout.padding.vertical_components().sum()
-                            + layout.border.vertical_components().sum(),
-                    ),
-                    color: Color::from_rgb(23, 23, 29),
-                }, &mut new_mesh);
-                std::mem::swap(mesh, &mut new_mesh);
-            }
-            if let Some(mesh) = self.text_meshes.get_mut(&node) {
-                let (size, min_pos, _max_pos) = mesh.compute_info();
-                mesh.translate(
-                    (parent_layout.location.x
-                        // + text_offset.x
-                        + layout.content_box_x())
-                    - min_pos.x,
-                    (parent_layout.location.y
-                        // + text_offset.y
-                        + ((row_height - size.y) / 2.0)
-                        + layout.content_box_y())
-                    - min_pos.y,
-                );
-            }
+            let (size, min_pos, _max_pos) = text_mesh.compute_info();
+            text_mesh.translate(
+                (parent_layout.location.x
+                    // + text_offset.x
+                    + layout.content_box_x())
+                - min_pos.x,
+                (parent_layout.location.y
+                    // + text_offset.y
+                    + ((*row_height - size.y) / 2.0)
+                    + layout.content_box_y())
+                - min_pos.y,
+            );
         }
     }
 
     fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { .. } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Color::from_rgb(59, 59, 67));
-            }
-            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Color::from_rgb(191, 191, 197));
-            }
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
+            pane_mesh.change_color(Color::from_rgb(59, 59, 67));
+            text_mesh.change_color(Color::from_rgb(191, 191, 197));
             self.window.set_cursor_icon(winit::window::CursorIcon::Hand);
         }
     }
 
     fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { .. } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Color::from_rgb(23, 23, 29));
-            }
-            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Color::from_rgb(163, 163, 173));
-            }
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
+            pane_mesh.change_color(Color::from_rgb(23, 23, 29));
+            text_mesh.change_color(Color::from_rgb(163, 163, 173));
             self.window.set_cursor_icon(winit::window::CursorIcon::Arrow);
         }
     }
 
     fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { .. } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Color::from_rgb(59, 59, 67));
-                pane_mesh.translate(0.0, 1.0);
-            }
-            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Color::from_rgb(139, 139, 149));
-                text_mesh.translate(0.0, 1.0);
-            }
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
+            pane_mesh.change_color(Color::from_rgb(59, 59, 67));
+            pane_mesh.translate(0.0, 1.0);
+            text_mesh.change_color(Color::from_rgb(139, 139, 149));
+            text_mesh.translate(0.0, 1.0);
         }
     }
 
     fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
-        if let Some(obj) = self.objects.get(&node) {
-            let Object::Button { .. } = obj; // else { return; };
-            if let Some(pane_mesh) = self.pane_meshes.get_mut(&node) {
-                pane_mesh.change_color(Color::from_rgb(23, 23, 29));
-                pane_mesh.translate(0.0, -1.0);
-            }
-            if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
-                text_mesh.change_color(Color::from_rgb(163, 163, 173));
-                text_mesh.translate(0.0, -1.0);
-            }
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
+            pane_mesh.change_color(Color::from_rgb(23, 23, 29));
+            pane_mesh.translate(0.0, -1.0);
+            text_mesh.change_color(Color::from_rgb(163, 163, 173));
+            text_mesh.translate(0.0, -1.0);
         }
     }
 
@@ -246,14 +224,14 @@ impl Something {
             true,
         );
 
-        self.pane_meshes.insert(node, pane_mesh);
-        self.text_meshes.insert(node, text_mesh);
-        self.objects.insert(node, Object::Button { row_height });
+        self.objects.insert(node, Object::Button { row_height, text_mesh, pane_mesh });
     }
 }
 
 enum Object {
     Button {
         row_height: f32,
+        text_mesh: Mesh2D,
+        pane_mesh: Mesh2D,
     },
 }
