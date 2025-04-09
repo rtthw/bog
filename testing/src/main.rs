@@ -42,6 +42,7 @@ fn main() -> Result<()> {
         .fill_height()
         .align_content_center());
     let mut something = Something {
+        window,
         renderer: Renderer2D::new(graphics.context()),
         pane_meshes: HashMap::with_capacity(10),
         text_meshes: HashMap::with_capacity(10),
@@ -65,12 +66,12 @@ fn main() -> Result<()> {
                     let (width, height) = new_size.into();
                     ui.handle_resize(&mut something, width, height);
                     graphics.resize(new_size);
-                    window.request_redraw();
+                    something.window.request_redraw();
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let (x, y): (f32, f32) = position.into();
                     ui.handle_mouse_move(&mut something, x, y);
-                    window.request_redraw();
+                    something.window.request_redraw();
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     if state == winit::event::ElementState::Pressed {
@@ -78,12 +79,12 @@ fn main() -> Result<()> {
                     } else {
                         ui.handle_mouse_up(&mut something, button);
                     }
-                    window.request_redraw();
+                    something.window.request_redraw();
                 }
                 _ => {}
             }
             winit::event::Event::RedrawRequested(_) => {
-                let (width, height) = window.inner_size().into();
+                let (width, height) = something.window.inner_size().into();
                 let viewport = Viewport::new_at_origo(width, height);
                 let [r, g, b, a] = bg_color.into();
                 RenderTarget::screen(graphics.context(), width, height)
@@ -109,6 +110,7 @@ fn main() -> Result<()> {
 
 
 struct Something {
+    window: winit::window::Window,
     renderer: Renderer2D,
     pane_meshes: HashMap<u64, Mesh2D>,
     text_meshes: HashMap<u64, Mesh2D>,
@@ -167,6 +169,7 @@ impl UiHandler for Something {
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Color::from_rgb(191, 191, 197));
             }
+            self.window.set_cursor_icon(winit::window::CursorIcon::Hand);
         }
     }
 
@@ -179,6 +182,7 @@ impl UiHandler for Something {
             if let Some(text_mesh) = self.text_meshes.get_mut(&node) {
                 text_mesh.change_color(Color::from_rgb(163, 163, 173));
             }
+            self.window.set_cursor_icon(winit::window::CursorIcon::Arrow);
         }
     }
 
