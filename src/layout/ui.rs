@@ -79,7 +79,7 @@ impl Ui {
 
         let mut hover_changed_to = None;
 
-        let mut parent_layout = self.tree.layout(self.root).unwrap();
+        let mut parent_layout = self.tree.layout(self.root.into()).unwrap();
         let mut known_parent = self.root;
         for_each_node(&self.tree, self.root, &mut |node, parent| {
             if parent != known_parent {
@@ -175,12 +175,9 @@ impl Ui {
                 height: taffy::AvailableSpace::Definite(height),
             },
         ).unwrap();
-        for node in self.tree.children(self.root).unwrap() {
-            handler.on_resize(node.into(), &mut self.tree);
-            for child_node in self.tree.children(node).unwrap() {
-                handler.on_resize(child_node.into(), &mut self.tree);
-            }
-        }
+        for_each_node(&self.tree, self.root, &mut |node, _parent| {
+            handler.on_resize(node.into(), &self.tree);
+        });
     }
 }
 
@@ -199,7 +196,7 @@ pub type UiModel = taffy::TaffyTree<bool>;
 pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
-    fn on_resize(&mut self, node: u64, model: &mut UiModel);
+    fn on_resize(&mut self, node: u64, model: &UiModel);
     fn on_mouse_enter(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_down(&mut self, node: u64, model: &mut UiModel);
@@ -208,4 +205,36 @@ pub trait UiHandler {
     fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel);
     fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32);
     fn on_click(&mut self, node: u64, model: &mut UiModel);
+}
+
+pub trait UiModelExt {
+    fn node_layout(&self, node: u64) -> &UiLayout;
+    fn parent_layout(&self, node: u64) -> &UiLayout;
+    fn swap_siblings(&mut self, a: u64, b: u64);
+}
+
+impl UiModelExt for UiModel {
+    fn node_layout(&self, node: u64) -> &UiLayout {
+        self.layout(node.into()).unwrap()
+    }
+
+    fn parent_layout(&self, node: u64) -> &UiLayout {
+        self.layout(self.parent(node.into()).unwrap()).unwrap()
+    }
+
+    // TODO: This is probably written terribly, should redo it with a clear head.
+    fn swap_siblings(&mut self, a: u64, b: u64) {
+        let parent = self.parent(a.into()).unwrap();
+        let mut children = self.children(parent).unwrap()
+            .into_iter()
+            .map(|n| n.into())
+            .collect::<Vec<u64>>();
+        let Some((a_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &a) else { return; };
+        let Some((b_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &b) else { return; };
+        children.swap(a_index, b_index);
+        self.set_children(parent, &children.into_iter().map(|n| n.into()).collect::<Vec<_>>())
+            .unwrap();
+    }
 }
