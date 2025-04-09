@@ -14,6 +14,9 @@ pub struct Ui {
     area: (f32, f32),
     mouse_pos: (f32, f32),
     lmb_down_at: Option<(f32, f32)>,
+    lmb_down_time: std::time::Instant,
+    lmb_down_node: Option<u64>,
+    is_dragging: bool,
     hovered_node: Option<u64>,
 }
 
@@ -29,6 +32,9 @@ impl Ui {
             area: (1.0, 1.0),
             mouse_pos: (0.0, 0.0),
             lmb_down_at: None,
+            lmb_down_time: std::time::Instant::now(),
+            lmb_down_node: None,
+            is_dragging: false,
             hovered_node: None,
         }
     }
@@ -52,6 +58,24 @@ impl Ui {
             return;
         }
         self.mouse_pos = (x, y);
+
+        if let Some((drag_origin_x, drag_origin_y)) = self.lmb_down_at {
+            if let Some(dragging_node) = self.lmb_down_node {
+                if !self.is_dragging {
+                    let dur_since = std::time::Instant::now().duration_since(self.lmb_down_time);
+                    if dur_since.as_secs_f64() > 0.1 {
+                        // User is likely dragging.
+                        self.is_dragging = true;
+                        handler.on_drag_start(dragging_node, &mut self.tree);
+                    }
+                }
+                if self.is_dragging {
+                    let delta_x = drag_origin_x - x;
+                    let delta_y = drag_origin_y - y;
+                    handler.on_drag_update(dragging_node, &mut self.tree, delta_x, delta_y);
+                }
+            }
+        }
 
         let mut hover_changed_to = None;
 
@@ -82,23 +106,19 @@ impl Ui {
             }
 
             // TODO: See if there should be some multi-hovering system.
-            hover_changed_to = Some(node);
-
-            // if let Some(hovered) = self.hovered_node {
-            //     if hovered != node.into() {
-            //         hover_changed_to = Some(node);
-            //     }
-            // } else {
-            //     hover_changed_to = Some(node);
-            // }
+            hover_changed_to = Some(node.into());
         });
 
-        if let Some(left_node) = self.hovered_node {
+        if self.hovered_node == hover_changed_to {
+            return;
+        }
+
+        if let Some(left_node) = self.hovered_node.take() {
             handler.on_mouse_leave(left_node, &mut self.tree);
         }
         if let Some(entered_node) = hover_changed_to {
-            handler.on_mouse_enter(entered_node.into(), &mut self.tree);
-            self.hovered_node = Some(entered_node.into());
+            handler.on_mouse_enter(entered_node, &mut self.tree);
+            self.hovered_node = Some(entered_node);
         }
     }
 
@@ -112,7 +132,9 @@ impl Ui {
         }
         match button {
             winit::event::MouseButton::Left => {
+                self.lmb_down_time = std::time::Instant::now();
                 self.lmb_down_at = Some(self.mouse_pos);
+                self.lmb_down_node = self.hovered_node.clone();
             }
             _ => {}
         }
@@ -123,14 +145,17 @@ impl Ui {
         handler: &mut impl UiHandler,
         button: winit::event::MouseButton,
     ) {
-        if let Some(node) = self.hovered_node {
-            handler.on_mouse_up(node, &mut self.tree);
-        }
         match button {
             winit::event::MouseButton::Left => {
-                if let Some(_down_pos) = self.lmb_down_at.take() {
-                    if let Some(node) = self.hovered_node {
-                        handler.on_click(node, &mut self.tree);
+                if let Some(node) = self.hovered_node {
+                    handler.on_mouse_up(node, &mut self.tree);
+                }
+                self.lmb_down_at = None;
+                if let Some(node) = self.lmb_down_node.take() {
+                    handler.on_click(node, &mut self.tree);
+                    if self.is_dragging {
+                        self.is_dragging = false;
+                        handler.on_drag_end(node, self.hovered_node, &mut self.tree);
                     }
                 }
             }
@@ -179,5 +204,8 @@ pub trait UiHandler {
     fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_down(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_up(&mut self, node: u64, model: &mut UiModel);
+    fn on_drag_start(&mut self, node: u64, model: &mut UiModel);
+    fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel);
+    fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32);
     fn on_click(&mut self, node: u64, model: &mut UiModel);
 }

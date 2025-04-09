@@ -196,6 +196,18 @@ impl UiHandler for Something {
         }
     }
 
+    fn on_drag_start(&mut self, node: u64, _model: &mut UiModel) {
+        println!("on_drag_start({node});");
+    }
+
+    fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel) {
+        println!("on_drag_end({node}, {other:?});");
+    }
+
+    fn on_drag_update(&mut self, node: u64, _model: &mut UiModel, delta_x: f32, delta_y: f32) {
+        // println!("on_drag_update({node}, {delta_x}, {delta_y});");
+    }
+
     fn on_click(&mut self, node: u64, _model: &mut UiModel) {
         println!("on_click({node});");
     }
