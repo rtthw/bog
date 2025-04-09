@@ -180,9 +180,9 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
-            pane_mesh.translate(0.0, 1.0);
             text_mesh.change_color(Color::from_rgb(139, 139, 149));
-            text_mesh.translate(0.0, 1.0);
+            // pane_mesh.translate(0.0, 1.0);
+            // text_mesh.translate(0.0, 1.0);
         }
     }
 
@@ -190,22 +190,48 @@ impl UiHandler for Something {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(23, 23, 29));
-            pane_mesh.translate(0.0, -1.0);
             text_mesh.change_color(Color::from_rgb(163, 163, 173));
-            text_mesh.translate(0.0, -1.0);
+            // pane_mesh.translate(0.0, -1.0);
+            // text_mesh.translate(0.0, -1.0);
         }
     }
 
     fn on_drag_start(&mut self, node: u64, _model: &mut UiModel) {
-        println!("on_drag_start({node});");
+        println!("on_drag_start(from={node});");
     }
 
     fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel) {
-        println!("on_drag_end({node}, {other:?});");
+        let Some(other) = other else { return; };
+        if node == other { return; };
+        println!("on_drag_end(from={node}, to={other:?});");
+
+        let parent = model.parent(node.into()).unwrap();
+        let mut children = model.children(parent).unwrap()
+            .into_iter()
+            .map(|n| n.into())
+            .collect::<Vec<u64>>();
+        let Some((node_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &node) else { return; };
+        let Some((other_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &other) else { return; };
+        children.swap(node_index, other_index);
+        model.set_children(parent, &children.into_iter().map(|n| n.into()).collect::<Vec<_>>())
+            .unwrap();
     }
 
-    fn on_drag_update(&mut self, node: u64, _model: &mut UiModel, delta_x: f32, delta_y: f32) {
-        // println!("on_drag_update({node}, {delta_x}, {delta_y});");
+    fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32) {
+        if let Some(obj) = self.objects.get_mut(&node) {
+            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
+            pane_mesh.change_color(Color::from_rgb(59, 59, 67));
+            text_mesh.change_color(Color::from_rgb(139, 139, 149));
+            let layout = model.layout(node.into()).unwrap();
+            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
+            let (_, min_pos, _) = text_mesh.compute_info();
+            text_mesh.translate(
+                (parent_layout.location.x + layout.content_box_x() + delta_x) - min_pos.x,
+                (parent_layout.location.y + layout.content_box_y() + delta_y) - min_pos.y,
+            );
+        }
     }
 
     fn on_click(&mut self, node: u64, _model: &mut UiModel) {

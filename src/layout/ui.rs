@@ -70,8 +70,8 @@ impl Ui {
                     }
                 }
                 if self.is_dragging {
-                    let delta_x = drag_origin_x - x;
-                    let delta_y = drag_origin_y - y;
+                    let delta_x = x - drag_origin_x;
+                    let delta_y = y - drag_origin_y;
                     handler.on_drag_update(dragging_node, &mut self.tree, delta_x, delta_y);
                 }
             }
