@@ -10,7 +10,7 @@ use graphics::*;
 use layout::*;
 use math::vec2;
 use new_renderer::{Mesh2D, Renderer2D, Shape, Tessellator};
-use ui::{Ui, UiHandler, UiModel, UiModelExt as _};
+use ui::{Placement, Ui, UiHandler, UiModel};
 
 
 
@@ -120,40 +120,31 @@ struct Something {
 }
 
 impl UiHandler for Something {
-    fn on_resize(&mut self, node: u64, model: &UiModel) {
+    fn on_layout(&mut self, node: u64, placement: &Placement) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { row_height, text_mesh, pane_mesh } = obj; // else { return; };
-            let layout = model.node_layout(node);
-            let parent_layout = model.parent_layout(node);
             let mut new_mesh = Mesh2D::new();
             Tessellator.tessellate_shape(Shape::Rect {
-                pos: vec2(
-                    parent_layout.location.x + layout.location.x,
-                    parent_layout.location.y + layout.location.y,
-                ),
+                pos: placement.position(),
                 size: vec2(
-                    layout.size.width
-                        + layout.padding.horizontal_components().sum()
-                        + layout.border.horizontal_components().sum(),
-                    layout.size.height
-                        + layout.padding.vertical_components().sum()
-                        + layout.border.vertical_components().sum(),
+                    placement.layout.size.width
+                        + placement.layout.padding.horizontal_components().sum()
+                        + placement.layout.border.horizontal_components().sum(),
+                    placement.layout.size.height
+                        + placement.layout.padding.vertical_components().sum()
+                        + placement.layout.border.vertical_components().sum(),
                 ),
                 color: Color::from_rgb(23, 23, 29),
             }, &mut new_mesh);
             std::mem::swap(pane_mesh, &mut new_mesh);
 
             let (size, min_pos, _max_pos) = text_mesh.compute_info();
+            let pos = placement.content_position();
             text_mesh.translate(
-                (parent_layout.location.x
-                    // + text_offset.x
-                    + layout.content_box_x())
-                - min_pos.x,
-                (parent_layout.location.y
-                    // + text_offset.y
+                pos.x - min_pos.x,
+                pos.y
                     + ((*row_height - size.y) / 2.0)
-                    + layout.content_box_y())
-                - min_pos.y,
+                    - min_pos.y,
             );
         }
     }
@@ -203,12 +194,27 @@ impl UiHandler for Something {
     // NOTE: We can't just swap the two objects in `self.objects` because the sizing system is
     //       tied to the layout model. If `node` and `other` have different widths, then it
     //       won't display properly.
+    // TODO: This is probably written terribly, should redo it with a clear head.
     fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel) {
         let Some(other) = other else { return; };
         if node == other { return; };
         println!("on_drag_end(from={node}, to={other:?});");
 
-        model.swap_siblings(node, other);
+        let parent = model.parent(node.into()).unwrap();
+        let mut children = model.children(parent).unwrap()
+            .into_iter()
+            .map(|n| n.into())
+            .collect::<Vec<u64>>();
+        let Some((node_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &node) else { return; };
+        let Some((other_index, _)) = children.iter().enumerate()
+            .find(|(_, n)| *n == &other) else { return; };
+        children.swap(node_index, other_index);
+        let real_children = children.clone().into_iter().map(|n| n.into()).collect::<Vec<_>>();
+        model.set_children(parent, &real_children).unwrap();
+        // for node in &children[(node_index.min(other_index))..=(node_index.max(other_index))] {
+        //     self.on_resize(*node, model);
+        // }
     }
 
     fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32) {
@@ -216,8 +222,8 @@ impl UiHandler for Something {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
             text_mesh.change_color(Color::from_rgb(139, 139, 149));
-            let layout = model.node_layout(node);
-            let parent_layout = model.parent_layout(node);
+            let layout = model.layout(node.into()).unwrap();
+            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
             let (_, min_pos, _) = text_mesh.compute_info();
             text_mesh.translate(
                 (parent_layout.location.x + layout.content_box_x() + delta_x) - min_pos.x,
@@ -250,7 +256,7 @@ impl Something {
         }, &mut pane_mesh);
         // pane_mesh.invert_y();
 
-        let node = ui.push_to_root(
+        let node = ui.tree().push_to_root(
             Layout::default()
                 .width(text_size.x)
                 .height(row_height)

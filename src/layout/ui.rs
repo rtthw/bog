@@ -2,13 +2,14 @@
 
 
 
+use three_d::Vec2;
+
 use super::Layout;
 
 
 
 pub struct Ui {
-    tree: UiModel,
-    root: taffy::NodeId,
+    tree: LayoutTree,
 
     // Known state.
     area: (f32, f32),
@@ -21,13 +22,9 @@ pub struct Ui {
 }
 
 impl Ui {
-    pub fn new(layout: Layout) -> Self {
-        let mut tree = taffy::TaffyTree::new();
-        let root = tree.new_with_children(layout.into(), &[]).unwrap();
-
+    pub fn new(root_layout: Layout) -> Self {
         Self {
-            tree,
-            root,
+            tree: LayoutTree::new(root_layout),
 
             area: (1.0, 1.0),
             mouse_pos: (0.0, 0.0),
@@ -39,18 +36,8 @@ impl Ui {
         }
     }
 
-    pub fn push_to(&mut self, layout: Layout, parent: u64, accepts_input: bool) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
-        self.tree.add_child(parent.into(), id).unwrap();
-
-        id.into()
-    }
-
-    pub fn push_to_root(&mut self, layout: Layout, accepts_input: bool) -> u64 {
-        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
-        self.tree.add_child(self.root, id).unwrap();
-
-        id.into()
+    pub fn tree(&mut self) -> &mut LayoutTree {
+        &mut self.tree
     }
 
     pub fn handle_mouse_move(&mut self, handler: &mut impl UiHandler, x: f32, y: f32) {
@@ -66,41 +53,34 @@ impl Ui {
                     if dur_since.as_secs_f64() > 0.1 {
                         // User is likely dragging.
                         self.is_dragging = true;
-                        handler.on_drag_start(dragging_node, &mut self.tree);
+                        handler.on_drag_start(dragging_node, &mut self.tree.inner);
                     }
                 }
                 if self.is_dragging {
                     let delta_x = x - drag_origin_x;
                     let delta_y = y - drag_origin_y;
-                    handler.on_drag_update(dragging_node, &mut self.tree, delta_x, delta_y);
+                    handler.on_drag_update(dragging_node, &mut self.tree.inner, delta_x, delta_y);
                 }
             }
         }
 
         let mut hover_changed_to = None;
+        for_each_node(&self.tree.inner, self.tree.root, &mut |node, placement| {
+            let pos = placement.position();
 
-        let mut parent_layout = self.tree.layout(self.root.into()).unwrap();
-        let mut known_parent = self.root;
-        for_each_node(&self.tree, self.root, &mut |node, parent| {
-            if parent != known_parent {
-                parent_layout = self.tree.layout(parent).unwrap();
-                known_parent = parent;
-            }
-            let layout = self.tree.layout(node).unwrap();
-            let (abs_x, abs_y) = (
-                parent_layout.location.x + layout.location.x,
-                parent_layout.location.y + layout.location.y,
-            );
-
-            if abs_x > x
-                || abs_y > y
-                || abs_x + layout.size.width + layout.padding.horizontal_components().sum() < x
-                || abs_y + layout.size.height + layout.padding.vertical_components().sum() < y
+            if pos.x > x
+                || pos.y > y
+                || pos.x
+                    + placement.layout.size.width
+                    + placement.layout.padding.horizontal_components().sum() < x
+                || pos.y
+                    + placement.layout.size.height
+                    + placement.layout.padding.vertical_components().sum() < y
             {
                 return; // Breaks out of `for_each_node`.
             }
 
-            let accepts_input = self.tree.get_node_context(node).unwrap();
+            let accepts_input = self.tree.inner.get_node_context(node).unwrap();
             if !*accepts_input {
                 return; // Breaks out of `for_each_node`.
             }
@@ -114,10 +94,10 @@ impl Ui {
         }
 
         if let Some(left_node) = self.hovered_node.take() {
-            handler.on_mouse_leave(left_node, &mut self.tree);
+            handler.on_mouse_leave(left_node, &mut self.tree.inner);
         }
         if let Some(entered_node) = hover_changed_to {
-            handler.on_mouse_enter(entered_node, &mut self.tree);
+            handler.on_mouse_enter(entered_node, &mut self.tree.inner);
             self.hovered_node = Some(entered_node);
         }
     }
@@ -128,7 +108,7 @@ impl Ui {
         button: winit::event::MouseButton,
     ) {
         if let Some(node) = self.hovered_node {
-            handler.on_mouse_down(node, &mut self.tree);
+            handler.on_mouse_down(node, &mut self.tree.inner);
         }
         match button {
             winit::event::MouseButton::Left => {
@@ -148,14 +128,14 @@ impl Ui {
         match button {
             winit::event::MouseButton::Left => {
                 if let Some(node) = self.hovered_node {
-                    handler.on_mouse_up(node, &mut self.tree);
+                    handler.on_mouse_up(node, &mut self.tree.inner);
                 }
                 self.lmb_down_at = None;
                 if let Some(node) = self.lmb_down_node.take() {
-                    handler.on_click(node, &mut self.tree);
+                    handler.on_click(node, &mut self.tree.inner);
                     if self.is_dragging {
                         self.is_dragging = false;
-                        handler.on_drag_end(node, self.hovered_node, &mut self.tree);
+                        handler.on_drag_end(node, self.hovered_node, &mut self.tree.inner);
                     }
                 }
             }
@@ -168,25 +148,42 @@ impl Ui {
             return;
         }
         self.area = (width, height);
-        self.tree.compute_layout(
-            self.root,
-            taffy::Size {
-                width: taffy::AvailableSpace::Definite(width),
-                height: taffy::AvailableSpace::Definite(height),
-            },
-        ).unwrap();
-        for_each_node(&self.tree, self.root, &mut |node, _parent| {
-            handler.on_resize(node.into(), &self.tree);
-        });
+        self.tree.handle_resize(handler, width, height);
     }
 }
 
 fn for_each_node<F>(tree: &UiModel, node: taffy::NodeId, func: &mut F)
-where F: FnMut(taffy::NodeId, taffy::NodeId),
+where F: FnMut(taffy::NodeId, &Placement),
+{
+    let top_layout = tree.layout(node).unwrap();
+
+    for child in tree.children(node).unwrap().into_iter() {
+        let placement = Placement {
+            parent_position: Vec2::new(top_layout.location.x, top_layout.location.y),
+            layout: *tree.layout(child).unwrap(),
+        };
+        func(child, &placement);
+        for_each_node_inner(tree, child, &placement, func);
+    }
+}
+
+fn for_each_node_inner<F>(
+    tree: &UiModel,
+    node: taffy::NodeId,
+    placement: &Placement,
+    func: &mut F,
+)
+where F: FnMut(taffy::NodeId, &Placement),
 {
     for child in tree.children(node).unwrap().into_iter() {
-        func(child, node);
-        for_each_node(tree, child, func);
+        let layout = *tree.layout(child).unwrap();
+        let child_placement = Placement {
+            parent_position: placement.parent_position
+                + Vec2::new(layout.location.x, layout.location.y),
+            layout,
+        };
+        func(child, &child_placement);
+        for_each_node_inner(tree, child, &child_placement, func);
     }
 }
 
@@ -196,7 +193,7 @@ pub type UiModel = taffy::TaffyTree<bool>;
 pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
-    fn on_resize(&mut self, node: u64, model: &UiModel);
+    fn on_layout(&mut self, node: u64, placement: &Placement);
     fn on_mouse_enter(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
     fn on_mouse_down(&mut self, node: u64, model: &mut UiModel);
@@ -207,34 +204,77 @@ pub trait UiHandler {
     fn on_click(&mut self, node: u64, model: &mut UiModel);
 }
 
-pub trait UiModelExt {
-    fn node_layout(&self, node: u64) -> &UiLayout;
-    fn parent_layout(&self, node: u64) -> &UiLayout;
-    fn swap_siblings(&mut self, a: u64, b: u64);
+
+
+pub struct LayoutTree {
+    inner: taffy::TaffyTree<bool>,
+    root: taffy::NodeId,
+    known_size: Vec2,
 }
 
-impl UiModelExt for UiModel {
-    fn node_layout(&self, node: u64) -> &UiLayout {
-        self.layout(node.into()).unwrap()
+impl LayoutTree {
+    pub fn new(root_layout: Layout) -> Self {
+        let mut inner = taffy::TaffyTree::new();
+        let root = inner.new_with_children(root_layout.into(), &[]).unwrap();
+
+        Self {
+            inner,
+            root,
+            known_size: Vec2::new(0.0, 0.0),
+        }
     }
 
-    fn parent_layout(&self, node: u64) -> &UiLayout {
-        self.layout(self.parent(node.into()).unwrap()).unwrap()
+    pub fn push_to(&mut self, layout: Layout, parent: u64, accepts_input: bool) -> u64 {
+        let id = self.inner.new_leaf_with_context(layout.into(), accepts_input).unwrap();
+        self.inner.add_child(parent.into(), id).unwrap();
+
+        id.into()
     }
 
-    // TODO: This is probably written terribly, should redo it with a clear head.
-    fn swap_siblings(&mut self, a: u64, b: u64) {
-        let parent = self.parent(a.into()).unwrap();
-        let mut children = self.children(parent).unwrap()
-            .into_iter()
-            .map(|n| n.into())
-            .collect::<Vec<u64>>();
-        let Some((a_index, _)) = children.iter().enumerate()
-            .find(|(_, n)| *n == &a) else { return; };
-        let Some((b_index, _)) = children.iter().enumerate()
-            .find(|(_, n)| *n == &b) else { return; };
-        children.swap(a_index, b_index);
-        self.set_children(parent, &children.into_iter().map(|n| n.into()).collect::<Vec<_>>())
-            .unwrap();
+    pub fn push_to_root(&mut self, layout: Layout, accepts_input: bool) -> u64 {
+        let id = self.inner.new_leaf_with_context(layout.into(), accepts_input).unwrap();
+        self.inner.add_child(self.root, id).unwrap();
+
+        id.into()
+    }
+
+    pub fn handle_resize(&mut self, handler: &mut impl UiHandler, width: f32, height: f32) {
+        self.known_size = Vec2::new(width, height);
+        self.do_layout(handler);
+    }
+
+    pub fn do_layout(&mut self, handler: &mut impl UiHandler) {
+        self.inner.compute_layout(
+            self.root,
+            taffy::Size {
+                width: taffy::AvailableSpace::Definite(self.known_size.x),
+                height: taffy::AvailableSpace::Definite(self.known_size.y),
+            },
+        ).unwrap();
+
+        for_each_node(&self.inner, self.root, &mut |node, placement| {
+            handler.on_layout(node.into(), placement);
+        });
+    }
+}
+
+pub struct Placement {
+    parent_position: Vec2,
+    pub layout: taffy::Layout,
+}
+
+impl Placement {
+    pub fn position(&self) -> Vec2 {
+        Vec2::new(
+            self.parent_position.x + self.layout.location.x,
+            self.parent_position.y + self.layout.location.y,
+        )
+    }
+
+    pub fn content_position(&self) -> Vec2 {
+        Vec2::new(
+            self.parent_position.x + self.layout.content_box_x(),
+            self.parent_position.y + self.layout.content_box_y(),
+        )
     }
 }
