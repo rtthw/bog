@@ -53,13 +53,24 @@ impl Ui {
                     if dur_since.as_secs_f64() > 0.1 {
                         // User is likely dragging.
                         self.is_dragging = true;
-                        handler.on_drag_start(dragging_node, &mut self.tree.inner);
+                        handler.on_drag_start(dragging_node, LayoutContext {
+                tree: &mut self.tree.inner,
+                is_dragging: self.is_dragging,
+            });
                     }
                 }
                 if self.is_dragging {
                     let delta_x = x - drag_origin_x;
                     let delta_y = y - drag_origin_y;
-                    handler.on_drag_update(dragging_node, &mut self.tree.inner, delta_x, delta_y);
+                    handler.on_drag_update(
+                        dragging_node,
+                        LayoutContext {
+                            tree: &mut self.tree.inner,
+                            is_dragging: self.is_dragging,
+                        },
+                        delta_x,
+                        delta_y,
+                    );
                 }
             }
         }
@@ -94,10 +105,16 @@ impl Ui {
         }
 
         if let Some(left_node) = self.hovered_node.take() {
-            handler.on_mouse_leave(left_node, &mut self.tree.inner);
+            handler.on_mouse_leave(left_node, LayoutContext {
+                tree: &mut self.tree.inner,
+                is_dragging: self.is_dragging,
+            });
         }
         if let Some(entered_node) = hover_changed_to {
-            handler.on_mouse_enter(entered_node, &mut self.tree.inner);
+            handler.on_mouse_enter(entered_node, LayoutContext {
+                tree: &mut self.tree.inner,
+                is_dragging: self.is_dragging,
+            });
             self.hovered_node = Some(entered_node);
         }
     }
@@ -108,7 +125,10 @@ impl Ui {
         button: winit::event::MouseButton,
     ) {
         if let Some(node) = self.hovered_node {
-            handler.on_mouse_down(node, &mut self.tree.inner);
+            handler.on_mouse_down(node, LayoutContext {
+                tree: &mut self.tree.inner,
+                is_dragging: self.is_dragging,
+            });
         }
         match button {
             winit::event::MouseButton::Left => {
@@ -128,14 +148,23 @@ impl Ui {
         match button {
             winit::event::MouseButton::Left => {
                 if let Some(node) = self.hovered_node {
-                    handler.on_mouse_up(node, &mut self.tree.inner);
+                    handler.on_mouse_up(node, LayoutContext {
+                        tree: &mut self.tree.inner,
+                        is_dragging: self.is_dragging,
+                    });
                 }
                 self.lmb_down_at = None;
                 if let Some(node) = self.lmb_down_node.take() {
-                    handler.on_click(node, &mut self.tree.inner);
+                    handler.on_click(node, LayoutContext {
+                        tree: &mut self.tree.inner,
+                        is_dragging: self.is_dragging,
+                    });
                     if self.is_dragging {
                         self.is_dragging = false;
-                        handler.on_drag_end(node, self.hovered_node, &mut self.tree.inner);
+                        handler.on_drag_end(node, self.hovered_node, LayoutContext {
+                            tree: &mut self.tree.inner,
+                            is_dragging: self.is_dragging,
+                        });
                     }
                 }
             }
@@ -152,7 +181,7 @@ impl Ui {
     }
 }
 
-fn for_each_node<F>(tree: &UiModel, node: taffy::NodeId, func: &mut F)
+fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: taffy::NodeId, func: &mut F)
 where F: FnMut(taffy::NodeId, &Placement),
 {
     let top_layout = tree.layout(node).unwrap();
@@ -168,7 +197,7 @@ where F: FnMut(taffy::NodeId, &Placement),
 }
 
 fn for_each_node_inner<F>(
-    tree: &UiModel,
+    tree: &taffy::TaffyTree<bool>,
     node: taffy::NodeId,
     placement: &Placement,
     func: &mut F,
@@ -189,19 +218,18 @@ where F: FnMut(taffy::NodeId, &Placement),
 
 
 
-pub type UiModel = taffy::TaffyTree<bool>;
 pub type UiLayout = taffy::Layout;
 
 pub trait UiHandler {
     fn on_layout(&mut self, node: u64, placement: &Placement);
-    fn on_mouse_enter(&mut self, node: u64, model: &mut UiModel);
-    fn on_mouse_leave(&mut self, node: u64, model: &mut UiModel);
-    fn on_mouse_down(&mut self, node: u64, model: &mut UiModel);
-    fn on_mouse_up(&mut self, node: u64, model: &mut UiModel);
-    fn on_drag_start(&mut self, node: u64, model: &mut UiModel);
-    fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel);
-    fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32);
-    fn on_click(&mut self, node: u64, model: &mut UiModel);
+    fn on_mouse_enter(&mut self, node: u64, context: LayoutContext);
+    fn on_mouse_leave(&mut self, node: u64, context: LayoutContext);
+    fn on_mouse_down(&mut self, node: u64, context: LayoutContext);
+    fn on_mouse_up(&mut self, node: u64, context: LayoutContext);
+    fn on_drag_start(&mut self, node: u64, context: LayoutContext);
+    fn on_drag_end(&mut self, node: u64, other: Option<u64>, context: LayoutContext);
+    fn on_drag_update(&mut self, node: u64, context: LayoutContext, delta_x: f32, delta_y: f32);
+    fn on_click(&mut self, node: u64, context: LayoutContext);
 }
 
 
@@ -276,5 +304,26 @@ impl Placement {
             self.parent_position.x + self.layout.content_box_x(),
             self.parent_position.y + self.layout.content_box_y(),
         )
+    }
+}
+
+
+
+pub struct LayoutContext<'a> {
+    tree: &'a mut taffy::TaffyTree<bool>,
+    pub is_dragging: bool,
+}
+
+impl<'a> std::ops::Deref for LayoutContext<'a> {
+    type Target = taffy::TaffyTree<bool>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tree
+    }
+}
+
+impl<'a> std::ops::DerefMut for LayoutContext<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.tree
     }
 }

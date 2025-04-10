@@ -10,7 +10,7 @@ use graphics::*;
 use layout::*;
 use math::vec2;
 use new_renderer::{Mesh2D, Renderer2D, Shape, Tessellator};
-use ui::{Placement, Ui, UiHandler, UiModel};
+use ui::{Placement, Ui, UiHandler, LayoutContext};
 
 
 
@@ -149,7 +149,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_enter(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_mouse_enter(&mut self, node: u64, _context: LayoutContext) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
@@ -158,7 +158,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_leave(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_mouse_leave(&mut self, node: u64, _context: LayoutContext) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(23, 23, 29));
@@ -167,7 +167,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_down(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_mouse_down(&mut self, node: u64, _context: LayoutContext) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
@@ -177,7 +177,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_up(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_mouse_up(&mut self, node: u64, _context: LayoutContext) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(23, 23, 29));
@@ -187,7 +187,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_drag_start(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_drag_start(&mut self, node: u64, _context: LayoutContext) {
         println!("on_drag_start(from={node});");
     }
 
@@ -195,13 +195,13 @@ impl UiHandler for Something {
     //       tied to the layout model. If `node` and `other` have different widths, then it
     //       won't display properly.
     // TODO: This is probably written terribly, should redo it with a clear head.
-    fn on_drag_end(&mut self, node: u64, other: Option<u64>, model: &mut UiModel) {
+    fn on_drag_end(&mut self, node: u64, other: Option<u64>, mut context: LayoutContext) {
         let Some(other) = other else { return; };
         if node == other { return; };
         println!("on_drag_end(from={node}, to={other:?});");
 
-        let parent = model.parent(node.into()).unwrap();
-        let mut children = model.children(parent).unwrap()
+        let parent = context.parent(node.into()).unwrap();
+        let mut children = context.children(parent).unwrap()
             .into_iter()
             .map(|n| n.into())
             .collect::<Vec<u64>>();
@@ -211,19 +211,19 @@ impl UiHandler for Something {
             .find(|(_, n)| *n == &other) else { return; };
         children.swap(node_index, other_index);
         let real_children = children.clone().into_iter().map(|n| n.into()).collect::<Vec<_>>();
-        model.set_children(parent, &real_children).unwrap();
+        context.set_children(parent, &real_children).unwrap();
         // for node in &children[(node_index.min(other_index))..=(node_index.max(other_index))] {
         //     self.on_resize(*node, model);
         // }
     }
 
-    fn on_drag_update(&mut self, node: u64, model: &mut UiModel, delta_x: f32, delta_y: f32) {
+    fn on_drag_update(&mut self, node: u64, context: LayoutContext, delta_x: f32, delta_y: f32) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
             text_mesh.change_color(Color::from_rgb(139, 139, 149));
-            let layout = model.layout(node.into()).unwrap();
-            let parent_layout = model.layout(model.parent(node.into()).unwrap()).unwrap();
+            let layout = context.layout(node.into()).unwrap();
+            let parent_layout = context.layout(context.parent(node.into()).unwrap()).unwrap();
             let (_, min_pos, _) = text_mesh.compute_info();
             text_mesh.translate(
                 (parent_layout.location.x + layout.content_box_x() + delta_x) - min_pos.x,
@@ -232,7 +232,7 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_click(&mut self, node: u64, _model: &mut UiModel) {
+    fn on_click(&mut self, node: u64, _context: LayoutContext) {
         println!("on_click({node});");
     }
 }
