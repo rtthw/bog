@@ -219,14 +219,14 @@ impl UiHandler for Something {
     //       tied to the layout model. If `node` and `other` have different widths, then it
     //       won't display properly.
     // TODO: This is probably written terribly, should redo it with a clear head.
-    fn on_drag_end(&mut self, node: u64, other: Option<u64>, mut context: LayoutContext) {
+    fn on_drag_end(&mut self, node: u64, other: Option<u64>, context: LayoutContext) {
         self.drag_indicator = None;
         let Some(other) = other else { return; };
         if node == other { return; };
         println!("on_drag_end(from={node}, to={other:?});");
 
-        let parent = context.parent(node.into()).unwrap();
-        let mut children = context.children(parent).unwrap()
+        let parent = context.tree.parent(node.into()).unwrap();
+        let mut children = context.tree.children(parent).unwrap()
             .into_iter()
             .map(|n| n.into())
             .collect::<Vec<u64>>();
@@ -236,10 +236,10 @@ impl UiHandler for Something {
             .find(|(_, n)| *n == &other) else { return; };
         children.swap(node_index, other_index);
         let real_children = children.clone().into_iter().map(|n| n.into()).collect::<Vec<_>>();
-        context.set_children(parent, &real_children).unwrap();
-        // for node in &children[(node_index.min(other_index))..=(node_index.max(other_index))] {
-        //     self.on_resize(*node, model);
-        // }
+        context.tree.set_children(parent, &real_children).unwrap();
+
+        // TODO: Only for a re-layout of affected nodes.
+        context.tree.do_layout(self);
     }
 
     fn on_drag_update(
@@ -252,8 +252,8 @@ impl UiHandler for Something {
     ) {
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, .. } = obj; // else { return; };
-            let layout = context.layout(node.into()).unwrap();
-            let parent_layout = context.layout(context.parent(node.into()).unwrap()).unwrap();
+            let layout = context.tree.layout(node.into()).unwrap();
+            let parent_layout = context.tree.layout(context.tree.parent(node.into()).unwrap()).unwrap();
             let (_, min_pos, _) = text_mesh.compute_info();
             text_mesh.translate(
                 (parent_layout.location.x + layout.content_box_x() + delta_x) - min_pos.x,

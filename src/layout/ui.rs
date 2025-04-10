@@ -79,7 +79,7 @@ impl Ui {
                         // User is likely dragging.
                         self.is_dragging = true;
                         handler.on_drag_start(dragging_node, LayoutContext {
-                            tree: &mut self.tree.inner,
+                            tree: &mut self.tree,
                             is_dragging: self.is_dragging,
                         });
                     }
@@ -91,7 +91,7 @@ impl Ui {
                         dragging_node,
                         hover_changed_to,
                         LayoutContext {
-                            tree: &mut self.tree.inner,
+                            tree: &mut self.tree,
                             is_dragging: self.is_dragging,
                         },
                         delta_x,
@@ -107,13 +107,13 @@ impl Ui {
 
         if let Some(left_node) = self.hovered_node.take() {
             handler.on_mouse_leave(left_node, LayoutContext {
-                tree: &mut self.tree.inner,
+                tree: &mut self.tree,
                 is_dragging: self.is_dragging,
             });
         }
         if let Some(entered_node) = hover_changed_to {
             handler.on_mouse_enter(entered_node, LayoutContext {
-                tree: &mut self.tree.inner,
+                tree: &mut self.tree,
                 is_dragging: self.is_dragging,
             });
             self.hovered_node = Some(entered_node);
@@ -127,7 +127,7 @@ impl Ui {
     ) {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_down(node, LayoutContext {
-                tree: &mut self.tree.inner,
+                tree: &mut self.tree,
                 is_dragging: self.is_dragging,
             });
         }
@@ -150,20 +150,20 @@ impl Ui {
             winit::event::MouseButton::Left => {
                 if let Some(node) = self.hovered_node {
                     handler.on_mouse_up(node, LayoutContext {
-                        tree: &mut self.tree.inner,
+                        tree: &mut self.tree,
                         is_dragging: self.is_dragging,
                     });
                 }
                 self.lmb_down_at = None;
                 if let Some(node) = self.lmb_down_node.take() {
                     handler.on_click(node, LayoutContext {
-                        tree: &mut self.tree.inner,
+                        tree: &mut self.tree,
                         is_dragging: self.is_dragging,
                     });
                     if self.is_dragging {
                         self.is_dragging = false;
                         handler.on_drag_end(node, self.hovered_node, LayoutContext {
-                            tree: &mut self.tree.inner,
+                            tree: &mut self.tree,
                             is_dragging: self.is_dragging,
                         });
                     }
@@ -248,6 +248,21 @@ pub struct LayoutTree {
     known_size: Vec2,
 }
 
+impl std::ops::Deref for LayoutTree {
+    type Target = taffy::TaffyTree<bool>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl std::ops::DerefMut for LayoutTree {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+
 impl LayoutTree {
     pub fn new(root_layout: Layout) -> Self {
         let mut inner = taffy::TaffyTree::new();
@@ -318,20 +333,6 @@ impl Placement {
 
 
 pub struct LayoutContext<'a> {
-    tree: &'a mut taffy::TaffyTree<bool>,
+    pub tree: &'a mut LayoutTree,
     pub is_dragging: bool,
-}
-
-impl<'a> std::ops::Deref for LayoutContext<'a> {
-    type Target = taffy::TaffyTree<bool>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.tree
-    }
-}
-
-impl<'a> std::ops::DerefMut for LayoutContext<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.tree
-    }
 }
