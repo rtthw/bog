@@ -46,35 +46,6 @@ impl Ui {
         }
         self.mouse_pos = (x, y);
 
-        if let Some((drag_origin_x, drag_origin_y)) = self.lmb_down_at {
-            if let Some(dragging_node) = self.lmb_down_node {
-                if !self.is_dragging {
-                    let dur_since = std::time::Instant::now().duration_since(self.lmb_down_time);
-                    if dur_since.as_secs_f64() > 0.1 {
-                        // User is likely dragging.
-                        self.is_dragging = true;
-                        handler.on_drag_start(dragging_node, LayoutContext {
-                tree: &mut self.tree.inner,
-                is_dragging: self.is_dragging,
-            });
-                    }
-                }
-                if self.is_dragging {
-                    let delta_x = x - drag_origin_x;
-                    let delta_y = y - drag_origin_y;
-                    handler.on_drag_update(
-                        dragging_node,
-                        LayoutContext {
-                            tree: &mut self.tree.inner,
-                            is_dragging: self.is_dragging,
-                        },
-                        delta_x,
-                        delta_y,
-                    );
-                }
-            }
-        }
-
         let mut hover_changed_to = None;
         for_each_node(&self.tree.inner, self.tree.root, &mut |node, placement| {
             let pos = placement.position();
@@ -99,6 +70,36 @@ impl Ui {
             // TODO: See if there should be some multi-hovering system.
             hover_changed_to = Some(node.into());
         });
+
+        if let Some((drag_origin_x, drag_origin_y)) = self.lmb_down_at {
+            if let Some(dragging_node) = self.lmb_down_node {
+                if !self.is_dragging {
+                    let dur_since = std::time::Instant::now().duration_since(self.lmb_down_time);
+                    if dur_since.as_secs_f64() > 0.1 {
+                        // User is likely dragging.
+                        self.is_dragging = true;
+                        handler.on_drag_start(dragging_node, LayoutContext {
+                            tree: &mut self.tree.inner,
+                            is_dragging: self.is_dragging,
+                        });
+                    }
+                }
+                if self.is_dragging {
+                    let delta_x = x - drag_origin_x;
+                    let delta_y = y - drag_origin_y;
+                    handler.on_drag_update(
+                        dragging_node,
+                        hover_changed_to,
+                        LayoutContext {
+                            tree: &mut self.tree.inner,
+                            is_dragging: self.is_dragging,
+                        },
+                        delta_x,
+                        delta_y,
+                    );
+                }
+            }
+        }
 
         if self.hovered_node == hover_changed_to {
             return;
@@ -228,7 +229,14 @@ pub trait UiHandler {
     fn on_mouse_up(&mut self, node: u64, context: LayoutContext);
     fn on_drag_start(&mut self, node: u64, context: LayoutContext);
     fn on_drag_end(&mut self, node: u64, other: Option<u64>, context: LayoutContext);
-    fn on_drag_update(&mut self, node: u64, context: LayoutContext, delta_x: f32, delta_y: f32);
+    fn on_drag_update(
+        &mut self,
+        node: u64,
+        hovered_node: Option<u64>,
+        context: LayoutContext,
+        delta_x: f32,
+        delta_y: f32,
+    );
     fn on_click(&mut self, node: u64, context: LayoutContext);
 }
 

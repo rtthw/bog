@@ -46,6 +46,7 @@ fn main() -> Result<()> {
         window,
         renderer: Renderer2D::new(graphics.context()),
         objects: HashMap::with_capacity(10),
+        drag_indicator: None,
     };
 
     let font = fonts.get_font_mut("mono").unwrap();
@@ -92,6 +93,9 @@ fn main() -> Result<()> {
                 RenderTarget::screen(graphics.context(), width, height)
                     .clear(ClearState::color_and_depth(r, g, b, a, 1.0))
                     .write(|| -> Result<()> {
+                        if let Some(drag_mesh) = &something.drag_indicator {
+                            something.renderer.render(viewport, drag_mesh);
+                        }
                         for obj in something.objects.values() {
                             match obj {
                                 Object::Button { text_mesh, pane_mesh, .. } => {
@@ -117,6 +121,7 @@ struct Something {
     window: winit::window::Window,
     renderer: Renderer2D,
     objects: HashMap<u64, Object>,
+    drag_indicator: Option<Mesh2D>,
 }
 
 impl UiHandler for Something {
@@ -149,7 +154,10 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_enter(&mut self, node: u64, _context: LayoutContext) {
+    fn on_mouse_enter(&mut self, node: u64, context: LayoutContext) {
+        if context.is_dragging {
+            return;
+        }
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(59, 59, 67));
@@ -158,7 +166,10 @@ impl UiHandler for Something {
         }
     }
 
-    fn on_mouse_leave(&mut self, node: u64, _context: LayoutContext) {
+    fn on_mouse_leave(&mut self, node: u64, context: LayoutContext) {
+        if context.is_dragging {
+            return;
+        }
         if let Some(obj) = self.objects.get_mut(&node) {
             let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
             pane_mesh.change_color(Color::from_rgb(23, 23, 29));
@@ -188,7 +199,20 @@ impl UiHandler for Something {
     }
 
     fn on_drag_start(&mut self, node: u64, _context: LayoutContext) {
-        println!("on_drag_start(from={node});");
+        let Some(obj) = self.objects.get_mut(&node) else { return; };
+        let Object::Button { text_mesh, pane_mesh, .. } = obj;
+
+        pane_mesh.change_color(Color::from_rgb(59, 59, 67));
+        text_mesh.change_color(Color::from_rgb(139, 139, 149));
+
+        let (size, min_pos, max_pos) = pane_mesh.compute_info();
+        let mut drag_mesh = Mesh2D::new();
+        Tessellator.tessellate_shape(Shape::Rect {
+            pos: vec2(min_pos.x, max_pos.y),
+            size: vec2(size.x, 3.0),
+            color: Color::from_rgb(139, 139, 149),
+        }, &mut drag_mesh);
+        self.drag_indicator = Some(drag_mesh);
     }
 
     // NOTE: We can't just swap the two objects in `self.objects` because the sizing system is
@@ -196,6 +220,7 @@ impl UiHandler for Something {
     //       won't display properly.
     // TODO: This is probably written terribly, should redo it with a clear head.
     fn on_drag_end(&mut self, node: u64, other: Option<u64>, mut context: LayoutContext) {
+        self.drag_indicator = None;
         let Some(other) = other else { return; };
         if node == other { return; };
         println!("on_drag_end(from={node}, to={other:?});");
@@ -217,11 +242,16 @@ impl UiHandler for Something {
         // }
     }
 
-    fn on_drag_update(&mut self, node: u64, context: LayoutContext, delta_x: f32, delta_y: f32) {
+    fn on_drag_update(
+        &mut self,
+        node: u64,
+        hovered_node: Option<u64>,
+        context: LayoutContext,
+        delta_x: f32,
+        delta_y: f32,
+    ) {
         if let Some(obj) = self.objects.get_mut(&node) {
-            let Object::Button { text_mesh, pane_mesh, .. } = obj; // else { return; };
-            pane_mesh.change_color(Color::from_rgb(59, 59, 67));
-            text_mesh.change_color(Color::from_rgb(139, 139, 149));
+            let Object::Button { text_mesh, .. } = obj; // else { return; };
             let layout = context.layout(node.into()).unwrap();
             let parent_layout = context.layout(context.parent(node.into()).unwrap()).unwrap();
             let (_, min_pos, _) = text_mesh.compute_info();
@@ -230,6 +260,17 @@ impl UiHandler for Something {
                 (parent_layout.location.y + layout.content_box_y() + delta_y) - min_pos.y,
             );
         }
+        let Some(hovered) = hovered_node else { return; };
+        let Some(obj) = self.objects.get_mut(&hovered) else { return; };
+        let Object::Button { pane_mesh, .. } = obj; // else { return; };
+        let Some(drag_mesh) = &mut self.drag_indicator else { return; };
+        drag_mesh.clear();
+        let (size, min_pos, max_pos) = pane_mesh.compute_info();
+        Tessellator.tessellate_shape(Shape::Rect {
+            pos: vec2(min_pos.x, max_pos.y),
+            size: vec2(size.x, 3.0),
+            color: Color::from_rgb(139, 139, 149),
+        }, drag_mesh);
     }
 
     fn on_click(&mut self, node: u64, _context: LayoutContext) {

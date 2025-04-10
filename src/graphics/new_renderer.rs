@@ -268,6 +268,12 @@ impl Mesh2D {
     pub fn change_color(&mut self, color: Color) {
         self.colors.fill(color.to_linear_srgb());
     }
+
+    pub fn clear(&mut self) {
+        self.indices.clear();
+        self.positions.clear();
+        self.colors.clear();
+    }
 }
 
 
