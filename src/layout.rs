@@ -1,8 +1,4 @@
-//! Visual layouts
-
-
-
-pub mod ui;
+//! User interface layouts
 
 
 

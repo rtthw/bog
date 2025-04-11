@@ -2,11 +2,11 @@
 
 
 
-pub extern crate winit;
+pub mod window {
+    pub use winit::*;
+}
 
-pub mod graphics;
 pub mod layout;
-pub mod program;
 
 
 
@@ -14,6 +14,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("graphics error")]
-    GraphicsError(#[from] graphics::Error),
+    #[error("i/o error")]
+    IoError(#[from] std::io::Error),
 }
