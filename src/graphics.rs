@@ -2,6 +2,8 @@
 
 
 
+use std::ops::Range;
+
 use crate::window::Window;
 
 
@@ -122,7 +124,7 @@ impl<'w> WindowGraphics<'w> {
 }
 
 impl<'w> WindowGraphics<'w> {
-    pub fn render(&self, shader: &Shader) -> Result<()> {
+    pub fn render(&self, mut func: impl FnMut(RenderPass)) -> Result<()> {
         let output = self.surface.get_current_texture().unwrap();
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -133,7 +135,7 @@ impl<'w> WindowGraphics<'w> {
         );
 
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -153,10 +155,7 @@ impl<'w> WindowGraphics<'w> {
                 timestamp_writes: None,
             });
 
-            render_pass.set_pipeline(&shader.pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+            func(RenderPass(render_pass));
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -252,5 +251,35 @@ impl<'a> Default for ShaderDescriptor<'a> {
                 conservative: false,
             },
         }
+    }
+}
+
+
+
+pub struct RenderPass<'a>(wgpu::RenderPass<'a>);
+
+impl<'a> RenderPass<'a> {
+    pub fn use_shader(&mut self, shader: &Shader) {
+        self.0.set_pipeline(&shader.pipeline);
+    }
+
+    pub fn use_vertex_buffer(&mut self, slot: u32, buffer: wgpu::BufferSlice) {
+        self.0.set_vertex_buffer(slot, buffer);
+    }
+
+    pub fn use_index_buffer(&mut self, buffer: wgpu::BufferSlice, format: wgpu::IndexFormat) {
+        self.0.set_index_buffer(buffer, format);
+    }
+
+    pub fn set_scissor_rect(&mut self, x: u32, y: u32, width: u32, height: u32) {
+        self.0.set_scissor_rect(x, y, width, height);
+    }
+
+    pub fn draw(&mut self, vertices: Range<u32>, instances: Range<u32>) {
+        self.0.draw(vertices, instances);
+    }
+
+    pub fn draw_indexed(&mut self, indices: Range<u32>, base_vertex: i32, instances: Range<u32>) {
+        self.0.draw_indexed(indices, base_vertex, instances);
     }
 }
