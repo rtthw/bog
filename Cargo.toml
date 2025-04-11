@@ -17,6 +17,7 @@ default = ["all"]
 all = []
 
 [dependencies]
+bytemuck = { version = "1", features = ["derive"] }
 glutin = "0.30"
 lyon = "1"
 ration = "*"
@@ -24,6 +25,6 @@ raw-window-handle = "0.5"
 swash = "0.2"
 taffy = "0.7"
 thiserror = "2"
-three-d = { version = "0.18", default-features = false }
 ttf-parser = "0.25"
-winit = "0.28"
+winit = "0.29"
+wgpu = "24"
