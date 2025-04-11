@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 bog = { path = ".." }
+futures = "0.3"

@@ -2,18 +2,20 @@
 
 
 use bog::*;
+use graphics::*;
 use window::*;
 
 
 
 fn main() -> Result<()> {
-    let (screen_width, screen_height) = (1200.0, 800.0);
     let event_loop = EventLoop::new()?;
     let window = WindowBuilder::new()
         .with_title("Bog Testing")
-        .with_inner_size(dpi::LogicalSize::new(screen_width, screen_height))
+        .with_inner_size(dpi::LogicalSize::new(1200.0, 800.0))
         .build(&event_loop)?;
-    // let graphics = WindowGraphics::from_winit_window(&window, GraphicsConfig::new(1200, 800))?;
+    let graphics = futures::executor::block_on(async {
+        WindowGraphics::from_window(&window).await
+    })?;
 
     event_loop.run(move |event, control_flow| {
         match event {

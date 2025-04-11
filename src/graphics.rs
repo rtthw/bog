@@ -6,10 +6,10 @@ use crate::window::Window;
 
 
 
-pub type Result<T> = std::result::Result<T, Error>;
+type Result<T> = std::result::Result<T, GraphicsError>;
 
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum GraphicsError {
     #[error("create surface error")]
     CreateSurfaceError(#[from] wgpu::CreateSurfaceError),
     #[error("request device error")]
@@ -29,6 +29,7 @@ pub struct WindowGraphics<'w> {
     window: &'w Window,
 }
 
+// Constructors.
 impl<'w> WindowGraphics<'w> {
     pub async fn from_window(window: &'w Window) -> Result<Self> {
         let size: [u32; 2] = window.inner_size().into();
@@ -94,6 +95,35 @@ impl<'w> WindowGraphics<'w> {
             size,
             window,
         })
+    }
+}
+
+// Getters.
+impl<'w> WindowGraphics<'w> {
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
+    }
+
+    pub fn surface_config(&self) -> &wgpu::SurfaceConfiguration {
+        &self.config
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn window(&self) -> &Window {
+        self.window
+    }
+}
+
+impl<'w> WindowGraphics<'w> {
+    pub fn render(&self) -> Result<()> {
+        Ok(())
     }
 }
 
