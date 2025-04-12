@@ -2,6 +2,8 @@
 
 
 
+pub mod painter;
+
 use std::ops::Range;
 
 use crate::window::Window;
