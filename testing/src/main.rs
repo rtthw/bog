@@ -36,7 +36,7 @@ fn main() -> Result<()> {
     });
     let vertex_buffer = graphics.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(&quad_vertices([-0.4, 0.1], [0.8, 0.1], 0xaaaaab)),
+        contents: bytemuck::cast_slice(&quad_vertices([-0.4, 0.1], [0.8, 0.1], 0x2b2b33ff)),
         usage: wgpu::BufferUsages::VERTEX,
     });
     let index_buffer = graphics.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {

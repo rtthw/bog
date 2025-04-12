@@ -3,14 +3,17 @@
 
 // --- Utilities
 
-// [u8; 4] SRGB as u32 -> [r, g, b, a] in 0.-1
 fn convert_color(color: u32) -> vec4<f32> {
     return vec4<f32>(
-        f32(color & 255u),
-        f32((color >> 8u) & 255u),
-        f32((color >> 16u) & 255u),
-        f32((color >> 24u) & 255u),
-    ) / 255.0;
+        translate_color_channel(f32((color >> 8u) & 255u)),
+        translate_color_channel(f32((color >> 16u) & 255u)),
+        translate_color_channel(f32((color >> 24u) & 255u)),
+        f32(color & 255u) / 255.0,
+    );
+}
+
+fn translate_color_channel(color: f32) -> f32 {
+    return pow((color / 255.0 + 0.055) / 1.055, 2.4);
 }
 
 
