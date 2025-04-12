@@ -6,7 +6,7 @@ pub mod painter;
 
 use std::ops::Range;
 
-use crate::window::Window;
+use crate::{math::Vec2, window::Window};
 
 pub use bytemuck;
 pub use wgpu;
@@ -30,7 +30,6 @@ pub struct WindowGraphics<'w> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
-    size: [u32; 2],
 
     // NOTE: Window must be dropped after the other surface fields.
     window: &'w Window,
@@ -99,7 +98,6 @@ impl<'w> WindowGraphics<'w> {
             device,
             queue,
             config,
-            size,
             window,
         })
     }
@@ -129,6 +127,10 @@ impl<'w> WindowGraphics<'w> {
 
     pub fn window(&self) -> &Window {
         self.window
+    }
+
+    pub fn screen_size(&self) -> Vec2 {
+        Vec2::new(self.surface_config().width as f32, self.surface_config().height as f32)
     }
 }
 
@@ -188,7 +190,7 @@ impl Shader {
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: desc.pipeline_layout_label,
-            bind_group_layouts: &[],
+            bind_group_layouts: desc.bind_group_layouts,
             push_constant_ranges: &[],
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -228,6 +230,7 @@ pub struct ShaderDescriptor<'a> {
     pub label: Option<&'a str>,
     pub pipeline_label: Option<&'a str>,
     pub pipeline_layout_label: Option<&'a str>,
+    pub bind_group_layouts: &'a [&'a wgpu::BindGroupLayout],
     pub vertex_entry_point: Option<&'a str>,
     pub vertex_buffers: &'a [wgpu::VertexBufferLayout<'a>],
     pub fragment_entry_point: Option<&'a str>,
@@ -242,6 +245,7 @@ impl<'a> Default for ShaderDescriptor<'a> {
             label: None,
             pipeline_label: None,
             pipeline_layout_label: None,
+            bind_group_layouts: &[],
             vertex_entry_point: None,
             vertex_buffers: &[],
             fragment_entry_point: None,
@@ -249,7 +253,7 @@ impl<'a> Default for ShaderDescriptor<'a> {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Cw,
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 // NOTE: Setting this to anything other than `Fill` requires
                 //       `Features::NON_FILL_POLYGON_MODE`.
@@ -270,6 +274,15 @@ pub struct RenderPass<'a>(wgpu::RenderPass<'a>);
 impl<'a> RenderPass<'a> {
     pub fn use_shader(&mut self, shader: &Shader) {
         self.0.set_pipeline(&shader.pipeline);
+    }
+
+    pub fn use_bind_group(
+        &mut self,
+        index: u32,
+        bind_group: &wgpu::BindGroup,
+        offsets: &[wgpu::DynamicOffset],
+    ) {
+        self.0.set_bind_group(index, bind_group, offsets);
     }
 
     pub fn use_vertex_buffer(&mut self, slot: u32, buffer: wgpu::BufferSlice) {

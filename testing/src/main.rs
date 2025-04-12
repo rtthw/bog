@@ -21,10 +21,10 @@ fn main() -> Result<()> {
     let mut painter = Painter::new(&graphics);
     let paints = vec![
         Rectangle {
-            pos: vec2(-0.3, 0.0),
-            size: vec2(0.5, 0.5),
+            pos: vec2(0.0, 0.0),
+            size: vec2(100.0, 50.0),
             color: 0x1e1e22,
-            corner_radii: [0.13, 4.0, 0.13, 0.07],
+            corner_radii: [3.0, 19.0, 19.0, 7.0],
         }.to_mesh(),
     ];
 

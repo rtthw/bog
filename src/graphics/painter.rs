@@ -4,7 +4,9 @@
 
 use std::ops::Range;
 
-use crate::math::{vec2, Vec2};
+use wgpu::util::DeviceExt as _;
+
+use crate::math::Vec2;
 
 use super::{RenderPass, Shader, ShaderDescriptor, Vertex, WindowGraphics};
 
@@ -13,12 +15,57 @@ use super::{RenderPass, Shader, ShaderDescriptor, Vertex, WindowGraphics};
 // TODO: It might be better to create a custom `PaintVertex` type.
 pub struct Painter {
     shader: Shader,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+    known_uniform_content: PaintUniform,
     vertex_buffer: PaintBuffer,
     index_buffer: PaintBuffer,
 }
 
 impl Painter {
     pub fn new(graphics: &WindowGraphics) -> Self {
+        let uniform_buffer = graphics.device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Painter Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[PaintUniform {
+                    screen_size: [0.0, 0.0],
+                }]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+        let uniform_bind_group_layout = {
+            graphics.device().create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Painter Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        has_dynamic_offset: false,
+                        min_binding_size: std::num::NonZeroU64::new(
+                            std::mem::size_of::<PaintUniform>() as _,
+                        ),
+                        ty: wgpu::BufferBindingType::Uniform,
+                    },
+                    count: None,
+                }],
+            })
+        };
+
+        let uniform_bind_group = {
+            graphics.device().create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Painter Uniform Bind Group"),
+                layout: &uniform_bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &uniform_buffer,
+                        offset: 0,
+                        size: None,
+                    }),
+                }],
+            })
+        };
+
         let shader = Shader::new(graphics.device(), ShaderDescriptor {
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
                 include_str!("painter.wgsl"),
@@ -26,6 +73,7 @@ impl Painter {
             label: Some("Painter Shader"),
             pipeline_label: Some("Painter Render Pipeline"),
             pipeline_layout_label: Some("Painter Render Pipeline Layout"),
+            bind_group_layouts: &[&uniform_bind_group_layout],
             vertex_entry_point: Some("vs_main"),
             vertex_buffers: &[Vertex::desc()],
             fragment_entry_point: Some("fs_main"),
@@ -55,6 +103,11 @@ impl Painter {
 
         Self {
             shader,
+            uniform_buffer,
+            uniform_bind_group,
+            known_uniform_content: PaintUniform {
+                screen_size: [0.0, 0.0],
+            },
             vertex_buffer: PaintBuffer {
                 inner: vertex_buffer_inner,
                 slices: Vec::with_capacity(64),
@@ -69,6 +122,18 @@ impl Painter {
     }
 
     pub fn prepare(&mut self, graphics: &WindowGraphics, paints: &[PaintMesh]) {
+        let uniform_buffer_content = PaintUniform {
+            screen_size: graphics.screen_size().into(),
+        };
+        if uniform_buffer_content != self.known_uniform_content {
+            graphics.queue().write_buffer(
+                &self.uniform_buffer,
+                0,
+                bytemuck::cast_slice(&[uniform_buffer_content]),
+            );
+            self.known_uniform_content = uniform_buffer_content;
+        }
+
         let (num_vertices, num_indices) = paints.iter().fold((0, 0), |acc, paint| {
             (acc.0 + paint.vertices.len(), acc.1 + paint.indices.len())
         });
@@ -158,6 +223,7 @@ impl Painter {
 
     pub fn render(&self, mut pass: RenderPass, paints: &[PaintMesh]) {
         pass.use_shader(&self.shader);
+        pass.use_bind_group(0, &self.uniform_bind_group, &[]);
 
         let mut index_buffer_slices = self.index_buffer.slices.iter();
         let mut vertex_buffer_slices = self.vertex_buffer.slices.iter();
@@ -208,6 +274,12 @@ pub struct PaintBuffer {
     capacity: wgpu::BufferAddress,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+struct PaintUniform {
+    screen_size: [f32; 2],
+}
 
 
 pub struct Rectangle {
@@ -252,6 +324,8 @@ impl Rectangle {
         );
 
         builder.build().unwrap();
+
+        println!("{:?}", geometry);
 
         PaintMesh {
             indices: geometry.indices,

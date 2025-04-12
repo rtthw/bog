@@ -1,6 +1,13 @@
 
 
 
+struct Locals {
+    screen_size: vec2<f32>,
+};
+@group(0) @binding(0) var<uniform> r_locals: Locals;
+
+
+
 // --- Utilities
 
 fn convert_color(color: u32) -> vec4<f32> {
@@ -14,6 +21,15 @@ fn convert_color(color: u32) -> vec4<f32> {
 
 fn translate_color_channel(color: f32) -> f32 {
     return pow((color / 255.0 + 0.055) / 1.055, 2.4);
+}
+
+fn translate_position(screen_pos: vec2<f32>) -> vec4<f32> {
+    return vec4<f32>(
+        2.0 * screen_pos.x / r_locals.screen_size.x - 1.0,
+        1.0 - 2.0 * screen_pos.y / r_locals.screen_size.y,
+        0.0,
+        1.0,
+    );
 }
 
 
@@ -36,7 +52,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = convert_color(model.color);
-    out.clip_position = vec4<f32>(model.position, 1.0, 1.0);
+    out.clip_position = translate_position(model.position);
     return out;
 }
 
