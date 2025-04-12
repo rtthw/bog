@@ -16,12 +16,35 @@ fn main() -> Result<()> {
     let graphics = futures::executor::block_on(async {
         WindowGraphics::from_window(&window).await
     })?;
+    let shader = Shader::new(graphics.device(), ShaderDescriptor {
+        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
+            include_str!("shader.wgsl"),
+        )),
+        label: Some("shader.wgsl"),
+        pipeline_label: Some("Render Pipeline"),
+        pipeline_layout_label: Some("Render Pipeline Layout"),
+        vertex_entry_point: Some("vs_main"),
+        vertex_buffers: &[Vertex::desc()],
+        fragment_entry_point: Some("fs_main"),
+        fragment_targets: &[Some(wgpu::ColorTargetState {
+            format: graphics.surface_config().format,
+            blend: Some(wgpu::BlendState::REPLACE),
+            write_mask: wgpu::ColorWrites::ALL,
+        })],
+        ..Default::default()
+    });
 
     event_loop.run(move |event, control_flow| {
         match event {
             WindowManagerEvent::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => {
                     control_flow.exit();
+                }
+                WindowEvent::RedrawRequested => {
+                    graphics
+                        .render(|mut render_pass| {
+                        })
+                        .unwrap();
                 }
                 _ => {}
             }

@@ -6,6 +6,8 @@ use std::ops::Range;
 
 use crate::window::Window;
 
+pub use wgpu;
+
 
 
 type Result<T> = std::result::Result<T, GraphicsError>;
@@ -281,5 +283,36 @@ impl<'a> RenderPass<'a> {
 
     pub fn draw_indexed(&mut self, indices: Range<u32>, base_vertex: i32, instances: Range<u32>) {
         self.0.draw_indexed(indices, base_vertex, instances);
+    }
+}
+
+
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    pos: [f32; 2],
+    color: u32,
+}
+
+impl Vertex {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Uint32,
+                },
+            ]
+        }
     }
 }
