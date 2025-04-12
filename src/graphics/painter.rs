@@ -4,6 +4,8 @@
 
 use std::ops::Range;
 
+use crate::math::Vec2;
+
 use super::{RenderPass, Shader, ShaderDescriptor, Vertex, WindowGraphics};
 
 
@@ -182,8 +184,22 @@ impl Painter {
 }
 
 pub struct PaintMesh {
-    indices: Vec<u32>,
-    vertices: Vec<Vertex>,
+    pub indices: Vec<u32>,
+    pub vertices: Vec<Vertex>,
+}
+
+impl PaintMesh {
+    pub fn quad(pos: Vec2, size: Vec2, color: u32) -> Self {
+        Self {
+            indices: [0, 1, 2, 2, 1, 3].to_vec(),
+            vertices: vec![
+                Vertex { pos: pos.into(), color },
+                Vertex { pos: [pos.x + size.x, pos.y], color },
+                Vertex { pos: [pos.x, pos.y + size.y], color },
+                Vertex { pos: [pos.x + size.x, pos.y + size.y], color },
+            ],
+        }
+    }
 }
 
 pub struct PaintBuffer {

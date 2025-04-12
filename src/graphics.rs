@@ -323,18 +323,3 @@ impl Vertex {
         }
     }
 }
-
-
-
-pub const fn quad_vertices(pos: [f32; 2], size: [f32; 2], color: u32) -> [Vertex; 4] {
-    [
-        Vertex { pos, color },
-        Vertex { pos: [pos[0] + size[0], pos[1]], color },
-        Vertex { pos: [pos[0], pos[1] + size[1]], color },
-        Vertex { pos: [pos[0] + size[0], pos[1] + size[1]], color },
-    ]
-}
-
-pub const fn quad_indices() -> [u32; 6] {
-    [0, 1, 2, 2, 1, 3]
-}
