@@ -19,7 +19,14 @@ fn main() -> Result<()> {
         WindowGraphics::from_window(&window).await
     })?;
     let mut painter = Painter::new(&graphics);
-    let paints = vec![PaintMesh::quad(vec2(0.1, 0.2), vec2(0.3, 0.3), 0x1e1e22)];
+    let paints = vec![
+        Rectangle {
+            pos: vec2(-0.3, 0.0),
+            size: vec2(0.5, 0.5),
+            color: 0x1e1e22,
+            corner_radii: [0.13, 4.0, 0.13, 0.07],
+        }.to_mesh(),
+    ];
 
     event_loop.run(move |event, control_flow| {
         match event {
@@ -28,6 +35,7 @@ fn main() -> Result<()> {
                     control_flow.exit();
                 }
                 WindowEvent::Resized(new_size) => {
+                    graphics.window().request_redraw();
                     if new_size.width > 0 && new_size.height > 0 {
                         graphics.surface_config_mut().width = new_size.width;
                         graphics.surface_config_mut().height = new_size.height;

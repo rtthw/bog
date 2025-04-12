@@ -4,7 +4,7 @@
 
 use std::ops::Range;
 
-use crate::math::Vec2;
+use crate::math::{vec2, Vec2};
 
 use super::{RenderPass, Shader, ShaderDescriptor, Vertex, WindowGraphics};
 
@@ -206,4 +206,56 @@ pub struct PaintBuffer {
     inner: wgpu::Buffer,
     slices: Vec<Range<usize>>,
     capacity: wgpu::BufferAddress,
+}
+
+
+
+pub struct Rectangle {
+    pub pos: Vec2,
+    pub size: Vec2,
+    pub color: u32,
+    pub corner_radii: [f32; 4], // pqbd
+}
+
+impl Rectangle {
+    pub fn to_mesh(self) -> PaintMesh {
+        let mut geometry: lyon::tessellation::VertexBuffers<Vertex, u32>
+            = lyon::tessellation::VertexBuffers::new();
+        let options = lyon::tessellation::FillOptions::default();
+        let constructor = |vertex: lyon::tessellation::FillVertex| {
+            Vertex {
+                pos: vertex.position().into(),
+                color: self.color,
+            }
+        };
+        let mut geometry_builder
+            = lyon::tessellation::BuffersBuilder::new(&mut geometry, constructor);
+        let mut tessellator = lyon::tessellation::FillTessellator::new();
+
+        let mut builder = tessellator.builder(
+            &options,
+            &mut geometry_builder,
+        );
+
+        builder.add_rounded_rectangle(
+            &lyon::math::Box2D {
+                min: lyon::math::point(self.pos.x, self.pos.y),
+                max: lyon::math::point(self.pos.x + self.size.x, self.pos.y + self.size.y),
+            },
+            &lyon::path::builder::BorderRadii {
+                top_left: self.corner_radii[0],
+                top_right: self.corner_radii[1],
+                bottom_left: self.corner_radii[2],
+                bottom_right: self.corner_radii[3],
+            },
+            lyon::path::Winding::Positive,
+        );
+
+        builder.build().unwrap();
+
+        PaintMesh {
+            indices: geometry.indices,
+            vertices: geometry.vertices,
+        }
+    }
 }
