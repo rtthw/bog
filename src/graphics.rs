@@ -6,6 +6,7 @@ use std::ops::Range;
 
 use crate::window::Window;
 
+pub use bytemuck;
 pub use wgpu;
 
 
@@ -110,6 +111,10 @@ impl<'w> WindowGraphics<'w> {
 
     pub fn surface_config(&self) -> &wgpu::SurfaceConfiguration {
         &self.config
+    }
+
+    pub fn surface_config_mut(&mut self) -> &mut wgpu::SurfaceConfiguration {
+        &mut self.config
     }
 
     pub fn device(&self) -> &wgpu::Device {
@@ -315,4 +320,19 @@ impl Vertex {
             ]
         }
     }
+}
+
+
+
+pub const fn quad_vertices(pos: [f32; 2], size: [f32; 2], color: u32) -> [Vertex; 4] {
+    [
+        Vertex { pos, color },
+        Vertex { pos: [pos[0] + size[0], pos[1]], color },
+        Vertex { pos: [pos[0], pos[1] + size[1]], color },
+        Vertex { pos: [pos[0] + size[0], pos[1] + size[1]], color },
+    ]
+}
+
+pub const fn quad_indices() -> [u32; 6] {
+    [0, 1, 2, 2, 1, 3]
 }
