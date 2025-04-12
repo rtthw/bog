@@ -4,6 +4,7 @@
 
 pub mod graphics;
 pub mod layout;
+pub mod math;
 pub mod window {
     pub use winit::{
         dpi,
