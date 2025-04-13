@@ -2,6 +2,7 @@
 
 
 
+pub mod fonts;
 pub mod graphics;
 pub mod layout;
 pub mod math;

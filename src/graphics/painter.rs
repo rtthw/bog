@@ -282,6 +282,7 @@ struct PaintUniform {
 }
 
 
+
 pub struct Rectangle {
     pub pos: Vec2,
     pub size: Vec2,
@@ -324,8 +325,6 @@ impl Rectangle {
         );
 
         builder.build().unwrap();
-
-        println!("{:?}", geometry);
 
         PaintMesh {
             indices: geometry.indices,

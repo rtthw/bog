@@ -23,8 +23,8 @@ fn main() -> Result<()> {
         Rectangle {
             pos: vec2(0.0, 0.0),
             size: vec2(100.0, 50.0),
-            color: 0x1e1e22,
-            corner_radii: [3.0, 19.0, 19.0, 7.0],
+            color: 0xaaaaabff,
+            corner_radii: [7.0, 19.0, 19.0, 19.0],
         }.to_mesh(),
     ];
 
