@@ -32,13 +32,13 @@ fn main() -> Result<()> {
 
     let mut painter = Painter::new(&graphics);
     let paints = vec![
-        Rectangle {
-            pos: vec2(0.0, 0.0),
-            size: vec2(100.0, 50.0),
-            color: 0xaaaaabff,
-            corner_radii: [7.0, 19.0, 1.0, 45.0],
-        }.to_mesh(),
-        PaintMesh::glyph(test_glyph_mesh, 0x1e1e22ff),
+        // Rectangle {
+        //     pos: vec2(0.0, 0.0),
+        //     size: vec2(100.0, 50.0),
+        //     color: 0x2b2b33ff,
+        //     corner_radii: [7.0, 19.0, 1.0, 45.0],
+        // }.to_mesh(),
+        PaintMesh::glyph(test_glyph_mesh, 0xaaaaabff),
     ];
 
     event_loop.run(move |event, control_flow| {
@@ -50,9 +50,7 @@ fn main() -> Result<()> {
                 WindowEvent::Resized(new_size) => {
                     graphics.window().request_redraw();
                     if new_size.width > 0 && new_size.height > 0 {
-                        graphics.surface_config_mut().width = new_size.width;
-                        graphics.surface_config_mut().height = new_size.height;
-                        graphics.surface().configure(graphics.device(), graphics.surface_config());
+                        graphics.resize(vec2(new_size.width as _, new_size.height as _));
                     }
                 }
                 WindowEvent::RedrawRequested => {

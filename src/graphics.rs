@@ -13,6 +13,9 @@ pub use wgpu;
 
 
 
+pub const SAMPLE_COUNT: u32 = 4;
+
+
 type Result<T> = std::result::Result<T, GraphicsError>;
 
 #[derive(thiserror::Error, Debug)]
@@ -30,6 +33,9 @@ pub struct WindowGraphics<'w> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+
+    depth_texture_view: Option<wgpu::TextureView>,
+    multisampled_render_target: Option<wgpu::TextureView>,
 
     // NOTE: Window must be dropped after the other surface fields.
     window: &'w Window,
@@ -76,6 +82,7 @@ impl<'w> WindowGraphics<'w> {
             .await?;
 
         let surface_caps = surface.get_capabilities(&adapter);
+        println!("SURFACE CAPABILITIES:\n\t{:?}", surface_caps);
         let surface_format = surface_caps
             .formats
             .iter()
@@ -98,6 +105,8 @@ impl<'w> WindowGraphics<'w> {
             device,
             queue,
             config,
+            depth_texture_view: None,
+            multisampled_render_target: None,
             window,
         })
     }
@@ -137,7 +146,7 @@ impl<'w> WindowGraphics<'w> {
 impl<'w> WindowGraphics<'w> {
     pub fn render(&self, mut func: impl FnMut(RenderPass)) -> Result<()> {
         let output = self.surface.get_current_texture().unwrap();
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let frame_view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self.device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
@@ -146,22 +155,39 @@ impl<'w> WindowGraphics<'w> {
         );
 
         {
-            let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
+            let color_attachment = if let Some(msaa_target) = &self.multisampled_render_target {
+                wgpu::RenderPassColorAttachment {
+                    view: msaa_target,
+                    resolve_target: Some(&frame_view),
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.01,
-                            g: 0.01,
-                            b: 0.01,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
-                })],
-                depth_stencil_attachment: None,
+                }
+            } else {
+                wgpu::RenderPassColorAttachment {
+                    view: &frame_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                }
+            };
+            let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(color_attachment)],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: self.depth_texture_view.as_ref().unwrap(),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                }),
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
@@ -174,6 +200,51 @@ impl<'w> WindowGraphics<'w> {
 
         Ok(())
     }
+
+    pub fn resize(&mut self, new_size: Vec2) {
+        self.surface_config_mut().width = new_size.x as _;
+        self.surface_config_mut().height = new_size.y as _;
+        self.surface().configure(&self.device, self.surface_config());
+        let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth texture"),
+            size: wgpu::Extent3d {
+                width: self.config.width,
+                height: self.config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: SAMPLE_COUNT,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+
+        self.depth_texture_view =
+            Some(depth_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+
+        self.multisampled_render_target = if SAMPLE_COUNT > 1 {
+            let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
+                label: Some("Multisampled Frame Descriptor"),
+                size: wgpu::Extent3d {
+                    width: self.config.width,
+                    height: self.config.height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: SAMPLE_COUNT,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.config.format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            };
+            Some(self.device
+                .create_texture(multisampled_frame_descriptor)
+                .create_view(&wgpu::TextureViewDescriptor::default()))
+        } else {
+            None
+        };
+    }
 }
 
 
@@ -184,6 +255,18 @@ pub struct Shader {
 
 impl Shader {
     pub fn new(device: &wgpu::Device, desc: ShaderDescriptor) -> Self {
+        let depth_stencil = Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Greater,
+            stencil: wgpu::StencilState {
+                front: wgpu::StencilFaceState::IGNORE,
+                back: wgpu::StencilFaceState::IGNORE,
+                read_mask: 0,
+                write_mask: 0,
+            },
+            bias: wgpu::DepthBiasState::default(),
+        });
         let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: desc.label,
             source: desc.source,
@@ -209,9 +292,9 @@ impl Shader {
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: desc.primitive,
-            depth_stencil: None,
+            depth_stencil,
             multisample: wgpu::MultisampleState {
-                count: 1,
+                count: SAMPLE_COUNT,
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },

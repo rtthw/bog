@@ -27,7 +27,7 @@ fn translate_position(screen_pos: vec2<f32>) -> vec4<f32> {
     return vec4<f32>(
         2.0 * screen_pos.x / r_locals.screen_size.x - 1.0,
         1.0 - 2.0 * screen_pos.y / r_locals.screen_size.y,
-        0.0,
+        0.1,
         1.0,
     );
 }

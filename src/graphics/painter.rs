@@ -79,7 +79,7 @@ impl Painter {
             fragment_entry_point: Some("fs_main"),
             fragment_targets: &[Some(wgpu::ColorTargetState {
                 format: graphics.surface_config().format,
-                blend: Some(wgpu::BlendState::REPLACE),
+                blend: None,
                 write_mask: wgpu::ColorWrites::ALL,
             })],
             ..Default::default()
