@@ -255,6 +255,19 @@ pub struct PaintMesh {
 }
 
 impl PaintMesh {
+    pub fn glyph(mesh: crate::fonts::GlyphMesh, color: u32) -> Self {
+        Self {
+            indices: mesh.indices,
+            vertices: mesh.vertices
+                .into_iter()
+                .map(|v| Vertex {
+                    pos: v.into(),
+                    color,
+                })
+                .collect(),
+        }
+    }
+
     pub fn quad(pos: Vec2, size: Vec2, color: u32) -> Self {
         Self {
             indices: [0, 1, 2, 2, 1, 3].to_vec(),

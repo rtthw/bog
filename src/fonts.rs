@@ -25,17 +25,9 @@ pub enum FontError {
 
 
 pub fn load_font_face(bytes: &[u8]) -> Result<FontFace> {
-    let font_count = ttf_parser::fonts_in_collection(bytes)
-        .ok_or(FontError::InvalidFont)?;
-
-    // TODO: Support font collections?
-    if font_count != 0 {
-        return Err(FontError::InvalidFont);
-    }
-
     let face = FontFace {
         data: Arc::new(bytes.to_vec()),
-        index: font_count,
+        index: 0,
     };
 
     Ok(face)
@@ -80,6 +72,10 @@ impl<'a> ParsedFontFace<'a> {
         self.inner.line_gap()
     }
 
+    pub fn char_glyph(&self, ch: char) -> Option<u16> {
+        self.inner.glyph_index(ch).map(|id| id.0)
+    }
+
     pub fn glyph_mesh(&self, id: u16, size: f32) -> Result<GlyphMesh> {
         let scale = self.units_per_em() as f32 / size;
         let mut outliner = GlyphOutliner {
@@ -113,25 +109,25 @@ struct GlyphOutliner {
 
 impl ttf_parser::OutlineBuilder for GlyphOutliner {
     fn move_to(&mut self, x: f32, y: f32) {
-        self.builder.begin(lyon::math::Point::new(x / self.scale, y / self.scale));
+        self.builder.begin(lyon::math::Point::new(x / self.scale, -y / self.scale));
     }
 
     fn line_to(&mut self, x: f32, y: f32) {
-        self.builder.line_to(lyon::math::Point::new(x / self.scale, y / self.scale));
+        self.builder.line_to(lyon::math::Point::new(x / self.scale, -y / self.scale));
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
         self.builder.quadratic_bezier_to(
-            lyon::math::Point::new(x1 / self.scale, y1 / self.scale),
-            lyon::math::Point::new(x / self.scale, y / self.scale),
+            lyon::math::Point::new(x1 / self.scale, -y1 / self.scale),
+            lyon::math::Point::new(x / self.scale, -y / self.scale),
         );
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         self.builder.cubic_bezier_to(
-            lyon::math::Point::new(x1 / self.scale, y1 / self.scale),
-            lyon::math::Point::new(x2 / self.scale, y2 / self.scale),
-            lyon::math::Point::new(x / self.scale, y / self.scale),
+            lyon::math::Point::new(x1 / self.scale, -y1 / self.scale),
+            lyon::math::Point::new(x2 / self.scale, -y2 / self.scale),
+            lyon::math::Point::new(x / self.scale, -y / self.scale),
         );
     }
 
