@@ -60,8 +60,8 @@ impl Renderer {
 #[repr(C)]
 pub struct Globals {
     pub screen_size: [f32; 2],
+    pub zoom: f32,
     pad_1: u32,
-    pad_2: u32,
 }
 
 #[derive(Clone, Copy, Debug)]
