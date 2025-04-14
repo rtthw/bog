@@ -57,6 +57,45 @@ impl Renderer {
 
 
 
+pub struct ObjectSet {
+    objects: Vec<Object>,
+    meshes: Vec<ObjectMesh>,
+}
+
+impl ObjectSet {
+    pub fn new() -> Self {
+        Self {
+            objects: Vec::with_capacity(MAX_OBJECTS as usize),
+            meshes: Vec::with_capacity(MAX_OBJECTS as usize),
+        }
+    }
+
+    pub fn get(&self, id: u32) -> Option<&Object> {
+        self.objects.get(id as usize)
+    }
+
+    pub fn slice(&self, range: std::ops::Range<usize>) -> &[Object] {
+        &self.objects[range]
+    }
+
+    pub fn push(&mut self, object: Object, mesh: ObjectMesh) {
+        if self.objects.len() > MAX_OBJECTS as usize {
+            return;
+        }
+        self.objects.push(object);
+        self.meshes.push(mesh);
+    }
+}
+
+
+
+pub struct ObjectMesh {
+    pub indices: Vec<u32>,
+    pub vertices: Vec<Vertex>,
+}
+
+
+
 #[derive(Clone, Copy, Debug)]
 #[derive(bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
