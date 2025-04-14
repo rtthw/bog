@@ -3,6 +3,7 @@
 
 
 pub mod painter;
+pub mod renderer;
 
 use std::ops::Range;
 
@@ -82,7 +83,6 @@ impl<'w> WindowGraphics<'w> {
             .await?;
 
         let surface_caps = surface.get_capabilities(&adapter);
-        println!("SURFACE CAPABILITIES:\n\t{:?}", surface_caps);
         let surface_format = surface_caps
             .formats
             .iter()
@@ -202,9 +202,10 @@ impl<'w> WindowGraphics<'w> {
     }
 
     pub fn resize(&mut self, new_size: Vec2) {
-        self.surface_config_mut().width = new_size.x as _;
-        self.surface_config_mut().height = new_size.y as _;
-        self.surface().configure(&self.device, self.surface_config());
+        self.config.width = new_size.x as _;
+        self.config.height = new_size.y as _;
+        self.surface.configure(&self.device, &self.config);
+
         let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Depth texture"),
             size: wgpu::Extent3d {
@@ -220,8 +221,8 @@ impl<'w> WindowGraphics<'w> {
             view_formats: &[],
         });
 
-        self.depth_texture_view =
-            Some(depth_texture.create_view(&wgpu::TextureViewDescriptor::default()));
+        self.depth_texture_view = Some(depth_texture
+            .create_view(&wgpu::TextureViewDescriptor::default()));
 
         self.multisampled_render_target = if SAMPLE_COUNT > 1 {
             let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
