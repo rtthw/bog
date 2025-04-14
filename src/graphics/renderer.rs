@@ -6,6 +6,8 @@ use super::WindowGraphics;
 
 
 
+pub const MAX_OBJECTS: u64 = 256;
+
 pub struct Renderer {
     /// The uniform buffer for globals.
     global_buffer: wgpu::Buffer,
@@ -14,7 +16,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(graphics: &WindowGraphics, obj_count: usize) -> Self {
+    pub fn new(graphics: &WindowGraphics) -> Self {
         let global_buffer_size = std::mem::size_of::<Globals>() as u64;
         let global_buffer = graphics.device().create_buffer(&wgpu::BufferDescriptor {
             label: Some("bog::Renderer::global_buffer"),
@@ -22,7 +24,7 @@ impl Renderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let object_buffer_size = (std::mem::size_of::<Object>() * obj_count) as u64;
+        let object_buffer_size = std::mem::size_of::<Object>() as u64 * MAX_OBJECTS;
         let object_buffer = graphics.device().create_buffer(&wgpu::BufferDescriptor {
             label: Some("bog::Renderer::object_buffer"),
             size: object_buffer_size,
@@ -84,4 +86,21 @@ pub struct Vertex {
     /// Identifier for the object this vertex belongs to.
     pub object: u32,
     pub position: [f32; 2],
+}
+
+impl Vertex {
+    pub const fn desc() -> &'static [wgpu::VertexAttribute] {
+        &[
+            wgpu::VertexAttribute {
+                offset: 0,
+                format: wgpu::VertexFormat::Uint32,
+                shader_location: 0,
+            },
+            wgpu::VertexAttribute {
+                offset: std::mem::size_of::<u32>() as u64,
+                format: wgpu::VertexFormat::Float32x2,
+                shader_location: 1,
+            },
+        ]
+    }
 }
