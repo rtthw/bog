@@ -4,6 +4,7 @@
 
 pub mod fonts;
 pub mod graphics;
+pub mod gui;
 pub mod layout;
 pub mod math;
 pub mod window {
