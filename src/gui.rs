@@ -2,8 +2,6 @@
 
 
 
-use std::collections::HashMap;
-
 use crate::{layout::*, math::{vec2, Vec2}};
 
 
@@ -91,7 +89,7 @@ impl Gui {
                     if dur_since.as_secs_f64() > 0.1 {
                         // User is likely dragging.
                         self.is_dragging = true;
-                        handler.on_drag_start(drag_element);
+                        handler.on_drag_start(drag_element, &mut self.layout_tree);
                     }
                 }
                 if self.is_dragging {
@@ -158,7 +156,7 @@ pub trait GuiHandler {
     fn on_mouse_down(&mut self, element: Element);
     fn on_mouse_up(&mut self, element: Element);
     fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2);
-    fn on_drag_start(&mut self, element: Element);
+    fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree);
     fn on_drag_end(&mut self, element: Element);
     fn on_resize(&mut self, size: Vec2);
     fn on_element_layout(&mut self, element: Element, placement: &Placement);

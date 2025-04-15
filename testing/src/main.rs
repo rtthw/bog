@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use bog::*;
-// use fonts::*;
+use fonts::*;
 use graphics::*;
 use gui::*;
 use layout::*;
@@ -24,9 +24,11 @@ fn main() -> Result<()> {
         WindowGraphics::from_window(&window).await
     })?;
 
-    // let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
-    //     .unwrap();
-    // let parsed_font = font.parse().unwrap();
+    let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
+        .unwrap();
+    let parsed_font = font.parse().unwrap();
+    let indicator_glyph_id = parsed_font.char_glyph('A').unwrap();
+    let indicator_glyph_mesh = parsed_font.glyph_mesh(indicator_glyph_id, 20.0).unwrap();
 
     let mut painter = Painter::new(&graphics);
     let mut gui = Gui::new(Layout::default()
@@ -40,6 +42,7 @@ fn main() -> Result<()> {
         .align_items_center());
     let mut elements = HashMap::with_capacity(5);
     let mut paints = Vec::with_capacity(5);
+    paints.push(PaintMesh::glyph(indicator_glyph_mesh, 0xaaaaabff)); // Dragging indicator.
     for (index, layout) in [
         Layout::default().width(70.0).height(50.0),
         Layout::default().width(100.0).height(30.0),
@@ -49,7 +52,7 @@ fn main() -> Result<()> {
         ].into_iter().enumerate()
     {
         let element = gui.push_element_to_root(layout);
-        elements.insert(element, index);
+        elements.insert(element, index + 1); // Index 0 reserved for dragging indicator.
         paints.push(PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff));
     }
     let mut app = App {
@@ -141,9 +144,21 @@ impl<'w> GuiHandler for App<'w> {
     fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2) {
     }
 
-    fn on_drag_start(&mut self, element: Element) {
+    fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Grab);
+        if let Some(placement) = tree.placement(element) {
+            let pos = vec2(
+                (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
+                placement.position().y + placement.layout.size.height + 5.0,
+            );
+            self.paints[0] = Rectangle {
+                pos,
+                size: vec2(10.0, 10.0),
+                color: 0xaaaaabff,
+                corner_radii: [2.0, 2.0, 2.0, 2.0],
+            }.to_mesh();
+        }
     }
 
     fn on_drag_end(&mut self, element: Element) {

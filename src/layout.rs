@@ -27,6 +27,18 @@ impl LayoutTree {
         }
     }
 
+    // FIXME: This can be optimized.
+    pub fn placement(&self, node: LayoutNode) -> Option<Placement> {
+        let mut found = None;
+        self.iter_placements(&mut |n, placement| {
+            if n == node {
+                found = Some(placement.clone());
+            }
+        });
+
+        found
+    }
+
     pub fn iter_placements(&self, func: &mut impl FnMut(LayoutNode, &Placement)) {
         for_each_node(&self.tree, self.root, func);
     }
@@ -118,6 +130,7 @@ pub trait LayoutHandler {
 
 
 
+#[derive(Clone)]
 pub struct Placement {
     parent_pos: Vec2,
     pub layout: taffy::Layout,
