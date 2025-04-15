@@ -1,6 +1,8 @@
 
 
 
+use std::collections::HashMap;
+
 use bog::*;
 // use fonts::*;
 use graphics::*;
@@ -36,30 +38,24 @@ fn main() -> Result<()> {
         .gap_y(5.0)
         .align_content_center()
         .align_items_center());
-    gui.push_element_to_root(Layout::default()
-        .width(70.0)
-        .height(50.0));
-    gui.push_element_to_root(Layout::default()
-        .width(100.0)
-        .height(30.0));
-    gui.push_element_to_root(Layout::default()
-        .width(50.0)
-        .height(70.0));
-    gui.push_element_to_root(Layout::default()
-        .width(40.0)
-        .height(10.0));
-    gui.push_element_to_root(Layout::default()
-        .width(20.0)
-        .height(20.0));
+    let mut elements = HashMap::with_capacity(5);
+    let mut paints = Vec::with_capacity(5);
+    for (index, layout) in [
+        Layout::default().width(70.0).height(50.0),
+        Layout::default().width(100.0).height(30.0),
+        Layout::default().width(50.0).height(70.0),
+        Layout::default().width(40.0).height(70.0),
+        Layout::default().width(20.0).height(40.0),
+        ].into_iter().enumerate()
+    {
+        let element = gui.push_element_to_root(layout);
+        elements.insert(element, index);
+        paints.push(PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff));
+    }
     let mut app = App {
         graphics,
-        paints: vec![
-            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
-            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
-            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
-            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
-            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
-        ],
+        paints,
+        elements,
     };
 
     event_loop.run(move |event, control_flow| {
@@ -109,6 +105,7 @@ fn main() -> Result<()> {
 struct App<'w> {
     graphics: WindowGraphics<'w>,
     paints: Vec<PaintMesh>,
+    elements: HashMap<Element, usize>,
 }
 
 impl<'w> GuiHandler for App<'w> {
@@ -117,24 +114,28 @@ impl<'w> GuiHandler for App<'w> {
     fn on_mouse_enter(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
-        self.paints[*element].change_color(0xb7b7c0ff);
+        let Some(index) = self.elements.get(&element) else { return; };
+        self.paints[*index].change_color(0xb7b7c0ff);
     }
 
     fn on_mouse_leave(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
-        self.paints[*element].change_color(0xaaaaabff);
+        let Some(index) = self.elements.get(&element) else { return; };
+        self.paints[*index].change_color(0xaaaaabff);
     }
 
     fn on_mouse_down(&mut self, element: Element) {
         self.graphics.window().request_redraw();
-        self.paints[*element].change_color(0x3c3c44ff);
+        let Some(index) = self.elements.get(&element) else { return; };
+        self.paints[*index].change_color(0x3c3c44ff);
     }
 
     fn on_mouse_up(&mut self, element: Element) {
         self.graphics.window().request_redraw();
-        self.paints[*element].change_color(0xb7b7c0ff);
-        println!("Element #{element} clicked");
+        let Some(index) = self.elements.get(&element) else { return; };
+        self.paints[*index].change_color(0xb7b7c0ff);
+        println!("Element #{index} clicked");
     }
 
     fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2) {
@@ -153,7 +154,8 @@ impl<'w> GuiHandler for App<'w> {
     fn on_resize(&mut self, _size: math::Vec2) {}
 
     fn on_element_layout(&mut self, element: Element, placement: &Placement) {
-        self.paints[*element] = Rectangle {
+        let Some(index) = self.elements.get(&element) else { return; };
+        self.paints[*index] = Rectangle {
             pos: placement.position(),
             size: vec2(placement.layout.size.width, placement.layout.size.height),
             color: 0xaaaaabff,
