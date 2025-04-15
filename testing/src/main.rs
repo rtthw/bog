@@ -141,7 +141,19 @@ impl<'w> GuiHandler for App<'w> {
         println!("Element #{index} clicked");
     }
 
-    fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2) {
+    fn on_drag_update(&mut self, tree: &mut LayoutTree, element: Element, hovered: Option<Element>, delta: Vec2) {
+        if let Some(placement) = hovered.and_then(|e| tree.placement(e)) {
+            let pos = vec2(
+                (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
+                placement.position().y + placement.layout.size.height + 5.0,
+            );
+            self.paints[0] = Rectangle {
+                pos,
+                size: vec2(10.0, 10.0),
+                color: 0xaaaaabff,
+                corner_radii: [2.0, 2.0, 2.0, 2.0],
+            }.to_mesh();
+        }
     }
 
     fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree) {
@@ -164,6 +176,7 @@ impl<'w> GuiHandler for App<'w> {
     fn on_drag_end(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
+        self.paints[0] = PaintMesh::quad(vec2(-1.0, -1.0), vec2(1.0, 1.0), 0x00000000);
     }
 
     fn on_resize(&mut self, _size: math::Vec2) {}

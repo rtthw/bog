@@ -95,6 +95,7 @@ impl Gui {
                 if self.is_dragging {
                     let delta = pos - drag_origin_pos;
                     handler.on_drag_update(
+                        &mut self.layout_tree,
                         drag_element,
                         hover_changed_to,
                         delta,
@@ -155,7 +156,7 @@ pub trait GuiHandler {
     fn on_mouse_leave(&mut self, element: Element);
     fn on_mouse_down(&mut self, element: Element);
     fn on_mouse_up(&mut self, element: Element);
-    fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2);
+    fn on_drag_update(&mut self, tree: &mut LayoutTree, element: Element, hovered: Option<Element>, delta: Vec2);
     fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree);
     fn on_drag_end(&mut self, element: Element);
     fn on_resize(&mut self, size: Vec2);
