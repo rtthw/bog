@@ -2,11 +2,16 @@
 
 
 
+use crate::math::{vec2, Vec2};
+
+
+
 pub type LayoutNode = taffy::NodeId;
 
 pub struct LayoutTree {
     tree: taffy::TaffyTree<bool>,
     root: LayoutNode,
+    available_space: Vec2,
 }
 
 impl LayoutTree {
@@ -18,21 +23,110 @@ impl LayoutTree {
         Self {
             tree,
             root,
+            available_space: vec2(0.0, 0.0),
         }
     }
 
     pub fn push(&mut self, layout: Layout, parent: LayoutNode, interactable: bool) -> LayoutNode {
-        let id = self.tree.new_leaf_with_context(layout.into(), interactable).unwrap();
-        self.tree.add_child(parent.into(), id).unwrap();
+        let id = self.tree.new_leaf_with_context(layout.into(), interactable)
+            .unwrap(); // Cannot fail.
+        self.tree.add_child(parent, id)
+            .unwrap(); // Cannot fail.
 
         id
     }
 
-    pub fn push_to_root(&mut self, layout: Layout, accepts_input: bool) -> LayoutNode {
-        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
-        self.tree.add_child(self.root, id).unwrap();
+    pub fn push_to_root(&mut self, layout: Layout, interactable: bool) -> LayoutNode {
+        let id = self.tree.new_leaf_with_context(layout.into(), interactable)
+            .unwrap(); // Cannot fail.
+        self.tree.add_child(self.root, id)
+            .unwrap(); // Cannot fail.
 
         id
+    }
+
+    pub fn resize(&mut self, available_space: Vec2) {
+        self.available_space = available_space;
+    }
+
+    pub fn do_layout(&mut self, handler: &mut impl LayoutHandler) {
+        self.tree
+            .compute_layout(
+                self.root,
+                taffy::Size {
+                    width: taffy::AvailableSpace::Definite(self.available_space.x),
+                    height: taffy::AvailableSpace::Definite(self.available_space.y),
+                },
+            )
+            .unwrap(); // Cannot fail.
+
+        for_each_node(&self.tree, self.root, &mut |node, placement| {
+            handler.on_layout(node.into(), placement);
+        });
+    }
+}
+
+fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: taffy::NodeId, func: &mut F)
+where F: FnMut(taffy::NodeId, &Placement),
+{
+    let top_layout = tree.layout(node).unwrap();
+
+    for child in tree.children(node).unwrap().into_iter() {
+        let placement = Placement {
+            parent_pos: Vec2::new(top_layout.location.x, top_layout.location.y),
+            layout: *tree.layout(child).unwrap(),
+        };
+        func(child, &placement);
+        for_each_node_inner(tree, child, &placement, func);
+    }
+}
+
+fn for_each_node_inner<F>(
+    tree: &taffy::TaffyTree<bool>,
+    node: taffy::NodeId,
+    placement: &Placement,
+    func: &mut F,
+)
+where F: FnMut(taffy::NodeId, &Placement),
+{
+    for child in tree.children(node).unwrap().into_iter() {
+        let layout = *tree.layout(child).unwrap();
+        let child_placement = Placement {
+            parent_pos: placement.parent_pos
+                + Vec2::new(layout.location.x, layout.location.y),
+            layout,
+        };
+        func(child, &child_placement);
+        for_each_node_inner(tree, child, &child_placement, func);
+    }
+}
+
+
+
+pub trait LayoutHandler {
+    fn on_layout(&mut self, node: LayoutNode, placement: &Placement);
+}
+
+
+
+pub struct Placement {
+    parent_pos: Vec2,
+    pub layout: taffy::Layout,
+}
+
+impl Placement {
+    pub fn position(&self) -> Vec2 {
+        Vec2::new(
+            self.parent_pos.x + self.layout.location.x,
+            self.parent_pos.y + self.layout.location.y,
+        )
+    }
+
+    pub fn content_position(&self) -> Vec2 {
+        Vec2::new(
+            self.parent_pos.x + self.layout.content_box_x(),
+            self.parent_pos.y + self.layout.content_box_y(),
+        )
     }
 }
 
