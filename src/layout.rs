@@ -27,6 +27,14 @@ impl LayoutTree {
         }
     }
 
+    pub fn iter_placements(&self, func: &mut impl FnMut(LayoutNode, &Placement)) {
+        for_each_node(&self.tree, self.root, func);
+    }
+
+    pub fn is_interactable(&self, node: LayoutNode) -> bool {
+        *self.tree.get_node_context(node).unwrap()
+    }
+
     pub fn push(&mut self, layout: Layout, parent: LayoutNode, interactable: bool) -> LayoutNode {
         let id = self.tree.new_leaf_with_context(layout.into(), interactable)
             .unwrap(); // Cannot fail.
@@ -66,8 +74,8 @@ impl LayoutTree {
     }
 }
 
-fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: taffy::NodeId, func: &mut F)
-where F: FnMut(taffy::NodeId, &Placement),
+fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: LayoutNode, func: &mut F)
+where F: FnMut(LayoutNode, &Placement),
 {
     let top_layout = tree.layout(node).unwrap();
 
@@ -83,11 +91,11 @@ where F: FnMut(taffy::NodeId, &Placement),
 
 fn for_each_node_inner<F>(
     tree: &taffy::TaffyTree<bool>,
-    node: taffy::NodeId,
+    node: LayoutNode,
     placement: &Placement,
     func: &mut F,
 )
-where F: FnMut(taffy::NodeId, &Placement),
+where F: FnMut(LayoutNode, &Placement),
 {
     for child in tree.children(node).unwrap().into_iter() {
         let layout = *tree.layout(child).unwrap();
