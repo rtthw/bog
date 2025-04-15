@@ -2,6 +2,42 @@
 
 
 
+pub type LayoutNode = taffy::NodeId;
+
+pub struct LayoutTree {
+    tree: taffy::TaffyTree<bool>,
+    root: LayoutNode,
+}
+
+impl LayoutTree {
+    pub fn new(root_layout: Layout) -> Self {
+        let mut tree = taffy::TaffyTree::new();
+        let root = tree.new_with_children(root_layout.into(), &[])
+            .unwrap(); // Cannot fail.
+
+        Self {
+            tree,
+            root,
+        }
+    }
+
+    pub fn push(&mut self, layout: Layout, parent: LayoutNode, interactable: bool) -> LayoutNode {
+        let id = self.tree.new_leaf_with_context(layout.into(), interactable).unwrap();
+        self.tree.add_child(parent.into(), id).unwrap();
+
+        id
+    }
+
+    pub fn push_to_root(&mut self, layout: Layout, accepts_input: bool) -> LayoutNode {
+        let id = self.tree.new_leaf_with_context(layout.into(), accepts_input).unwrap();
+        self.tree.add_child(self.root, id).unwrap();
+
+        id
+    }
+}
+
+
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Layout(taffy::Style);
 
