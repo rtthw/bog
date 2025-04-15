@@ -8,16 +8,16 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 
 
-pub struct Gui {
+pub struct Gui<E> {
     layout_tree: LayoutTree,
-    elements: HashMap<LayoutNode, ElementContext>,
+    elements: HashMap<LayoutNode, E>,
 
     size: Vec2,
     mouse_pos: Vec2,
     hovered_node: Option<LayoutNode>,
 }
 
-impl Gui {
+impl<E> Gui<E> {
     pub fn new() -> Self {
         Self {
             layout_tree: LayoutTree::new(Layout::default()),
@@ -28,7 +28,7 @@ impl Gui {
         }
     }
 
-    pub fn handle_resize(&mut self, handler: &mut impl GuiHandler, size: Vec2) {
+    pub fn handle_resize(&mut self, handler: &mut impl GuiHandler<Element = E>, size: Vec2) {
         if size == self.size {
             return;
         }
@@ -41,7 +41,7 @@ impl Gui {
         handler.on_resize(size);
     }
 
-    pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler, pos: Vec2) {
+    pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler<Element = E>, pos: Vec2) {
         if pos == self.mouse_pos {
             return;
         }
@@ -75,22 +75,26 @@ impl Gui {
 
         if self.hovered_node != hover_changed_to {
             if let Some(left_node) = self.hovered_node.take() {
-                handler.on_mouse_leave(left_node);
+                if let Some(element) = self.elements.get_mut(&left_node) {
+                    handler.on_mouse_leave(element);
+                }
             }
             if let Some(entered_node) = hover_changed_to {
-                handler.on_mouse_enter(entered_node);
+                if let Some(element) = self.elements.get_mut(&entered_node) {
+                    handler.on_mouse_enter(element);
+                }
                 self.hovered_node = Some(entered_node);
             }
         }
     }
 }
 
-struct Inner<'a> {
-    handler: &'a mut dyn GuiHandler,
-    elements: &'a mut HashMap<LayoutNode, ElementContext>,
+struct Inner<'a, E> {
+    handler: &'a mut dyn GuiHandler<Element = E>,
+    elements: &'a mut HashMap<LayoutNode, E>,
 }
 
-impl<'a> LayoutHandler for Inner<'a> {
+impl<'a, E> LayoutHandler for Inner<'a, E> {
     fn on_layout(&mut self, node: LayoutNode, placement: &Placement) {
         let Some(element) = self.elements.get_mut(&node) else {
             println!("WARNING: Attempted to place element without context");
@@ -103,13 +107,11 @@ impl<'a> LayoutHandler for Inner<'a> {
 
 
 pub trait GuiHandler {
+    type Element;
+
     fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, node: LayoutNode);
-    fn on_mouse_leave(&mut self, node: LayoutNode);
+    fn on_mouse_enter(&mut self, element: &mut Self::Element);
+    fn on_mouse_leave(&mut self, element: &mut Self::Element);
     fn on_resize(&mut self, size: Vec2);
-    fn on_element_layout(&mut self, element: &mut ElementContext, placement: &Placement);
+    fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement);
 }
-
-
-
-pub struct ElementContext {}

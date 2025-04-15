@@ -31,6 +31,7 @@ impl LayoutTree {
         for_each_node(&self.tree, self.root, func);
     }
 
+    // TODO: Node context should be generic.
     pub fn is_interactable(&self, node: LayoutNode) -> bool {
         *self.tree.get_node_context(node).unwrap()
     }
