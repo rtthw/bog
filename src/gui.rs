@@ -8,53 +8,50 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 
 
-pub struct Gui<E> {
-    layout_tree: LayoutTree,
-    elements: HashMap<LayoutNode, E>, // TODO: No hash.
+pub type Element = LayoutNode;
 
+pub struct Gui {
+    layout_tree: LayoutTree,
     size: Vec2,
     mouse_pos: Vec2,
-    hovered_node: Option<LayoutNode>,
+    hovered_element: Option<LayoutNode>,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
-    drag_start_node: Option<LayoutNode>,
+    drag_start_element: Option<LayoutNode>,
     is_dragging: bool,
 }
 
-impl<E> Gui<E> {
+impl Gui {
     pub fn new(root_layout: Layout) -> Self {
         Self {
             layout_tree: LayoutTree::new(root_layout),
-            elements: HashMap::new(),
             size: vec2(0.0, 0.0),
             mouse_pos: vec2(0.0, 0.0),
-            hovered_node: None,
+            hovered_element: None,
             drag_start_pos: None,
             drag_start_time: std::time::Instant::now(),
-            drag_start_node: None,
+            drag_start_element: None,
             is_dragging: false,
         }
     }
 
-    pub fn push_element_to_root(&mut self, element: E, layout: Layout) {
-        let node = self.layout_tree.push_to_root(layout, true); // TODO: Node context?
-        self.elements.insert(node, element);
+    pub fn push_element_to_root(&mut self, layout: Layout) -> Element {
+        self.layout_tree.push_to_root(layout, true)
     }
 
-    pub fn handle_resize(&mut self, handler: &mut impl GuiHandler<Element = E>, size: Vec2) {
+    pub fn handle_resize(&mut self, handler: &mut impl GuiHandler, size: Vec2) {
         if size == self.size {
             return;
         }
         self.size = size;
         self.layout_tree.resize(size);
-        self.layout_tree.do_layout(&mut Inner {
+        self.layout_tree.do_layout(&mut Proxy {
             handler,
-            elements: &mut self.elements,
         });
         handler.on_resize(size);
     }
 
-    pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler<Element = E>, pos: Vec2) {
+    pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler, pos: Vec2) {
         if pos == self.mouse_pos {
             return;
         }
@@ -87,9 +84,7 @@ impl<E> Gui<E> {
         });
 
         if let Some(drag_origin_pos) = self.drag_start_pos {
-            if let Some(drag_element) = self.drag_start_node.as_ref()
-                .and_then(|n| self.elements.get_mut(n))
-            {
+            if let Some(drag_element) = self.drag_start_element {
                 if !self.is_dragging {
                     let dur_since = std::time::Instant::now()
                         .duration_since(self.drag_start_time);
@@ -110,42 +105,32 @@ impl<E> Gui<E> {
             }
         }
 
-        if self.hovered_node != hover_changed_to {
-            if let Some(left_node) = self.hovered_node.take() {
-                if let Some(element) = self.elements.get_mut(&left_node) {
-                    handler.on_mouse_leave(element);
-                }
+        if self.hovered_element != hover_changed_to {
+            if let Some(left_element) = self.hovered_element.take() {
+                handler.on_mouse_leave(left_element);
             }
-            if let Some(entered_node) = hover_changed_to {
-                if let Some(element) = self.elements.get_mut(&entered_node) {
-                    handler.on_mouse_enter(element);
-                }
-                self.hovered_node = Some(entered_node);
+            if let Some(entered_element) = hover_changed_to {
+                handler.on_mouse_enter(entered_element);
+                self.hovered_element = Some(entered_element);
             }
         }
     }
 
-    pub fn handle_mouse_down(&mut self, handler: &mut impl GuiHandler<Element = E>) {
-        if let Some(node) = self.hovered_node {
-            if let Some(element) = self.elements.get_mut(&node) {
-                handler.on_mouse_down(element);
-            }
+    pub fn handle_mouse_down(&mut self, handler: &mut impl GuiHandler) {
+        if let Some(element) = self.hovered_element {
+            handler.on_mouse_down(element);
         }
         self.drag_start_time = std::time::Instant::now();
         self.drag_start_pos = Some(self.mouse_pos);
-        self.drag_start_node = self.hovered_node.clone();
+        self.drag_start_element = self.hovered_element.clone();
     }
 
-    pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler<Element = E>) {
-        if let Some(node) = self.hovered_node {
-            if let Some(element) = self.elements.get_mut(&node) {
-                handler.on_mouse_up(element);
-            }
+    pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler) {
+        if let Some(element) = self.hovered_element {
+            handler.on_mouse_up(element);
         }
         self.drag_start_pos = None;
-        if let Some(element) = self.drag_start_node.take()
-            .and_then(|n| self.elements.get_mut(&n))
-        {
+        if let Some(element) = self.drag_start_element.take() {
             if self.is_dragging {
                 self.is_dragging = false;
                 handler.on_drag_end(element);
@@ -154,34 +139,27 @@ impl<E> Gui<E> {
     }
 }
 
-struct Inner<'a, E> {
-    handler: &'a mut dyn GuiHandler<Element = E>,
-    elements: &'a mut HashMap<LayoutNode, E>,
+struct Proxy<'a> {
+    handler: &'a mut dyn GuiHandler,
 }
 
-impl<'a, E> LayoutHandler for Inner<'a, E> {
+impl<'a> LayoutHandler for Proxy<'a> {
     fn on_layout(&mut self, node: LayoutNode, placement: &Placement) {
-        let Some(element) = self.elements.get_mut(&node) else {
-            println!("WARNING: Attempted to place element without context");
-            return;
-        };
-        self.handler.on_element_layout(element, placement);
+        self.handler.on_element_layout(node, placement);
     }
 }
 
 
 
 pub trait GuiHandler {
-    type Element;
-
     fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, element: &mut Self::Element);
-    fn on_mouse_leave(&mut self, element: &mut Self::Element);
-    fn on_mouse_down(&mut self, element: &mut Self::Element);
-    fn on_mouse_up(&mut self, element: &mut Self::Element);
-    fn on_drag_update(&mut self, element: &mut Self::Element, hovered: Option<LayoutNode>, delta: Vec2);
-    fn on_drag_start(&mut self, element: &mut Self::Element);
-    fn on_drag_end(&mut self, element: &mut Self::Element);
+    fn on_mouse_enter(&mut self, element: Element);
+    fn on_mouse_leave(&mut self, element: Element);
+    fn on_mouse_down(&mut self, element: Element);
+    fn on_mouse_up(&mut self, element: Element);
+    fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2);
+    fn on_drag_start(&mut self, element: Element);
+    fn on_drag_end(&mut self, element: Element);
     fn on_resize(&mut self, size: Vec2);
-    fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement);
+    fn on_element_layout(&mut self, element: Element, placement: &Placement);
 }

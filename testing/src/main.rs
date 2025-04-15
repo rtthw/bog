@@ -36,19 +36,19 @@ fn main() -> Result<()> {
         .gap_y(5.0)
         .align_content_center()
         .align_items_center());
-    gui.push_element_to_root(0, Layout::default()
+    gui.push_element_to_root(Layout::default()
         .width(70.0)
         .height(50.0));
-    gui.push_element_to_root(1, Layout::default()
+    gui.push_element_to_root(Layout::default()
         .width(100.0)
         .height(30.0));
-    gui.push_element_to_root(2, Layout::default()
+    gui.push_element_to_root(Layout::default()
         .width(50.0)
         .height(70.0));
-    gui.push_element_to_root(3, Layout::default()
+    gui.push_element_to_root(Layout::default()
         .width(40.0)
         .height(10.0));
-    gui.push_element_to_root(4, Layout::default()
+    gui.push_element_to_root(Layout::default()
         .width(20.0)
         .height(20.0));
     let mut app = App {
@@ -112,49 +112,47 @@ struct App<'w> {
 }
 
 impl<'w> GuiHandler for App<'w> {
-    type Element = usize;
-
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
-    fn on_mouse_enter(&mut self, element: &mut Self::Element) {
+    fn on_mouse_enter(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
         self.paints[*element].change_color(0xb7b7c0ff);
     }
 
-    fn on_mouse_leave(&mut self, element: &mut Self::Element) {
+    fn on_mouse_leave(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
         self.paints[*element].change_color(0xaaaaabff);
     }
 
-    fn on_mouse_down(&mut self, element: &mut Self::Element) {
+    fn on_mouse_down(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.paints[*element].change_color(0x3c3c44ff);
     }
 
-    fn on_mouse_up(&mut self, element: &mut Self::Element) {
+    fn on_mouse_up(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.paints[*element].change_color(0xb7b7c0ff);
         println!("Element #{element} clicked");
     }
 
-    fn on_drag_update(&mut self, element: &mut Self::Element, hovered: Option<LayoutNode>, delta: Vec2) {
+    fn on_drag_update(&mut self, element: Element, hovered: Option<Element>, delta: Vec2) {
     }
 
-    fn on_drag_start(&mut self, element: &mut Self::Element) {
+    fn on_drag_start(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Grab);
     }
 
-    fn on_drag_end(&mut self, element: &mut Self::Element) {
+    fn on_drag_end(&mut self, element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
     }
 
     fn on_resize(&mut self, _size: math::Vec2) {}
 
-    fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement) {
+    fn on_element_layout(&mut self, element: Element, placement: &Placement) {
         self.paints[*element] = Rectangle {
             pos: placement.position(),
             size: vec2(placement.layout.size.width, placement.layout.size.height),
