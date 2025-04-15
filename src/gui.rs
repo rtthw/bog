@@ -15,6 +15,10 @@ pub struct Gui<E> {
     size: Vec2,
     mouse_pos: Vec2,
     hovered_node: Option<LayoutNode>,
+    drag_start_pos: Option<Vec2>,
+    drag_start_time: std::time::Instant,
+    drag_start_node: Option<LayoutNode>,
+    is_dragging: bool,
 }
 
 impl<E> Gui<E> {
@@ -25,6 +29,10 @@ impl<E> Gui<E> {
             size: vec2(0.0, 0.0),
             mouse_pos: vec2(0.0, 0.0),
             hovered_node: None,
+            drag_start_pos: None,
+            drag_start_time: std::time::Instant::now(),
+            drag_start_node: None,
+            is_dragging: false,
         }
     }
 
@@ -78,6 +86,30 @@ impl<E> Gui<E> {
             hover_changed_to = Some(node.into());
         });
 
+        if let Some(drag_origin_pos) = self.drag_start_pos {
+            if let Some(drag_element) = self.drag_start_node.as_ref()
+                .and_then(|n| self.elements.get_mut(n))
+            {
+                if !self.is_dragging {
+                    let dur_since = std::time::Instant::now()
+                        .duration_since(self.drag_start_time);
+                    if dur_since.as_secs_f64() > 0.1 {
+                        // User is likely dragging.
+                        self.is_dragging = true;
+                        handler.on_drag_start(drag_element);
+                    }
+                }
+                if self.is_dragging {
+                    let delta = pos - drag_origin_pos;
+                    handler.on_drag_update(
+                        drag_element,
+                        hover_changed_to,
+                        delta,
+                    );
+                }
+            }
+        }
+
         if self.hovered_node != hover_changed_to {
             if let Some(left_node) = self.hovered_node.take() {
                 if let Some(element) = self.elements.get_mut(&left_node) {
@@ -99,12 +131,24 @@ impl<E> Gui<E> {
                 handler.on_mouse_down(element);
             }
         }
+        self.drag_start_time = std::time::Instant::now();
+        self.drag_start_pos = Some(self.mouse_pos);
+        self.drag_start_node = self.hovered_node.clone();
     }
 
     pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler<Element = E>) {
         if let Some(node) = self.hovered_node {
             if let Some(element) = self.elements.get_mut(&node) {
                 handler.on_mouse_up(element);
+            }
+        }
+        self.drag_start_pos = None;
+        if let Some(element) = self.drag_start_node.take()
+            .and_then(|n| self.elements.get_mut(&n))
+        {
+            if self.is_dragging {
+                self.is_dragging = false;
+                handler.on_drag_end(element);
             }
         }
     }
@@ -135,6 +179,9 @@ pub trait GuiHandler {
     fn on_mouse_leave(&mut self, element: &mut Self::Element);
     fn on_mouse_down(&mut self, element: &mut Self::Element);
     fn on_mouse_up(&mut self, element: &mut Self::Element);
+    fn on_drag_update(&mut self, element: &mut Self::Element, hovered: Option<LayoutNode>, delta: Vec2);
+    fn on_drag_start(&mut self, element: &mut Self::Element);
+    fn on_drag_end(&mut self, element: &mut Self::Element);
     fn on_resize(&mut self, size: Vec2);
     fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement);
 }
