@@ -255,6 +255,12 @@ pub struct PaintMesh {
 }
 
 impl PaintMesh {
+    pub fn change_color(&mut self, color: u32) {
+        for v in self.vertices.iter_mut() {
+            v.color = color;
+        }
+    }
+
     pub fn glyph(mesh: crate::fonts::GlyphMesh, color: u32) -> Self {
         Self {
             indices: mesh.indices,

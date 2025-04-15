@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         .with_title("Bog Testing")
         .with_inner_size(dpi::LogicalSize::new(1200.0, 800.0))
         .build(&event_loop)?;
-    let mut graphics = futures::executor::block_on(async {
+    let graphics = futures::executor::block_on(async {
         WindowGraphics::from_window(&window).await
     })?;
 
@@ -34,8 +34,11 @@ fn main() -> Result<()> {
 
     let mut painter = Painter::new(&graphics);
     let mut gui = Gui::new(Layout::default()
+        .flex_row()
         .fill_width()
         .fill_height()
+        .gap_x(10.0)
+        .gap_y(5.0)
         .align_content_center()
         .align_items_center());
     gui.push_element_to_root(Element::One, Layout::default()
@@ -45,6 +48,7 @@ fn main() -> Result<()> {
         .width(100.0)
         .height(30.0));
     let mut app = App {
+        graphics,
         paints: vec![
             Rectangle {
                 pos: vec2(0.0, 0.0),
@@ -68,10 +72,10 @@ fn main() -> Result<()> {
                     control_flow.exit();
                 }
                 WindowEvent::Resized(new_size) => {
-                    graphics.window().request_redraw();
+                    app.graphics.window().request_redraw();
                     if new_size.width > 0 && new_size.height > 0 {
                         let size = vec2(new_size.width as _, new_size.height as _);
-                        graphics.resize(size);
+                        app.graphics.resize(size);
                         gui.handle_resize(&mut app, size);
                     }
                 }
@@ -80,9 +84,9 @@ fn main() -> Result<()> {
                     gui.handle_mouse_move(&mut app, pos);
                 }
                 WindowEvent::RedrawRequested => {
-                    graphics
+                    app.graphics
                         .render(|render_pass| {
-                            painter.prepare(&graphics, &app.paints);
+                            painter.prepare(&app.graphics, &app.paints);
                             painter.render(render_pass, &app.paints);
                         })
                         .unwrap();
@@ -98,33 +102,38 @@ fn main() -> Result<()> {
 
 
 
-struct App {
+struct App<'w> {
+    graphics: WindowGraphics<'w>,
     paints: Vec<PaintMesh>,
 }
 
-impl GuiHandler for App {
+impl<'w> GuiHandler for App<'w> {
     type Element = Element;
 
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
     fn on_mouse_enter(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
         match element {
             Element::One => {
-                println!("One hovered");
+                self.paints[0].change_color(0xb7b7c0ff);
             }
             Element::Two => {
-                println!("Two hovered");
+                self.paints[1].change_color(0xb7b7c0ff);
             }
         }
     }
 
     fn on_mouse_leave(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        self.graphics.window().set_cursor_icon(CursorIcon::Default);
         match element {
             Element::One => {
-                println!("One un-hovered");
+                self.paints[0].change_color(0xaaaaabff);
             }
             Element::Two => {
-                println!("Two un-hovered");
+                self.paints[1].change_color(0xaaaaabff);
             }
         }
     }

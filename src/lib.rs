@@ -13,7 +13,7 @@ pub mod window {
         error::{EventLoopError as WindowManagerError, OsError as WindowError},
         event::{Event as WindowManagerEvent, WindowEvent},
         event_loop::EventLoop,
-        window::{Window, WindowBuilder},
+        window::{CursorIcon, Window, WindowBuilder},
     };
 }
 
