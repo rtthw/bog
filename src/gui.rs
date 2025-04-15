@@ -92,6 +92,22 @@ impl<E> Gui<E> {
             }
         }
     }
+
+    pub fn handle_mouse_down(&mut self, handler: &mut impl GuiHandler<Element = E>) {
+        if let Some(node) = self.hovered_node {
+            if let Some(element) = self.elements.get_mut(&node) {
+                handler.on_mouse_down(element);
+            }
+        }
+    }
+
+    pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler<Element = E>) {
+        if let Some(node) = self.hovered_node {
+            if let Some(element) = self.elements.get_mut(&node) {
+                handler.on_mouse_up(element);
+            }
+        }
+    }
 }
 
 struct Inner<'a, E> {
@@ -117,6 +133,8 @@ pub trait GuiHandler {
     fn on_mouse_move(&mut self, pos: Vec2);
     fn on_mouse_enter(&mut self, element: &mut Self::Element);
     fn on_mouse_leave(&mut self, element: &mut Self::Element);
+    fn on_mouse_down(&mut self, element: &mut Self::Element);
+    fn on_mouse_up(&mut self, element: &mut Self::Element);
     fn on_resize(&mut self, size: Vec2);
     fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement);
 }

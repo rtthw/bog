@@ -83,6 +83,13 @@ fn main() -> Result<()> {
                     let pos = vec2(position.x as _, position.y as _);
                     gui.handle_mouse_move(&mut app, pos);
                 }
+                WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
+                    if state.is_pressed() {
+                        gui.handle_mouse_down(&mut app);
+                    } else {
+                        gui.handle_mouse_up(&mut app);
+                    }
+                }
                 WindowEvent::RedrawRequested => {
                     app.graphics
                         .render(|render_pass| {
@@ -138,6 +145,31 @@ impl<'w> GuiHandler for App<'w> {
         }
     }
 
+    fn on_mouse_down(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        match element {
+            Element::One => {
+                self.paints[0].change_color(0x3c3c44ff);
+            }
+            Element::Two => {
+                self.paints[1].change_color(0x3c3c44ff);
+            }
+        }
+    }
+
+    fn on_mouse_up(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        match element {
+            Element::One => {
+                self.paints[0].change_color(0xb7b7c0ff);
+            }
+            Element::Two => {
+                self.paints[1].change_color(0xb7b7c0ff);
+            }
+        }
+        println!("Element {element:?} clicked");
+    }
+
     fn on_resize(&mut self, _size: math::Vec2) {}
 
     fn on_element_layout(&mut self, element: &mut Self::Element, placement: &layout::Placement) {
@@ -162,6 +194,7 @@ impl<'w> GuiHandler for App<'w> {
     }
 }
 
+#[derive(Debug)]
 enum Element {
     One,
     Two,
