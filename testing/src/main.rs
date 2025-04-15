@@ -2,7 +2,7 @@
 
 
 use bog::*;
-use fonts::*;
+// use fonts::*;
 use graphics::*;
 use gui::*;
 use layout::*;
@@ -22,46 +22,43 @@ fn main() -> Result<()> {
         WindowGraphics::from_window(&window).await
     })?;
 
-    let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
-        .unwrap();
-    let parsed_font = font.parse().unwrap();
-    let test_glyph_id = parsed_font.char_glyph('g').unwrap();
-    let mut test_glyph_mesh = parsed_font.glyph_mesh(test_glyph_id, 60.0).unwrap();
-    for v in test_glyph_mesh.vertices.iter_mut() {
-        v.x += 100.0;
-        v.y += 400.0;
-    }
+    // let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
+    //     .unwrap();
+    // let parsed_font = font.parse().unwrap();
 
     let mut painter = Painter::new(&graphics);
     let mut gui = Gui::new(Layout::default()
         .flex_row()
+        .flex_wrap()
         .fill_width()
         .fill_height()
         .gap_x(10.0)
         .gap_y(5.0)
         .align_content_center()
         .align_items_center());
-    gui.push_element_to_root(Element::One, Layout::default()
+    gui.push_element_to_root(0, Layout::default()
         .width(70.0)
         .height(50.0));
-    gui.push_element_to_root(Element::Two, Layout::default()
+    gui.push_element_to_root(1, Layout::default()
         .width(100.0)
         .height(30.0));
+    gui.push_element_to_root(2, Layout::default()
+        .width(50.0)
+        .height(70.0));
+    gui.push_element_to_root(3, Layout::default()
+        .width(40.0)
+        .height(10.0));
+    gui.push_element_to_root(4, Layout::default()
+        .width(20.0)
+        .height(20.0));
     let mut app = App {
         graphics,
         paints: vec![
-            Rectangle {
-                pos: vec2(0.0, 0.0),
-                size: vec2(100.0, 50.0),
-                color: 0xaaaaabff,
-                corner_radii: [7.0, 19.0, 1.0, 45.0],
-            }.to_mesh(),
-            Rectangle {
-                pos: vec2(0.0, 0.0),
-                size: vec2(100.0, 50.0),
-                color: 0xaaaaabff,
-                corner_radii: [7.0, 19.0, 1.0, 45.0],
-            }.to_mesh(),
+            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
+            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
+            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
+            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
+            PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff),
         ],
     };
 
@@ -115,87 +112,54 @@ struct App<'w> {
 }
 
 impl<'w> GuiHandler for App<'w> {
-    type Element = Element;
+    type Element = usize;
 
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
     fn on_mouse_enter(&mut self, element: &mut Self::Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
-        match element {
-            Element::One => {
-                self.paints[0].change_color(0xb7b7c0ff);
-            }
-            Element::Two => {
-                self.paints[1].change_color(0xb7b7c0ff);
-            }
-        }
+        self.paints[*element].change_color(0xb7b7c0ff);
     }
 
     fn on_mouse_leave(&mut self, element: &mut Self::Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
-        match element {
-            Element::One => {
-                self.paints[0].change_color(0xaaaaabff);
-            }
-            Element::Two => {
-                self.paints[1].change_color(0xaaaaabff);
-            }
-        }
+        self.paints[*element].change_color(0xaaaaabff);
     }
 
     fn on_mouse_down(&mut self, element: &mut Self::Element) {
         self.graphics.window().request_redraw();
-        match element {
-            Element::One => {
-                self.paints[0].change_color(0x3c3c44ff);
-            }
-            Element::Two => {
-                self.paints[1].change_color(0x3c3c44ff);
-            }
-        }
+        self.paints[*element].change_color(0x3c3c44ff);
     }
 
     fn on_mouse_up(&mut self, element: &mut Self::Element) {
         self.graphics.window().request_redraw();
-        match element {
-            Element::One => {
-                self.paints[0].change_color(0xb7b7c0ff);
-            }
-            Element::Two => {
-                self.paints[1].change_color(0xb7b7c0ff);
-            }
-        }
-        println!("Element {element:?} clicked");
+        self.paints[*element].change_color(0xb7b7c0ff);
+        println!("Element #{element} clicked");
+    }
+
+    fn on_drag_update(&mut self, element: &mut Self::Element, hovered: Option<LayoutNode>, delta: Vec2) {
+    }
+
+    fn on_drag_start(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        self.graphics.window().set_cursor_icon(CursorIcon::Grab);
+    }
+
+    fn on_drag_end(&mut self, element: &mut Self::Element) {
+        self.graphics.window().request_redraw();
+        self.graphics.window().set_cursor_icon(CursorIcon::Default);
     }
 
     fn on_resize(&mut self, _size: math::Vec2) {}
 
-    fn on_element_layout(&mut self, element: &mut Self::Element, placement: &layout::Placement) {
-        match element {
-            Element::One => {
-                self.paints[0] = Rectangle {
-                    pos: placement.position(),
-                    size: vec2(placement.layout.size.width, placement.layout.size.height),
-                    color: 0xaaaaabff,
-                    corner_radii: [3.0, 3.0, 3.0, 3.0],
-                }.to_mesh();
-            }
-            Element::Two => {
-                self.paints[1] = Rectangle {
-                    pos: placement.position(),
-                    size: vec2(placement.layout.size.width, placement.layout.size.height),
-                    color: 0xaaaaabff,
-                    corner_radii: [3.0, 3.0, 3.0, 3.0],
-                }.to_mesh();
-            }
-        }
+    fn on_element_layout(&mut self, element: &mut Self::Element, placement: &Placement) {
+        self.paints[*element] = Rectangle {
+            pos: placement.position(),
+            size: vec2(placement.layout.size.width, placement.layout.size.height),
+            color: 0xaaaaabff,
+            corner_radii: [3.0, 3.0, 3.0, 3.0],
+        }.to_mesh();
     }
-}
-
-#[derive(Debug)]
-enum Element {
-    One,
-    Two,
 }
