@@ -10,7 +10,7 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 pub struct Gui<E> {
     layout_tree: LayoutTree,
-    elements: HashMap<LayoutNode, E>,
+    elements: HashMap<LayoutNode, E>, // TODO: No hash.
 
     size: Vec2,
     mouse_pos: Vec2,
@@ -18,14 +18,19 @@ pub struct Gui<E> {
 }
 
 impl<E> Gui<E> {
-    pub fn new() -> Self {
+    pub fn new(root_layout: Layout) -> Self {
         Self {
-            layout_tree: LayoutTree::new(Layout::default()),
+            layout_tree: LayoutTree::new(root_layout),
             elements: HashMap::new(),
             size: vec2(0.0, 0.0),
             mouse_pos: vec2(0.0, 0.0),
             hovered_node: None,
         }
+    }
+
+    pub fn push_element_to_root(&mut self, element: E, layout: Layout) {
+        let node = self.layout_tree.push_to_root(layout, true); // TODO: Node context?
+        self.elements.insert(node, element);
     }
 
     pub fn handle_resize(&mut self, handler: &mut impl GuiHandler<Element = E>, size: Vec2) {
