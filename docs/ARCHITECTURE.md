@@ -3,20 +3,31 @@
 
 # Architecture
 
-Bog is a set of composable modules that are independent of one another.
+## Top-Level Crates
 
-## Modules
-
-### Graphics
+### bog_render
 
 *Interfaces for graphics cards.*
 
 - **Entry Point:** `GraphicsCard`
 - **Instance Type:** `GraphicsContext`
 
-### Window
+### bog_window
 
 *Interfaces for window managers.*
 
-- **Entry Point:** `WindowManager`
-- **Instance Type:** `Window`
+## Mid-Level Crates
+
+### bog_layout
+
+*Planar layout types and functionality.*
+
+## Low-Level Crates
+
+### bog_color
+
+*Color type definitions and conversions.*
+
+### bog_math
+
+*Various mathematical types and functions.*
