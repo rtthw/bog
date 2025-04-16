@@ -5,17 +5,10 @@
 pub mod fonts;
 pub mod graphics;
 pub mod gui;
-pub mod layout;
-pub mod math;
-pub mod window {
-    pub use winit::{
-        dpi,
-        error::{EventLoopError as WindowManagerError, OsError as WindowError},
-        event::{ElementState, Event as WindowManagerEvent, MouseButton, WindowEvent},
-        event_loop::EventLoop,
-        window::{CursorIcon, Window, WindowBuilder},
-    };
-}
+
+pub use bog_layout as layout;
+pub use bog_math as math;
+pub use bog_window as window;
 
 
 
