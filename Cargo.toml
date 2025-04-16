@@ -35,6 +35,7 @@ wgpu = "24"
 
 [workspace.dependencies]
 bog_color = { path = "crates/bog_color" }
+bog_env = { path = "crates/bog_env" }
 bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
