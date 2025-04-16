@@ -193,6 +193,11 @@ dependencies = [
 name = "bog"
 version = "0.1.0"
 dependencies = [
+ "bog_color",
+ "bog_layout",
+ "bog_math",
+ "bog_render",
+ "bog_window",
  "bytemuck",
  "cgmath",
  "glutin",
@@ -206,6 +211,26 @@ dependencies = [
  "wgpu",
  "winit",
 ]
+
+[[package]]
+name = "bog_color"
+version = "0.1.0"
+
+[[package]]
+name = "bog_layout"
+version = "0.1.0"
+
+[[package]]
+name = "bog_math"
+version = "0.1.0"
+
+[[package]]
+name = "bog_render"
+version = "0.1.0"
+
+[[package]]
+name = "bog_window"
+version = "0.1.0"
 
 [[package]]
 name = "bumpalo"

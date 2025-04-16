@@ -1,5 +1,5 @@
 [workspace]
-members = ["testing"]
+members = ["crates/*", "testing"]
 
 [package]
 name = "bog"
@@ -17,6 +17,12 @@ default = ["all"]
 all = []
 
 [dependencies]
+bog_color = { path = "crates/bog_color" }
+bog_layout = { path = "crates/bog_layout" }
+bog_math = { path = "crates/bog_math" }
+bog_render = { path = "crates/bog_render" }
+bog_window = { path = "crates/bog_window" }
+
 bytemuck = { version = "1", features = ["derive"] }
 cgmath = "0.18"
 glutin = "0.30"
