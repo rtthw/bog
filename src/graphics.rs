@@ -39,12 +39,12 @@ pub struct WindowGraphics<'w> {
     multisampled_render_target: Option<wgpu::TextureView>,
 
     // NOTE: Window must be dropped after the other surface fields.
-    window: &'w Window,
+    window: Window,
 }
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
-    pub async fn from_window(window: &'w Window) -> Result<Self> {
+    pub async fn from_window(window: Window) -> Result<Self> {
         let size: [u32; 2] = window.inner_size().into();
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -55,7 +55,7 @@ impl<'w> WindowGraphics<'w> {
             ..Default::default()
         });
 
-        let surface = instance.create_surface(window)?;
+        let surface = instance.create_surface((*window).clone())?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -135,7 +135,7 @@ impl<'w> WindowGraphics<'w> {
     }
 
     pub fn window(&self) -> &Window {
-        self.window
+        &self.window
     }
 
     pub fn screen_size(&self) -> Vec2 {

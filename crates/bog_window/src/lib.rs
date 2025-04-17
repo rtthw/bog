@@ -2,46 +2,96 @@
 
 
 
+use std::sync::Arc;
+
 use bog_math::{vec2, Vec2};
 pub use winit::{
-    dpi,
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent, MouseButton, WindowEvent},
-    event_loop::{EventLoop, EventLoopWindowTarget},
-    window::{CursorIcon, Window},
+    window::CursorIcon,
 };
 
 
 
-pub struct WindowManager {
-    event_loop: EventLoop<()>,
+#[derive(Clone, Debug)]
+pub struct Window(Arc<winit::window::Window>);
+
+impl std::ops::Deref for Window {
+    type Target = Arc<winit::window::Window>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl WindowManager {
+
+pub trait Client {
+    fn on_resume(&mut self, wm: WindowManager);
+    fn on_window_event(&mut self, wm: WindowManager, event: WindowEvent);
+}
+
+struct ClientProxy<'a, A: Client> {
+    client: &'a mut A,
+}
+
+impl<'a, A: Client> winit::application::ApplicationHandler for ClientProxy<'a, A> {
+    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.client.on_resume(WindowManager { event_loop })
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: WindowEvent,
+    ) {
+        self.client.on_window_event(WindowManager { event_loop }, event);
+    }
+}
+
+
+
+pub struct WindowingSystem {
+    event_loop: winit::event_loop::EventLoop<()>,
+}
+
+impl WindowingSystem {
     pub fn new() -> Result<Self, WindowManagerError> {
         Ok(Self {
-            event_loop: EventLoop::new()?,
+            event_loop: winit::event_loop::EventLoop::new()?,
         })
     }
 
+    pub fn run(self, app: &mut impl Client) -> Result<(), WindowManagerError> {
+        self.event_loop.run_app(&mut ClientProxy { client: app })
+    }
+}
+
+
+
+pub struct WindowManager<'a> {
+    event_loop: &'a winit::event_loop::ActiveEventLoop,
+}
+
+impl<'a> WindowManager<'a> {
     pub fn create_window(&self, desc: WindowDescriptor) -> Result<Window, WindowError> {
-        winit::window::WindowBuilder::new()
+        let inner = self.event_loop.create_window(winit::window::WindowAttributes::default()
             .with_title(desc.title)
-            .with_inner_size(dpi::LogicalSize::new(desc.inner_size.x, desc.inner_size.y))
+            .with_inner_size(
+                winit::dpi::LogicalSize::new(desc.inner_size.x as f64, desc.inner_size.y as f64)
+            )
             .with_active(desc.active)
             .with_maximized(desc.maximized)
             .with_visible(desc.visible)
             .with_transparent(desc.transparent)
             .with_blur(desc.blurred)
-            .with_decorations(desc.decorated)
-            .build(&self.event_loop)
+            .with_decorations(desc.decorated))?;
+
+        Ok(Window(Arc::new(inner)))
     }
 
-    pub fn run<F>(self, func: F) -> Result<(), WindowManagerError>
-    where
-        F: FnMut(WindowManagerEvent<()>, &EventLoopWindowTarget<()>),
-    {
-        self.event_loop.run(func)
+    pub fn exit(&self) {
+        self.event_loop.exit();
     }
 }
 

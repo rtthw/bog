@@ -15,90 +15,10 @@ use window::*;
 
 
 fn main() -> Result<()> {
-    let wm = WindowManager::new()?;
-    let window = wm.create_window(WindowDescriptor {
-        title: "Bog Testing",
-        ..Default::default()
-    })?;
-    let graphics = futures::executor::block_on(async {
-        WindowGraphics::from_window(&window).await
-    })?;
+    let window_system = WindowingSystem::new()?;
+    let mut app = App { window: None, display: None };
 
-    let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
-        .unwrap();
-    let parsed_font = font.parse().unwrap();
-    let indicator_glyph_id = parsed_font.char_glyph('A').unwrap();
-    let indicator_glyph_mesh = parsed_font.glyph_mesh(indicator_glyph_id, 20.0).unwrap();
-
-    let mut painter = Painter::new(&graphics);
-    let mut gui = Gui::new(Layout::default()
-        .flex_row()
-        .flex_wrap()
-        .fill_width()
-        .fill_height()
-        .gap_x(10.0)
-        .gap_y(5.0)
-        .align_content_center()
-        .align_items_center());
-    let mut elements = HashMap::with_capacity(5);
-    let mut paints = Vec::with_capacity(5);
-    paints.push(PaintMesh::glyph(indicator_glyph_mesh, 0xaaaaabff)); // Dragging indicator.
-    for (index, layout) in [
-        Layout::default().width(70.0).height(50.0),
-        Layout::default().width(100.0).height(30.0),
-        Layout::default().width(50.0).height(70.0),
-        Layout::default().width(40.0).height(70.0),
-        Layout::default().width(20.0).height(40.0),
-        ].into_iter().enumerate()
-    {
-        let element = gui.push_element_to_root(layout);
-        elements.insert(element, index + 1); // Index 0 reserved for dragging indicator.
-        paints.push(PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff));
-    }
-    let mut app = App {
-        graphics,
-        paints,
-        elements,
-    };
-
-    wm.run(move |event, control_flow| {
-        match event {
-            WindowManagerEvent::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => {
-                    control_flow.exit();
-                }
-                WindowEvent::Resized(new_size) => {
-                    app.graphics.window().request_redraw();
-                    if new_size.width > 0 && new_size.height > 0 {
-                        let size = vec2(new_size.width as _, new_size.height as _);
-                        app.graphics.resize(size);
-                        gui.handle_resize(&mut app, size);
-                    }
-                }
-                WindowEvent::CursorMoved { position, .. } => {
-                    let pos = vec2(position.x as _, position.y as _);
-                    gui.handle_mouse_move(&mut app, pos);
-                }
-                WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
-                    if state.is_pressed() {
-                        gui.handle_mouse_down(&mut app);
-                    } else {
-                        gui.handle_mouse_up(&mut app);
-                    }
-                }
-                WindowEvent::RedrawRequested => {
-                    app.graphics
-                        .render(|render_pass| {
-                            painter.prepare(&app.graphics, &app.paints);
-                            painter.render(render_pass, &app.paints);
-                        })
-                        .unwrap();
-                }
-                _ => {}
-            }
-            _ => {}
-        }
-    })?;
+    window_system.run(&mut app)?;
 
     Ok(())
 }
@@ -106,12 +26,108 @@ fn main() -> Result<()> {
 
 
 struct App<'w> {
-    graphics: WindowGraphics<'w>,
-    paints: Vec<PaintMesh>,
-    elements: HashMap<Element, usize>,
+    window: Option<Window>,
+    display: Option<Display<'w>>,
 }
 
-impl<'w> GuiHandler for App<'w> {
+impl<'w> Client for App<'w> {
+    fn on_resume(&mut self, wm: WindowManager) {
+        if self.window.is_none() {
+            self.window = Some(wm.create_window(WindowDescriptor {
+                title: "Bog Testing",
+                ..Default::default()
+            }).unwrap());
+        }
+        if self.display.is_none() && self.window.is_some() {
+            let graphics = futures::executor::block_on(async {
+                WindowGraphics::from_window(self.window.clone().unwrap()).await
+            }).unwrap();
+
+            let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
+                .unwrap();
+            let parsed_font = font.parse().unwrap();
+            let indicator_glyph_id = parsed_font.char_glyph('A').unwrap();
+            let indicator_glyph_mesh = parsed_font.glyph_mesh(indicator_glyph_id, 20.0).unwrap();
+
+            let painter = Painter::new(&graphics);
+            let mut gui = Gui::new(Layout::default()
+                .flex_row()
+                .flex_wrap()
+                .fill_width()
+                .fill_height()
+                .gap_x(10.0)
+                .gap_y(5.0)
+                .align_content_center()
+                .align_items_center());
+            let mut elements = HashMap::with_capacity(5);
+            let mut paints = Vec::with_capacity(5);
+            paints.push(PaintMesh::glyph(indicator_glyph_mesh, 0xaaaaabff)); // Dragging indicator.
+            for (index, layout) in [
+                Layout::default().width(70.0).height(50.0),
+                Layout::default().width(100.0).height(30.0),
+                Layout::default().width(50.0).height(70.0),
+                Layout::default().width(40.0).height(70.0),
+                Layout::default().width(20.0).height(40.0),
+                ].into_iter().enumerate()
+            {
+                let element = gui.push_element_to_root(layout);
+                elements.insert(element, index + 1); // Index 0 reserved for dragging indicator.
+                paints.push(PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff));
+            }
+
+            self.display = Some(Display {
+                graphics,
+                painter,
+                paints,
+                elements,
+            });
+        }
+    }
+
+    fn on_window_event(&mut self, wm: WindowManager, event: WindowEvent) {
+        let Some(Display {
+            graphics,
+            painter,
+            paints,
+            elements,
+        }) = &mut self.display else { return; };
+        match event {
+            WindowEvent::CloseRequested => {
+                wm.exit();
+            }
+            // WindowEvent::Resized(new_size) => {
+            //     graphics.window().request_redraw();
+            //     if new_size.width > 0 && new_size.height > 0 {
+            //         let size = vec2(new_size.width as _, new_size.height as _);
+            //         graphics.resize(size);
+            //         gui.handle_resize(&mut app, size);
+            //     }
+            // }
+            // WindowEvent::CursorMoved { position, .. } => {
+            //     let pos = vec2(position.x as _, position.y as _);
+            //     gui.handle_mouse_move(&mut app, pos);
+            // }
+            // WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
+            //     if state.is_pressed() {
+            //         gui.handle_mouse_down(&mut app);
+            //     } else {
+            //         gui.handle_mouse_up(&mut app);
+            //     }
+            // }
+            WindowEvent::RedrawRequested => {
+                graphics
+                    .render(|render_pass| {
+                        painter.prepare(&graphics, &paints);
+                        painter.render(render_pass, &paints);
+                    })
+                    .unwrap();
+            }
+            _ => {}
+        }
+    }
+}
+
+impl<'w> GuiHandler for Display<'w> {
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
     fn on_mouse_enter(&mut self, element: Element, state: &GuiState) {
@@ -200,4 +216,13 @@ impl<'w> GuiHandler for App<'w> {
             corner_radii: [3.0, 3.0, 3.0, 3.0],
         }.to_mesh();
     }
+}
+
+
+
+struct Display<'w> {
+    graphics: WindowGraphics<'w>,
+    painter: Painter,
+    paints: Vec<PaintMesh>,
+    elements: HashMap<Element, usize>,
 }
