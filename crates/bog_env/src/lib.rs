@@ -82,3 +82,39 @@ impl Platform {
         }
     }
 }
+
+
+
+pub struct PlatformFeature(u8);
+pub struct FilesystemFeature(u8);
+pub struct WindowingFeature(u8);
+
+bitflags::bitflags! {
+    impl PlatformFeature: u8 {
+        const PROCESS       = 0b_00000001;
+        const FILESYSTEM    = 0b_00000010;
+        const WINDOW        = 0b_00000100;
+        const NETWORK       = 0b_00001000;
+        const KEYBOARD      = 0b_00010000;
+        const POINTER       = 0b_00100000;
+        const GESTURES      = 0b_01000000;
+    }
+
+    impl FilesystemFeature: u8 {
+        const FILES         = 0b_00000001;
+        const DIRECTORIES   = 0b_00000010;
+        const SOFT_LINK     = 0b_00000100;
+        const HARD_LINK     = 0b_00001000;
+        const SHARED_MEM    = 0b_00010000;
+        const HOME_DIR      = 0b_00100000;
+    }
+
+    impl WindowingFeature: u8 {
+        const MULTIPLE          = 0b_00000001;
+        const GRAB_FOCUS        = 0b_00000010;
+        const REQUEST_ATTENTION = 0b_00000100;
+        const GRAB_POINTER      = 0b_00001000;
+        const HIDE_POINTER      = 0b_00010000;
+        const IGNORE_POINTER    = 0b_00010000;
+    }
+}

@@ -216,6 +216,9 @@ version = "0.1.0"
 [[package]]
 name = "bog_env"
 version = "0.1.0"
+dependencies = [
+ "bitflags 2.9.0",
+]
 
 [[package]]
 name = "bog_layout"
