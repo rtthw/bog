@@ -16,7 +16,7 @@ use window::*;
 
 fn main() -> Result<()> {
     let window_system = WindowingSystem::new()?;
-    let mut app = App { window: None, display: None };
+    let mut app = App { window: None, display: None, gui: None };
 
     window_system.run(&mut app)?;
 
@@ -28,6 +28,7 @@ fn main() -> Result<()> {
 struct App<'w> {
     window: Option<Window>,
     display: Option<Display<'w>>,
+    gui: Option<Gui>,
 }
 
 impl<'w> Client for App<'w> {
@@ -81,44 +82,42 @@ impl<'w> Client for App<'w> {
                 paints,
                 elements,
             });
+            self.gui = Some(gui);
         }
     }
 
     fn on_window_event(&mut self, wm: WindowManager, event: WindowEvent) {
-        let Some(Display {
-            graphics,
-            painter,
-            paints,
-            elements,
-        }) = &mut self.display else { return; };
+        let Some(display) = &mut self.display else { return; };
+        let Some(gui) = &mut self.gui else { return; };
+
         match event {
             WindowEvent::CloseRequested => {
                 wm.exit();
             }
-            // WindowEvent::Resized(new_size) => {
-            //     graphics.window().request_redraw();
-            //     if new_size.width > 0 && new_size.height > 0 {
-            //         let size = vec2(new_size.width as _, new_size.height as _);
-            //         graphics.resize(size);
-            //         gui.handle_resize(&mut app, size);
-            //     }
-            // }
-            // WindowEvent::CursorMoved { position, .. } => {
-            //     let pos = vec2(position.x as _, position.y as _);
-            //     gui.handle_mouse_move(&mut app, pos);
-            // }
-            // WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
-            //     if state.is_pressed() {
-            //         gui.handle_mouse_down(&mut app);
-            //     } else {
-            //         gui.handle_mouse_up(&mut app);
-            //     }
-            // }
+            WindowEvent::Resized(new_size) => {
+                display.graphics.window().request_redraw();
+                if new_size.width > 0 && new_size.height > 0 {
+                    let size = vec2(new_size.width as _, new_size.height as _);
+                    display.graphics.resize(size);
+                    gui.handle_resize(display, size);
+                }
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                let pos = vec2(position.x as _, position.y as _);
+                gui.handle_mouse_move(display, pos);
+            }
+            WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
+                if state.is_pressed() {
+                    gui.handle_mouse_down(display);
+                } else {
+                    gui.handle_mouse_up(display);
+                }
+            }
             WindowEvent::RedrawRequested => {
-                graphics
+                display.graphics
                     .render(|render_pass| {
-                        painter.prepare(&graphics, &paints);
-                        painter.render(render_pass, &paints);
+                        display.painter.prepare(&display.graphics, &display.paints);
+                        display.painter.render(render_pass, &display.paints);
                     })
                     .unwrap();
             }
@@ -133,7 +132,7 @@ impl<'w> GuiHandler for Display<'w> {
     fn on_mouse_enter(&mut self, element: Element, state: &GuiState) {
         self.graphics.window().request_redraw();
         if !state.is_dragging {
-            self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
+            self.graphics.window().set_cursor(CursorIcon::Pointer);
         }
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0xb7b7c0ff);
@@ -142,7 +141,7 @@ impl<'w> GuiHandler for Display<'w> {
     fn on_mouse_leave(&mut self, element: Element, state: &GuiState) {
         self.graphics.window().request_redraw();
         if !state.is_dragging {
-            self.graphics.window().set_cursor_icon(CursorIcon::Default);
+            self.graphics.window().set_cursor(CursorIcon::Default);
         }
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0xaaaaabff);
@@ -184,7 +183,7 @@ impl<'w> GuiHandler for Display<'w> {
 
     fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree) {
         self.graphics.window().request_redraw();
-        self.graphics.window().set_cursor_icon(CursorIcon::Grab);
+        self.graphics.window().set_cursor(CursorIcon::Grab);
         if let Some(placement) = tree.placement(element) {
             let pos = vec2(
                 (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
@@ -201,7 +200,7 @@ impl<'w> GuiHandler for Display<'w> {
 
     fn on_drag_end(&mut self, _element: Element) {
         self.graphics.window().request_redraw();
-        self.graphics.window().set_cursor_icon(CursorIcon::Default);
+        self.graphics.window().set_cursor(CursorIcon::Default);
         self.paints[0] = PaintMesh::quad(vec2(-1.0, -1.0), vec2(1.0, 1.0), 0x00000000);
     }
 
