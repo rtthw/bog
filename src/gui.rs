@@ -9,27 +9,27 @@ use crate::{layout::*, math::{vec2, Vec2}};
 pub type Element = LayoutNode;
 
 pub struct Gui {
+    state: GuiState,
     layout_tree: LayoutTree,
-    size: Vec2,
-    mouse_pos: Vec2,
     hovered_element: Option<LayoutNode>,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
     drag_start_element: Option<LayoutNode>,
-    is_dragging: bool,
 }
 
 impl Gui {
     pub fn new(root_layout: Layout) -> Self {
         Self {
+            state: GuiState {
+                size: vec2(0.0, 0.0),
+                mouse_pos: vec2(0.0, 0.0),
+                is_dragging: false,
+            },
             layout_tree: LayoutTree::new(root_layout),
-            size: vec2(0.0, 0.0),
-            mouse_pos: vec2(0.0, 0.0),
             hovered_element: None,
             drag_start_pos: None,
             drag_start_time: std::time::Instant::now(),
             drag_start_element: None,
-            is_dragging: false,
         }
     }
 
@@ -38,10 +38,10 @@ impl Gui {
     }
 
     pub fn handle_resize(&mut self, handler: &mut impl GuiHandler, size: Vec2) {
-        if size == self.size {
+        if size == self.state.size {
             return;
         }
-        self.size = size;
+        self.state.size = size;
         self.layout_tree.resize(size);
         self.layout_tree.do_layout(&mut Proxy {
             handler,
@@ -50,10 +50,10 @@ impl Gui {
     }
 
     pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler, pos: Vec2) {
-        if pos == self.mouse_pos {
+        if pos == self.state.mouse_pos {
             return;
         }
-        self.mouse_pos = pos;
+        self.state.mouse_pos = pos;
 
         handler.on_mouse_move(pos);
 
@@ -83,16 +83,16 @@ impl Gui {
 
         if let Some(drag_origin_pos) = self.drag_start_pos {
             if let Some(drag_element) = self.drag_start_element {
-                if !self.is_dragging {
+                if !self.state.is_dragging {
                     let dur_since = std::time::Instant::now()
                         .duration_since(self.drag_start_time);
                     if dur_since.as_secs_f64() > 0.1 {
                         // User is likely dragging.
-                        self.is_dragging = true;
+                        self.state.is_dragging = true;
                         handler.on_drag_start(drag_element, &mut self.layout_tree);
                     }
                 }
-                if self.is_dragging {
+                if self.state.is_dragging {
                     let delta = pos - drag_origin_pos;
                     handler.on_drag_update(
                         &mut self.layout_tree,
@@ -106,10 +106,10 @@ impl Gui {
 
         if self.hovered_element != hover_changed_to {
             if let Some(left_element) = self.hovered_element.take() {
-                handler.on_mouse_leave(left_element);
+                handler.on_mouse_leave(left_element, &self.state);
             }
             if let Some(entered_element) = hover_changed_to {
-                handler.on_mouse_enter(entered_element);
+                handler.on_mouse_enter(entered_element, &self.state);
                 self.hovered_element = Some(entered_element);
             }
         }
@@ -117,25 +117,31 @@ impl Gui {
 
     pub fn handle_mouse_down(&mut self, handler: &mut impl GuiHandler) {
         if let Some(element) = self.hovered_element {
-            handler.on_mouse_down(element);
+            handler.on_mouse_down(element, &self.state);
         }
         self.drag_start_time = std::time::Instant::now();
-        self.drag_start_pos = Some(self.mouse_pos);
+        self.drag_start_pos = Some(self.state.mouse_pos);
         self.drag_start_element = self.hovered_element.clone();
     }
 
     pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler) {
         if let Some(element) = self.hovered_element {
-            handler.on_mouse_up(element);
+            handler.on_mouse_up(element, &self.state);
         }
         self.drag_start_pos = None;
         if let Some(element) = self.drag_start_element.take() {
-            if self.is_dragging {
-                self.is_dragging = false;
+            if self.state.is_dragging {
+                self.state.is_dragging = false;
                 handler.on_drag_end(element);
             }
         }
     }
+}
+
+pub struct GuiState {
+    pub size: Vec2,
+    pub mouse_pos: Vec2,
+    pub is_dragging: bool,
 }
 
 struct Proxy<'a> {
@@ -152,11 +158,17 @@ impl<'a> LayoutHandler for Proxy<'a> {
 
 pub trait GuiHandler {
     fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, element: Element);
-    fn on_mouse_leave(&mut self, element: Element);
-    fn on_mouse_down(&mut self, element: Element);
-    fn on_mouse_up(&mut self, element: Element);
-    fn on_drag_update(&mut self, tree: &mut LayoutTree, element: Element, hovered: Option<Element>, delta: Vec2);
+    fn on_mouse_enter(&mut self, element: Element, state: &GuiState);
+    fn on_mouse_leave(&mut self, element: Element, state: &GuiState);
+    fn on_mouse_down(&mut self, element: Element, state: &GuiState);
+    fn on_mouse_up(&mut self, element: Element, state: &GuiState);
+    fn on_drag_update(
+        &mut self,
+        tree: &mut LayoutTree,
+        element: Element,
+        hovered: Option<Element>,
+        delta: Vec2,
+    );
     fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree);
     fn on_drag_end(&mut self, element: Element);
     fn on_resize(&mut self, size: Vec2);

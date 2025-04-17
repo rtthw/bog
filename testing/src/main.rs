@@ -114,34 +114,44 @@ struct App<'w> {
 impl<'w> GuiHandler for App<'w> {
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
-    fn on_mouse_enter(&mut self, element: Element) {
+    fn on_mouse_enter(&mut self, element: Element, state: &GuiState) {
         self.graphics.window().request_redraw();
-        self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
+        if !state.is_dragging {
+            self.graphics.window().set_cursor_icon(CursorIcon::Pointer);
+        }
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0xb7b7c0ff);
     }
 
-    fn on_mouse_leave(&mut self, element: Element) {
+    fn on_mouse_leave(&mut self, element: Element, state: &GuiState) {
         self.graphics.window().request_redraw();
-        self.graphics.window().set_cursor_icon(CursorIcon::Default);
+        if !state.is_dragging {
+            self.graphics.window().set_cursor_icon(CursorIcon::Default);
+        }
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0xaaaaabff);
     }
 
-    fn on_mouse_down(&mut self, element: Element) {
+    fn on_mouse_down(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0x3c3c44ff);
     }
 
-    fn on_mouse_up(&mut self, element: Element) {
+    fn on_mouse_up(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
         let Some(index) = self.elements.get(&element) else { return; };
         self.paints[*index].change_color(0xb7b7c0ff);
         println!("Element #{index} clicked");
     }
 
-    fn on_drag_update(&mut self, tree: &mut LayoutTree, element: Element, hovered: Option<Element>, delta: Vec2) {
+    fn on_drag_update(
+        &mut self,
+        tree: &mut LayoutTree,
+        _element: Element,
+        hovered: Option<Element>,
+        _delta: Vec2,
+    ) {
         if let Some(placement) = hovered.and_then(|e| tree.placement(e)) {
             let pos = vec2(
                 (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
@@ -173,7 +183,7 @@ impl<'w> GuiHandler for App<'w> {
         }
     }
 
-    fn on_drag_end(&mut self, element: Element) {
+    fn on_drag_end(&mut self, _element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor_icon(CursorIcon::Default);
         self.paints[0] = PaintMesh::quad(vec2(-1.0, -1.0), vec2(1.0, 1.0), 0x00000000);
