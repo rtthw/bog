@@ -28,6 +28,12 @@ impl WindowManager {
         winit::window::WindowBuilder::new()
             .with_title(desc.title)
             .with_inner_size(dpi::LogicalSize::new(desc.inner_size.x, desc.inner_size.y))
+            .with_active(desc.active)
+            .with_maximized(desc.maximized)
+            .with_visible(desc.visible)
+            .with_transparent(desc.transparent)
+            .with_blur(desc.blurred)
+            .with_decorations(desc.decorated)
             .build(&self.event_loop)
     }
 
@@ -44,13 +50,25 @@ impl WindowManager {
 pub struct WindowDescriptor<'a> {
     pub title: &'a str,
     pub inner_size: Vec2,
+    pub active: bool,
+    pub maximized: bool,
+    pub visible: bool,
+    pub transparent: bool,
+    pub blurred: bool,
+    pub decorated: bool,
 }
 
 impl<'a> Default for WindowDescriptor<'a> {
     fn default() -> Self {
         Self {
             title: "Untitled Window",
-            inner_size: vec2(1280.0, 720.0)
+            inner_size: vec2(1280.0, 720.0),
+            active: true,
+            maximized: false,
+            visible: true,
+            transparent: false,
+            blurred: false,
+            decorated: true,
         }
     }
 }
