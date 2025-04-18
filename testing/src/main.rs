@@ -86,7 +86,7 @@ impl<'w> Client for App<'w> {
         }
     }
 
-    fn on_window_event(&mut self, wm: WindowManager, event: WindowEvent) {
+    fn on_window_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
         let Some(display) = &mut self.display else { return; };
         let Some(gui) = &mut self.gui else { return; };
 
