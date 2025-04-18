@@ -17,6 +17,7 @@ pub use wgpu;
 pub const SAMPLE_COUNT: u32 = 4;
 
 
+
 type Result<T> = std::result::Result<T, GraphicsError>;
 
 #[derive(thiserror::Error, Debug)]

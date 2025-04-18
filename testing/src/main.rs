@@ -18,7 +18,7 @@ fn main() -> Result<()> {
     let window_system = WindowingSystem::new()?;
     let mut app = App { window: None, display: None, gui: None };
 
-    window_system.run(&mut app)?;
+    window_system.run_client(&mut app)?;
 
     Ok(())
 }
@@ -126,6 +126,15 @@ impl<'w> Client for App<'w> {
     }
 }
 
+
+
+struct Display<'w> {
+    graphics: WindowGraphics<'w>,
+    painter: Painter,
+    paints: Vec<PaintMesh>,
+    elements: HashMap<Element, usize>,
+}
+
 impl<'w> GuiHandler for Display<'w> {
     fn on_mouse_move(&mut self, _pos: math::Vec2) {}
 
@@ -215,13 +224,4 @@ impl<'w> GuiHandler for Display<'w> {
             corner_radii: [3.0, 3.0, 3.0, 3.0],
         }.to_mesh();
     }
-}
-
-
-
-struct Display<'w> {
-    graphics: WindowGraphics<'w>,
-    painter: Painter,
-    paints: Vec<PaintMesh>,
-    elements: HashMap<Element, usize>,
 }

@@ -8,7 +8,7 @@ use bog_math::{vec2, Vec2};
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent, MouseButton, WindowEvent},
-    window::CursorIcon,
+    window::{CursorIcon, WindowId},
 };
 
 
@@ -25,9 +25,10 @@ impl std::ops::Deref for Window {
 }
 
 
+
 pub trait Client {
     fn on_resume(&mut self, wm: WindowManager);
-    fn on_window_event(&mut self, wm: WindowManager, event: WindowEvent);
+    fn on_window_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
 }
 
 struct ClientProxy<'a, A: Client> {
@@ -42,10 +43,10 @@ impl<'a, A: Client> winit::application::ApplicationHandler for ClientProxy<'a, A
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
+        id: WindowId,
         event: WindowEvent,
     ) {
-        self.client.on_window_event(WindowManager { event_loop }, event);
+        self.client.on_window_event(WindowManager { event_loop }, id, event);
     }
 }
 
@@ -62,8 +63,8 @@ impl WindowingSystem {
         })
     }
 
-    pub fn run(self, app: &mut impl Client) -> Result<(), WindowManagerError> {
-        self.event_loop.run_app(&mut ClientProxy { client: app })
+    pub fn run_client(self, client: &mut impl Client) -> Result<(), WindowManagerError> {
+        self.event_loop.run_app(&mut ClientProxy { client })
     }
 }
 
