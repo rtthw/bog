@@ -8,6 +8,7 @@ use bog_math::{vec2, Vec2};
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent, MouseButton, WindowEvent},
+    monitor::MonitorHandle,
     window::{CursorIcon, WindowId},
 };
 
@@ -93,6 +94,14 @@ impl<'a> WindowManager<'a> {
 
     pub fn exit(&self) {
         self.event_loop.exit();
+    }
+
+    pub fn primary_monitor(&self) -> Option<MonitorHandle> {
+        self.event_loop.primary_monitor()
+    }
+
+    pub fn available_monitors(&self) -> impl Iterator<Item = MonitorHandle> {
+        self.event_loop.available_monitors()
     }
 }
 

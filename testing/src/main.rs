@@ -34,6 +34,22 @@ struct App<'w> {
 impl<'w> Client for App<'w> {
     fn on_resume(&mut self, wm: WindowManager) {
         if self.window.is_none() {
+            for monitor in wm.available_monitors() {
+                println!(
+                    "[bog] INFO: MONITOR FOUND: \"{}\"",
+                    monitor.name().unwrap_or(String::new()),
+                );
+                let size = monitor.size();
+                println!("\t... SIZE: {}x{}px", size.width, size.height);
+                let pos = monitor.position();
+                println!("\t... POSITION: ({}, {})", pos.x, pos.y);
+                if let Some(mhz) = monitor.refresh_rate_millihertz() {
+                    println!("\t... REFRESH RATE: {} mHz", mhz);
+                } else {
+                    println!("\t... UNKNOWN REFRESH RATE");
+                }
+            }
+
             self.window = Some(wm.create_window(WindowDescriptor {
                 title: "Bog Testing",
                 ..Default::default()
