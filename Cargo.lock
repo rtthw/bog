@@ -211,6 +211,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "bog_event"
+version = "0.1.0"
+
+[[package]]
 name = "bog_layout"
 version = "0.1.0"
 dependencies = [
