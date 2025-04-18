@@ -2,6 +2,10 @@
 
 
 
+pub mod key;
+
+
+
 pub enum EventType {
     /// ## Generation
     /// When the user presses a keyboard key, a *keydown* event is generated.
