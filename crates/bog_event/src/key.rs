@@ -54,3 +54,48 @@ impl KeyCode {
     keycode!(AN_Y 34);
     keycode!(AN_Z 35);
 }
+
+// Punctuation constants.
+impl KeyCode {
+    keycode!(AN_TILDE 36);
+    keycode!(AN_MINUS 37);
+    keycode!(AN_EQUAL 38);
+    keycode!(AN_LBRACKET 39);
+    keycode!(AN_RBRACKET 40);
+    keycode!(AN_BACKSLASH 41);
+    keycode!(AN_SEMICOLON 42);
+    keycode!(AN_APOSTROPHE 43);
+    keycode!(AN_COMMA 44);
+    keycode!(AN_DOT 45);
+    keycode!(AN_SLASH 46);
+}
+
+// Control constants.
+impl KeyCode {
+    keycode!(C_LCTRL 47);
+    keycode!(C_RCTRL 48);
+    keycode!(C_LSHIFT 49);
+    keycode!(C_RSHIFT 50);
+    keycode!(C_LALT 51);
+    keycode!(C_RALT 52);
+    keycode!(C_LMETA 53);
+    keycode!(C_RMETA 54);
+
+    keycode!(C_SPACE 55);
+    keycode!(C_BACKSPACE 56);
+    keycode!(C_TAB 57);
+    keycode!(C_ENTER 58);
+    keycode!(C_ESCAPE 59);
+    keycode!(C_MENU 60);
+
+    keycode!(C_INSERT 61);
+    keycode!(C_DELETE 62);
+    keycode!(C_HOME 63);
+    keycode!(C_END 64);
+    keycode!(C_PAGEUP 65);
+    keycode!(C_PAGEDOWN 66);
+    keycode!(C_ARROWUP 67);
+    keycode!(C_ARROWDOWN 68);
+    keycode!(C_ARROWLEFT 69);
+    keycode!(C_ARROWRIGHT 70);
+}
