@@ -94,12 +94,34 @@ pub trait EventTarget {
 
 
 
-pub enum RawEvent {
+pub enum WindowEvent {
+    CloseRequest,
+    RedrawRequest,
+
+    Resize {
+        width: u32,
+        height: u32,
+    },
+
+    FocusIn,
+    FocusOut,
+
     KeyDown {
         code: KeyCode,
         repeat: bool,
     },
     KeyUp {
         code: KeyCode,
+    },
+
+    MouseMove {
+        x: f32,
+        y: f32,
+    },
+    MouseDown {
+        code: u8,
+    },
+    MouseUp {
+        code: u8,
     },
 }

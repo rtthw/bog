@@ -4,11 +4,11 @@
 
 use std::sync::Arc;
 
-use bog_event::{KeyCode, RawEvent};
+use bog_event::{KeyCode, WindowEvent};
 use bog_math::{vec2, Vec2};
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
-    event::{ElementState, Event as WindowManagerEvent, MouseButton},
+    event::{ElementState, Event as WindowManagerEvent},
     monitor::MonitorHandle,
     window::{CursorIcon, WindowId},
 };
@@ -30,7 +30,7 @@ impl std::ops::Deref for Window {
 
 pub trait Client {
     fn on_resume(&mut self, wm: WindowManager);
-    fn on_event(&mut self, wm: WindowManager, id: WindowId, event: RawEvent);
+    fn on_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
 }
 
 struct ClientProxy<'a, C: Client> {
@@ -54,8 +54,23 @@ impl<'a, C: Client> winit::application::ApplicationHandler for ClientProxy<'a, C
     }
 }
 
-fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<RawEvent> {
+fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<WindowEvent> {
     match window_event {
+        winit::event::WindowEvent::CloseRequested => Some(WindowEvent::CloseRequest),
+        winit::event::WindowEvent::RedrawRequested => Some(WindowEvent::RedrawRequest),
+
+        winit::event::WindowEvent::Resized(new_size) => {
+            let (width, height) = new_size.into();
+            Some(WindowEvent::Resize { width, height })
+        }
+        winit::event::WindowEvent::Focused(focused) => {
+            Some(if focused {
+                WindowEvent::FocusIn
+            } else {
+                WindowEvent::FocusOut
+            })
+        }
+
         winit::event::WindowEvent::KeyboardInput { event, .. } => {
             let winit::event::KeyEvent {
                 physical_key,
@@ -68,12 +83,12 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Raw
                     let code = translate_winit_keycode(key_code)?;
 
                     Some(if state.is_pressed() {
-                        RawEvent::KeyDown {
+                        WindowEvent::KeyDown {
                             code,
                             repeat,
                         }
                     } else {
-                        RawEvent::KeyUp {
+                        WindowEvent::KeyUp {
                             code,
                         }
                     })
@@ -87,6 +102,19 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Raw
                 }
             }
         }
+
+        winit::event::WindowEvent::CursorMoved { position, .. } => {
+            Some(WindowEvent::MouseMove { x: position.x as _, y: position.y as _ })
+        }
+        winit::event::WindowEvent::MouseInput { state, button, .. } => {
+            let code = translate_winit_mousebutton(button);
+            Some(if state.is_pressed() {
+                WindowEvent::MouseDown { code }
+            } else {
+                WindowEvent::MouseUp { code }
+            })
+        }
+
         _ => None,
     }
 }
@@ -95,8 +123,43 @@ fn translate_winit_keycode(winit_code: winit::keyboard::KeyCode) -> Option<KeyCo
     Some(match winit_code {
         winit::keyboard::KeyCode::KeyA => KeyCode::AN_A,
         winit::keyboard::KeyCode::KeyB => KeyCode::AN_B,
+        winit::keyboard::KeyCode::KeyC => KeyCode::AN_C,
+        winit::keyboard::KeyCode::KeyD => KeyCode::AN_D,
+        winit::keyboard::KeyCode::KeyE => KeyCode::AN_E,
+        winit::keyboard::KeyCode::KeyF => KeyCode::AN_F,
+        winit::keyboard::KeyCode::KeyG => KeyCode::AN_G,
+        winit::keyboard::KeyCode::KeyH => KeyCode::AN_H,
+        winit::keyboard::KeyCode::KeyI => KeyCode::AN_I,
+        winit::keyboard::KeyCode::KeyJ => KeyCode::AN_J,
+        winit::keyboard::KeyCode::KeyK => KeyCode::AN_K,
+        winit::keyboard::KeyCode::KeyL => KeyCode::AN_L,
+        winit::keyboard::KeyCode::KeyM => KeyCode::AN_M,
+        winit::keyboard::KeyCode::KeyN => KeyCode::AN_N,
+        winit::keyboard::KeyCode::KeyO => KeyCode::AN_O,
+        winit::keyboard::KeyCode::KeyP => KeyCode::AN_P,
+        winit::keyboard::KeyCode::KeyQ => KeyCode::AN_Q,
+        winit::keyboard::KeyCode::KeyR => KeyCode::AN_R,
+        winit::keyboard::KeyCode::KeyS => KeyCode::AN_S,
+        winit::keyboard::KeyCode::KeyT => KeyCode::AN_T,
+        winit::keyboard::KeyCode::KeyU => KeyCode::AN_U,
+        winit::keyboard::KeyCode::KeyV => KeyCode::AN_V,
+        winit::keyboard::KeyCode::KeyW => KeyCode::AN_W,
+        winit::keyboard::KeyCode::KeyX => KeyCode::AN_X,
+        winit::keyboard::KeyCode::KeyY => KeyCode::AN_Y,
+        winit::keyboard::KeyCode::KeyZ => KeyCode::AN_Z,
         _ => None?,
     })
+}
+
+fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) -> u8 {
+    match winit_button {
+        winit::event::MouseButton::Left => 0,
+        winit::event::MouseButton::Right => 1,
+        winit::event::MouseButton::Middle => 2,
+        winit::event::MouseButton::Back => 3,
+        winit::event::MouseButton::Forward => 4,
+        winit::event::MouseButton::Other(n) => (n + 5) as u8,
+    }
 }
 
 

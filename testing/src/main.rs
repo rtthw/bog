@@ -103,28 +103,24 @@ impl<'w> Client for App<'w> {
         }
     }
 
-    fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: RawEvent) {
+    fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
         let Some(display) = &mut self.display else { return; };
         let Some(gui) = &mut self.gui else { return; };
 
         match event {
-            RawEvent::KeyDown { code, repeat } => {}
-            RawEvent::KeyUp { code } => {}
-            // WindowEvent::CloseRequested => {
-            //     wm.exit();
-            // }
-            // WindowEvent::Resized(new_size) => {
-            //     display.graphics.window().request_redraw();
-            //     if new_size.width > 0 && new_size.height > 0 {
-            //         let size = vec2(new_size.width as _, new_size.height as _);
-            //         display.graphics.resize(size);
-            //         gui.handle_resize(display, size);
-            //     }
-            // }
-            // WindowEvent::CursorMoved { position, .. } => {
-            //     let pos = vec2(position.x as _, position.y as _);
-            //     gui.handle_mouse_move(display, pos);
-            // }
+            WindowEvent::Resize { width, height } => {
+                display.graphics.window().request_redraw();
+                if width > 0 && height > 0 {
+                    let size = vec2(width as _, height as _);
+                    display.graphics.resize(size);
+                    gui.handle_resize(display, size);
+                }
+            }
+            // WindowEvent::KeyDown { code, repeat } => {}
+            // WindowEvent::KeyUp { code } => {}
+            WindowEvent::MouseMove { x, y } => {
+                gui.handle_mouse_move(display, vec2(x, y));
+            }
             // WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
             //     if state.is_pressed() {
             //         gui.handle_mouse_down(display);
@@ -132,14 +128,17 @@ impl<'w> Client for App<'w> {
             //         gui.handle_mouse_up(display);
             //     }
             // }
-            // WindowEvent::RedrawRequested => {
-            //     display.graphics
-            //         .render(|render_pass| {
-            //             display.painter.prepare(&display.graphics, &display.paints);
-            //             display.painter.render(render_pass, &display.paints);
-            //         })
-            //         .unwrap();
-            // }
+            WindowEvent::CloseRequest => {
+                wm.exit();
+            }
+            WindowEvent::RedrawRequest => {
+                display.graphics
+                    .render(|render_pass| {
+                        display.painter.prepare(&display.graphics, &display.paints);
+                        display.painter.render(render_pass, &display.paints);
+                    })
+                    .unwrap();
+            }
             _ => {}
         }
     }
