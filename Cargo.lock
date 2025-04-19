@@ -234,6 +234,7 @@ dependencies = [
 name = "bog_render"
 version = "0.1.0"
 dependencies = [
+ "bog_math",
  "rustc-hash 2.1.1",
  "wgpu",
 ]

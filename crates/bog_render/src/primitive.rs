@@ -4,6 +4,8 @@
 
 use std::any::{Any, TypeId};
 
+use bog_math::Rect;
+
 
 
 pub trait Primitive: std::fmt::Debug + Send + Sync + 'static {
@@ -13,7 +15,7 @@ pub trait Primitive: std::fmt::Debug + Send + Sync + 'static {
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         storage: &mut PrimitiveStorage,
-        bounds: &Bounds2D,
+        bounds: &Rect,
         // TODO: Setup some sort of viewport management system.
     );
 
@@ -22,7 +24,7 @@ pub trait Primitive: std::fmt::Debug + Send + Sync + 'static {
         encoder: &mut wgpu::CommandEncoder,
         storage: &PrimitiveStorage,
         target: &wgpu::TextureView,
-        clip_bounds: &Bounds2D<u32>,
+        clip_bounds: &Rect<u32>,
     );
 }
 

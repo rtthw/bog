@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bog_math.workspace = true
 wgpu.workspace = true
 
 rustc-hash = "2"
