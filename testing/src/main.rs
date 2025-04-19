@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 
 use bog::*;
+use event::*;
 use fonts::*;
 use graphics::*;
 use gui::*;
@@ -102,41 +103,43 @@ impl<'w> Client for App<'w> {
         }
     }
 
-    fn on_window_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
+    fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: RawEvent) {
         let Some(display) = &mut self.display else { return; };
         let Some(gui) = &mut self.gui else { return; };
 
         match event {
-            WindowEvent::CloseRequested => {
-                wm.exit();
-            }
-            WindowEvent::Resized(new_size) => {
-                display.graphics.window().request_redraw();
-                if new_size.width > 0 && new_size.height > 0 {
-                    let size = vec2(new_size.width as _, new_size.height as _);
-                    display.graphics.resize(size);
-                    gui.handle_resize(display, size);
-                }
-            }
-            WindowEvent::CursorMoved { position, .. } => {
-                let pos = vec2(position.x as _, position.y as _);
-                gui.handle_mouse_move(display, pos);
-            }
-            WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
-                if state.is_pressed() {
-                    gui.handle_mouse_down(display);
-                } else {
-                    gui.handle_mouse_up(display);
-                }
-            }
-            WindowEvent::RedrawRequested => {
-                display.graphics
-                    .render(|render_pass| {
-                        display.painter.prepare(&display.graphics, &display.paints);
-                        display.painter.render(render_pass, &display.paints);
-                    })
-                    .unwrap();
-            }
+            RawEvent::KeyDown { code, repeat } => {}
+            RawEvent::KeyUp { code } => {}
+            // WindowEvent::CloseRequested => {
+            //     wm.exit();
+            // }
+            // WindowEvent::Resized(new_size) => {
+            //     display.graphics.window().request_redraw();
+            //     if new_size.width > 0 && new_size.height > 0 {
+            //         let size = vec2(new_size.width as _, new_size.height as _);
+            //         display.graphics.resize(size);
+            //         gui.handle_resize(display, size);
+            //     }
+            // }
+            // WindowEvent::CursorMoved { position, .. } => {
+            //     let pos = vec2(position.x as _, position.y as _);
+            //     gui.handle_mouse_move(display, pos);
+            // }
+            // WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
+            //     if state.is_pressed() {
+            //         gui.handle_mouse_down(display);
+            //     } else {
+            //         gui.handle_mouse_up(display);
+            //     }
+            // }
+            // WindowEvent::RedrawRequested => {
+            //     display.graphics
+            //         .render(|render_pass| {
+            //             display.painter.prepare(&display.graphics, &display.paints);
+            //             display.painter.render(render_pass, &display.paints);
+            //         })
+            //         .unwrap();
+            // }
             _ => {}
         }
     }

@@ -3,6 +3,7 @@
 
 
 pub mod key;
+pub use key::*;
 
 
 
@@ -89,4 +90,16 @@ pub trait EventTarget {
     fn on_auxclick(&mut self, ctx: Self::Context) {}
     fn on_focusin(&mut self, ctx: Self::Context) {}
     fn on_focusout(&mut self, ctx: Self::Context) {}
+}
+
+
+
+pub enum RawEvent {
+    KeyDown {
+        code: KeyCode,
+        repeat: bool,
+    },
+    KeyUp {
+        code: KeyCode,
+    },
 }

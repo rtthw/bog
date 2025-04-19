@@ -4,10 +4,11 @@
 
 use std::sync::Arc;
 
+use bog_event::{KeyCode, RawEvent};
 use bog_math::{vec2, Vec2};
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
-    event::{ElementState, Event as WindowManagerEvent, MouseButton, WindowEvent},
+    event::{ElementState, Event as WindowManagerEvent, MouseButton},
     monitor::MonitorHandle,
     window::{CursorIcon, WindowId},
 };
@@ -29,14 +30,14 @@ impl std::ops::Deref for Window {
 
 pub trait Client {
     fn on_resume(&mut self, wm: WindowManager);
-    fn on_window_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
+    fn on_event(&mut self, wm: WindowManager, id: WindowId, event: RawEvent);
 }
 
-struct ClientProxy<'a, A: Client> {
-    client: &'a mut A,
+struct ClientProxy<'a, C: Client> {
+    client: &'a mut C,
 }
 
-impl<'a, A: Client> winit::application::ApplicationHandler for ClientProxy<'a, A> {
+impl<'a, C: Client> winit::application::ApplicationHandler for ClientProxy<'a, C> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.client.on_resume(WindowManager { event_loop })
     }
@@ -45,10 +46,57 @@ impl<'a, A: Client> winit::application::ApplicationHandler for ClientProxy<'a, A
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
         id: WindowId,
-        event: WindowEvent,
+        event: winit::event::WindowEvent,
     ) {
-        self.client.on_window_event(WindowManager { event_loop }, id, event);
+        if let Some(raw_event) = translate_window_event(event) {
+            self.client.on_event(WindowManager { event_loop }, id, raw_event);
+        }
     }
+}
+
+fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<RawEvent> {
+    match window_event {
+        winit::event::WindowEvent::KeyboardInput { event, .. } => {
+            let winit::event::KeyEvent {
+                physical_key,
+                state,
+                repeat,
+                ..
+            } = event;
+            match physical_key {
+                winit::keyboard::PhysicalKey::Code(key_code) => {
+                    let code = translate_winit_keycode(key_code)?;
+
+                    Some(if state.is_pressed() {
+                        RawEvent::KeyDown {
+                            code,
+                            repeat,
+                        }
+                    } else {
+                        RawEvent::KeyUp {
+                            code,
+                        }
+                    })
+                }
+                winit::keyboard::PhysicalKey::Unidentified(native_key_code) => {
+                    println!(
+                        "[bog] TODO: Handle unknown native key codes, got {:?}.",
+                        native_key_code,
+                    );
+                    None
+                }
+            }
+        }
+        _ => None,
+    }
+}
+
+fn translate_winit_keycode(winit_code: winit::keyboard::KeyCode) -> Option<KeyCode> {
+    Some(match winit_code {
+        winit::keyboard::KeyCode::KeyA => KeyCode::AN_A,
+        winit::keyboard::KeyCode::KeyB => KeyCode::AN_B,
+        _ => None?,
+    })
 }
 
 
