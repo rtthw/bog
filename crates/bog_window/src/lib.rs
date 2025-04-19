@@ -121,6 +121,17 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
 
 fn translate_winit_keycode(winit_code: winit::keyboard::KeyCode) -> Option<KeyCode> {
     Some(match winit_code {
+        winit::keyboard::KeyCode::Digit0 => KeyCode::AN_0,
+        winit::keyboard::KeyCode::Digit1 => KeyCode::AN_1,
+        winit::keyboard::KeyCode::Digit2 => KeyCode::AN_2,
+        winit::keyboard::KeyCode::Digit3 => KeyCode::AN_3,
+        winit::keyboard::KeyCode::Digit4 => KeyCode::AN_4,
+        winit::keyboard::KeyCode::Digit5 => KeyCode::AN_5,
+        winit::keyboard::KeyCode::Digit6 => KeyCode::AN_6,
+        winit::keyboard::KeyCode::Digit7 => KeyCode::AN_7,
+        winit::keyboard::KeyCode::Digit8 => KeyCode::AN_8,
+        winit::keyboard::KeyCode::Digit9 => KeyCode::AN_9,
+
         winit::keyboard::KeyCode::KeyA => KeyCode::AN_A,
         winit::keyboard::KeyCode::KeyB => KeyCode::AN_B,
         winit::keyboard::KeyCode::KeyC => KeyCode::AN_C,
@@ -147,6 +158,46 @@ fn translate_winit_keycode(winit_code: winit::keyboard::KeyCode) -> Option<KeyCo
         winit::keyboard::KeyCode::KeyX => KeyCode::AN_X,
         winit::keyboard::KeyCode::KeyY => KeyCode::AN_Y,
         winit::keyboard::KeyCode::KeyZ => KeyCode::AN_Z,
+
+        winit::keyboard::KeyCode::Backquote => KeyCode::AN_TILDE,
+        winit::keyboard::KeyCode::Minus => KeyCode::AN_MINUS,
+        winit::keyboard::KeyCode::Equal => KeyCode::AN_EQUAL,
+        winit::keyboard::KeyCode::BracketLeft => KeyCode::AN_LBRACKET,
+        winit::keyboard::KeyCode::BracketRight => KeyCode::AN_RBRACKET,
+        winit::keyboard::KeyCode::Backslash => KeyCode::AN_BACKSLASH,
+        winit::keyboard::KeyCode::Semicolon => KeyCode::AN_SEMICOLON,
+        winit::keyboard::KeyCode::Quote => KeyCode::AN_APOSTROPHE,
+        winit::keyboard::KeyCode::Comma => KeyCode::AN_COMMA,
+        winit::keyboard::KeyCode::Period => KeyCode::AN_DOT,
+        winit::keyboard::KeyCode::Slash => KeyCode::AN_SLASH,
+
+        winit::keyboard::KeyCode::ControlLeft => KeyCode::C_LCTRL,
+        winit::keyboard::KeyCode::ControlRight => KeyCode::C_RCTRL,
+        winit::keyboard::KeyCode::ShiftLeft => KeyCode::C_LSHIFT,
+        winit::keyboard::KeyCode::ShiftRight => KeyCode::C_RSHIFT,
+        winit::keyboard::KeyCode::AltLeft => KeyCode::C_LALT,
+        winit::keyboard::KeyCode::AltRight => KeyCode::C_RALT,
+        winit::keyboard::KeyCode::SuperLeft => KeyCode::C_LMETA,
+        winit::keyboard::KeyCode::SuperRight => KeyCode::C_RMETA,
+
+        winit::keyboard::KeyCode::Space => KeyCode::C_SPACE,
+        winit::keyboard::KeyCode::Backspace => KeyCode::C_BACKSPACE,
+        winit::keyboard::KeyCode::Tab => KeyCode::C_TAB,
+        winit::keyboard::KeyCode::Enter => KeyCode::C_ENTER,
+        winit::keyboard::KeyCode::Escape => KeyCode::C_ESCAPE,
+        winit::keyboard::KeyCode::ContextMenu => KeyCode::C_MENU,
+
+        winit::keyboard::KeyCode::Insert => KeyCode::C_INSERT,
+        winit::keyboard::KeyCode::Delete => KeyCode::C_DELETE,
+        winit::keyboard::KeyCode::Home => KeyCode::C_HOME,
+        winit::keyboard::KeyCode::End => KeyCode::C_END,
+        winit::keyboard::KeyCode::PageUp => KeyCode::C_PAGEUP,
+        winit::keyboard::KeyCode::PageDown => KeyCode::C_PAGEDOWN,
+        winit::keyboard::KeyCode::ArrowUp => KeyCode::C_ARROWUP,
+        winit::keyboard::KeyCode::ArrowDown => KeyCode::C_ARROWDOWN,
+        winit::keyboard::KeyCode::ArrowLeft => KeyCode::C_ARROWLEFT,
+        winit::keyboard::KeyCode::ArrowRight => KeyCode::C_ARROWRIGHT,
+
         _ => None?,
     })
 }

@@ -121,13 +121,16 @@ impl<'w> Client for App<'w> {
             WindowEvent::MouseMove { x, y } => {
                 gui.handle_mouse_move(display, vec2(x, y));
             }
-            // WindowEvent::MouseInput { button: MouseButton::Left, state, .. } => {
-            //     if state.is_pressed() {
-            //         gui.handle_mouse_down(display);
-            //     } else {
-            //         gui.handle_mouse_up(display);
-            //     }
-            // }
+            WindowEvent::MouseDown { code } => {
+                if code == 0 {
+                    gui.handle_mouse_down(display);
+                }
+            }
+            WindowEvent::MouseUp { code } => {
+                if code == 0 {
+                    gui.handle_mouse_up(display);
+                }
+            }
             WindowEvent::CloseRequest => {
                 wm.exit();
             }
