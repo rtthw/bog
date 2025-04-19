@@ -17,6 +17,7 @@ default = ["all"]
 all = []
 
 [dependencies]
+bog_collections.workspace = true
 bog_color.workspace = true
 bog_event.workspace = true
 bog_layout.workspace = true
@@ -35,6 +36,7 @@ ttf-parser = "0.25"
 wgpu.workspace = true
 
 [workspace.dependencies]
+bog_collections = { path = "crates/bog_collections" }
 bog_color = { path = "crates/bog_color" }
 bog_env = { path = "crates/bog_env" }
 bog_event = { path = "crates/bog_event" }

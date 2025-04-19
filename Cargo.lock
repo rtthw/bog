@@ -183,6 +183,7 @@ dependencies = [
 name = "bog"
 version = "0.1.0"
 dependencies = [
+ "bog_collections",
  "bog_color",
  "bog_event",
  "bog_layout",
@@ -198,6 +199,13 @@ dependencies = [
  "thiserror 2.0.12",
  "ttf-parser",
  "wgpu",
+]
+
+[[package]]
+name = "bog_collections"
+version = "0.1.0"
+dependencies = [
+ "rustc-hash 2.1.1",
 ]
 
 [[package]]
@@ -234,8 +242,8 @@ dependencies = [
 name = "bog_render"
 version = "0.1.0"
 dependencies = [
+ "bog_collections",
  "bog_math",
- "rustc-hash 2.1.1",
  "wgpu",
 ]
 
