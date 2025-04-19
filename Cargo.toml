@@ -32,7 +32,7 @@ raw-window-handle = "0.5"
 swash = "0.2"
 thiserror = "2"
 ttf-parser = "0.25"
-wgpu = "24"
+wgpu.workspace = true
 
 [workspace.dependencies]
 bog_color = { path = "crates/bog_color" }
@@ -42,3 +42,5 @@ bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
 bog_window = { path = "crates/bog_window" }
+
+wgpu = "24"
