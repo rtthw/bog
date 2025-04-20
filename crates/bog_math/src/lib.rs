@@ -2,15 +2,19 @@
 
 
 
-pub extern crate cgmath;
+#![no_std]
+
+
+
+pub extern crate glam;
 
 mod rect;
 pub use rect::Rect;
 
 
-pub type Vec2 = cgmath::Vector2<f32>;
-pub type Vec3 = cgmath::Vector3<f32>;
-pub type Vec4 = cgmath::Vector4<f32>;
+pub type Vec2 = glam::Vec2;
+pub type Vec3 = glam::Vec3;
+pub type Vec4 = glam::Vec4;
 
 
 
@@ -28,9 +32,9 @@ pub fn vec4(x: f32, y: f32, z: f32, w: f32) -> Vec4 {
 
 
 
-pub type Mat2 = cgmath::Matrix2<f32>;
-pub type Mat3 = cgmath::Matrix3<f32>;
-pub type Mat4 = cgmath::Matrix4<f32>;
+pub type Mat2 = glam::Mat2;
+pub type Mat3 = glam::Mat3;
+pub type Mat4 = glam::Mat4;
 
 
 
@@ -42,18 +46,10 @@ pub fn mat4_translation(translation: Vec3) -> Mat4 {
     Mat4::from_translation(translation)
 }
 
-pub fn mat3_scale(scale: f32) -> Mat3 {
+pub fn mat3_scale(scale: Vec2) -> Mat3 {
     Mat3::from_scale(scale)
 }
 
-pub fn mat4_scale(scale: f32) -> Mat4 {
+pub fn mat4_scale(scale: Vec3) -> Mat4 {
     Mat4::from_scale(scale)
-}
-
-pub fn mat3_scale_nonuniform(scale: Vec2) -> Mat3 {
-    Mat3::from_nonuniform_scale(scale.x, scale.y)
-}
-
-pub fn mat4_scale_nonuniform(scale: Vec3) -> Mat4 {
-    Mat4::from_nonuniform_scale(scale.x, scale.y, scale.z)
 }

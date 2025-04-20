@@ -7,7 +7,7 @@ use bog_math::Rect;
 
 
 
-pub trait Primitive: std::fmt::Debug + Send + Sync + 'static {
+pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
     fn prepare(
         &self,
         device: &wgpu::Device,
