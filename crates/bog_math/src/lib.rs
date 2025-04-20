@@ -1,7 +1,5 @@
 //! Bog Math
 
-
-
 #![no_std]
 
 

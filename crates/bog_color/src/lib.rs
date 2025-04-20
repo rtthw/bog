@@ -1,5 +1,7 @@
 //! Bog Color
 
+#![no_std]
+
 
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]

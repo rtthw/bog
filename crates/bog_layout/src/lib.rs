@@ -1,5 +1,7 @@
 //! Bog Layout
 
+#![no_std]
+
 
 
 use bog_math::{vec2, Vec2};
