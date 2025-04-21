@@ -240,7 +240,9 @@ name = "bog_render"
 version = "0.1.0"
 dependencies = [
  "bog_collections",
+ "bog_color",
  "bog_math",
+ "bytemuck",
  "wgpu",
 ]
 
