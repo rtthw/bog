@@ -83,7 +83,7 @@ impl<'w> Client for App<'w> {
                 let element = gui.push_element_to_root(layout);
                 elements.insert(element, Button {
                     quad: Quad {
-                        bounds: Rect::new(Vec2::ZERO, Vec2::ZERO),
+                        bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                         border: Border {
                             color: Color::from_u32(0xb7b7c0ff),
                             width: 3.0,
@@ -124,7 +124,13 @@ impl<'w> Client for App<'w> {
                 display.graphics.window().request_redraw();
                 if width > 0 && height > 0 {
                     let physical_size = vec2(width as _, height as _);
+                    display.viewport.physical_size = physical_size;
                     display.viewport.scale_factor = display.graphics.window().scale_factor();
+                    display.viewport.projection = Mat4::orthographic_rh_gl(
+                        0.0, width as f32,
+                        height as f32, 0.0,
+                        -1.0, 1.0
+                    );
 
                     display.graphics.resize(display.renderer.device(), physical_size);
                     gui.handle_resize(display, physical_size);
@@ -149,6 +155,7 @@ impl<'w> Client for App<'w> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
+                display.renderer.clear();
                 display.renderer.start_layer(
                     Rect::new(Vec2::ZERO, display.viewport.physical_size),
                 );

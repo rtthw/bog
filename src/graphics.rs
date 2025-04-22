@@ -208,45 +208,45 @@ impl<'w> WindowGraphics<'w> {
         self.config.height = new_size.y as _;
         self.surface.configure(device, &self.config);
 
-        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Depth texture"),
-            size: wgpu::Extent3d {
-                width: self.config.width,
-                height: self.config.height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: SAMPLE_COUNT,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
+        // let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+        //     label: Some("Depth texture"),
+        //     size: wgpu::Extent3d {
+        //         width: self.config.width,
+        //         height: self.config.height,
+        //         depth_or_array_layers: 1,
+        //     },
+        //     mip_level_count: 1,
+        //     sample_count: SAMPLE_COUNT,
+        //     dimension: wgpu::TextureDimension::D2,
+        //     format: wgpu::TextureFormat::Depth32Float,
+        //     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        //     view_formats: &[],
+        // });
 
-        self.depth_texture_view = Some(depth_texture
-            .create_view(&wgpu::TextureViewDescriptor::default()));
+        // self.depth_texture_view = Some(depth_texture
+        //     .create_view(&wgpu::TextureViewDescriptor::default()));
 
-        self.multisampled_render_target = if SAMPLE_COUNT > 1 {
-            let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
-                label: Some("Multisampled Frame Descriptor"),
-                size: wgpu::Extent3d {
-                    width: self.config.width,
-                    height: self.config.height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: SAMPLE_COUNT,
-                dimension: wgpu::TextureDimension::D2,
-                format: self.config.format,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[],
-            };
-            Some(device
-                .create_texture(multisampled_frame_descriptor)
-                .create_view(&wgpu::TextureViewDescriptor::default()))
-        } else {
-            None
-        };
+        // self.multisampled_render_target = if SAMPLE_COUNT > 1 {
+        //     let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
+        //         label: Some("Multisampled Frame Descriptor"),
+        //         size: wgpu::Extent3d {
+        //             width: self.config.width,
+        //             height: self.config.height,
+        //             depth_or_array_layers: 1,
+        //         },
+        //         mip_level_count: 1,
+        //         sample_count: SAMPLE_COUNT,
+        //         dimension: wgpu::TextureDimension::D2,
+        //         format: self.config.format,
+        //         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        //         view_formats: &[],
+        //     };
+        //     Some(device
+        //         .create_texture(multisampled_frame_descriptor)
+        //         .create_view(&wgpu::TextureViewDescriptor::default()))
+        // } else {
+        //     None
+        // };
     }
 }
 

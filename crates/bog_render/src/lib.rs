@@ -152,7 +152,7 @@ impl Renderer {
         // 3. Finalize.
         self.quad_manager.cleanup();
         self.staging_belt.finish();
-        let submission = self.queue.submit([encoder.finish()]);
+        let submission = self.queue.submit(std::iter::once(encoder.finish()));
         self.staging_belt.recall();
 
         submission

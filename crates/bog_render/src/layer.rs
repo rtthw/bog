@@ -8,6 +8,7 @@ use crate::QuadSolid;
 
 
 
+#[derive(Debug)]
 pub struct Layer {
     pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
