@@ -1,11 +1,42 @@
 //! Bog Render
 
-use bog_math::{Mat4, Rect, Vec2};
-
 
 
 pub mod buffer;
 pub mod primitive;
+
+use bog_color::Color;
+use bog_math::{Mat4, Rect, Vec2};
+
+
+
+pub struct Quad {
+    pub bounds: Rect,
+    pub border: Border,
+    pub shadow: Shadow,
+    pub bg_color: Color,
+}
+
+pub struct Border {
+    pub color: Color,
+    pub width: f32,
+    pub radius: [f32; 4],
+}
+
+pub struct Shadow {
+    pub color: Color,
+    pub offset: Vec2,
+    pub blur_radius: f32,
+}
+
+pub trait Render {
+    fn start_layer(&mut self, bounds: Rect);
+    fn end_layer(&mut self);
+    fn start_transform(&mut self, transform: Mat4);
+    fn end_transform(&mut self);
+    fn fill_quad(&mut self, quad: Quad);
+    fn clear(&mut self);
+}
 
 
 
@@ -15,7 +46,7 @@ pub struct Renderer {
     format: wgpu::TextureFormat,
     staging_belt: wgpu::util::StagingBelt,
 
-    layers: Vec<Layer>,
+    layers: LayerStack,
 
     quad_pipeline: QuadPipeline,
     quad_manager: QuadManager,
@@ -31,7 +62,7 @@ impl Renderer {
             format,
             staging_belt: wgpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
 
-            layers: Vec::new(),
+            layers: LayerStack::new(),
 
             quad_pipeline,
             quad_manager: QuadManager::new(),
@@ -122,6 +153,46 @@ impl Renderer {
     }
 }
 
+impl Render for Renderer {
+    fn start_layer(&mut self, bounds: Rect) {
+        self.layers.push_clip(bounds);
+    }
+
+    fn end_layer(&mut self) {
+        self.layers.pop_clip();
+    }
+
+    fn start_transform(&mut self, transform: Mat4) {
+        self.layers.push_transformation(transform);
+    }
+
+    fn end_transform(&mut self) {
+        self.layers.pop_transformation();
+    }
+
+    fn fill_quad(&mut self, quad: Quad) {
+        let (layer, transform) = self.layers.current_mut();
+        let bounds = quad.bounds * transform;
+        let color = quad.bg_color.to_linear();
+        let quad = QuadPrimitive {
+            position: [bounds.x, bounds.y],
+            size: [bounds.w, bounds.h],
+            border_color: quad.border.color.to_linear(),
+            border_radius: quad.border.radius.into(),
+            border_width: quad.border.width,
+            shadow_color: quad.shadow.color.to_linear(),
+            shadow_offset: quad.shadow.offset.into(),
+            shadow_blur_radius: quad.shadow.blur_radius,
+        };
+
+        layer.quads.push(QuadSolid { color, quad });
+    }
+
+    fn clear(&mut self) {
+        self.layers.clear();
+    }
+}
+
 
 
 pub struct Viewport {
@@ -137,6 +208,128 @@ pub struct Layer {
     pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
 }
+
+impl Default for Layer {
+    fn default() -> Self {
+        Self {
+            bounds: Rect::INFINITE,
+            quads: Vec::new(),
+        }
+    }
+}
+
+impl Layer {
+    pub fn with_bounds(bounds: Rect) -> Self {
+        Self {
+            bounds,
+            ..Default::default()
+        }
+    }
+
+    fn flush(&mut self) {}
+
+    fn resize(&mut self, bounds: Rect) {
+        self.bounds = bounds;
+    }
+
+    fn reset(&mut self) {
+        self.bounds = Rect::INFINITE;
+
+        self.quads.clear();
+    }
+}
+
+pub struct LayerStack {
+    layers: Vec<Layer>,
+    transformations: Vec<Mat4>,
+    previous: Vec<usize>,
+    current: usize,
+    active_count: usize,
+}
+
+impl LayerStack {
+    pub fn new() -> Self {
+        Self {
+            layers: vec![Layer::default()],
+            transformations: vec![Mat4::IDENTITY],
+            previous: vec![],
+            current: 0,
+            active_count: 1,
+        }
+    }
+
+    #[inline]
+    pub fn current_mut(&mut self) -> (&mut Layer, Mat4) {
+        let transformation = self.transformation();
+
+        (&mut self.layers[self.current], transformation)
+    }
+
+    #[inline]
+    pub fn transformation(&self) -> Mat4 {
+        self.transformations.last().copied().unwrap()
+    }
+
+    pub fn push_clip(&mut self, bounds: Rect) {
+        self.previous.push(self.current);
+
+        self.current = self.active_count;
+        self.active_count += 1;
+
+        let bounds = bounds * self.transformation();
+
+        if self.current == self.layers.len() {
+            self.layers.push(Layer::with_bounds(bounds));
+        } else {
+            self.layers[self.current].resize(bounds);
+        }
+    }
+
+    pub fn pop_clip(&mut self) {
+        self.flush();
+
+        self.current = self.previous.pop().unwrap();
+    }
+
+    pub fn push_transformation(&mut self, transformation: Mat4) {
+        self.transformations.push(self.transformation() * transformation);
+    }
+
+    pub fn pop_transformation(&mut self) {
+        let _ = self.transformations.pop();
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Layer> {
+        self.flush();
+
+        self.layers[..self.active_count].iter_mut()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Layer> {
+        self.layers[..self.active_count].iter()
+    }
+
+    pub fn as_slice(&self) -> &[Layer] {
+        &self.layers[..self.active_count]
+    }
+
+    pub fn flush(&mut self) {
+        self.layers[self.current].flush();
+    }
+
+    pub fn clear(&mut self) {
+        for layer in self.layers[..self.active_count].iter_mut() {
+            layer.reset();
+        }
+
+        self.current = 0;
+        self.active_count = 1;
+        self.previous.clear();
+    }
+}
+
+
+
 
 pub struct QuadManager {
     pub layers: Vec<QuadLayer>,
@@ -281,7 +474,7 @@ impl Uniforms {
 #[derive(Clone, Copy, Debug)]
 #[derive(bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
-pub struct Quad {
+pub struct QuadPrimitive {
     pub position: [f32; 2],
     pub size: [f32; 2],
     pub border_color: [f32; 4], // linear rgb
@@ -297,7 +490,7 @@ pub struct Quad {
 #[repr(C)]
 pub struct QuadSolid {
     pub color: [f32; 4], // linear rgb
-    pub quad: Quad,
+    pub quad: QuadPrimitive,
 }
 
 pub struct QuadPipeline {

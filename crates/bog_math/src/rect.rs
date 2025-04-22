@@ -2,7 +2,9 @@
 
 
 
-use crate::Vec2;
+use glam::Vec4Swizzles as _;
+
+use crate::{vec4, Mat4, Vec2};
 
 
 
@@ -12,6 +14,22 @@ pub struct Rect<T = f32> {
     pub y: T,
     pub w: T,
     pub h: T,
+}
+
+impl Rect<f32> {
+    pub const INFINITE: Self = Self::new(
+        Vec2::new(0.0, 0.0),
+        Vec2::new(f32::INFINITY, f32::INFINITY),
+    );
+
+    pub const fn new(pos: Vec2, size: Vec2) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            w: size.x,
+            h: size.y,
+        }
+    }
 }
 
 impl Rect<f32> {
@@ -74,5 +92,19 @@ impl core::ops::Mul<f32> for Rect<f32> {
             w: self.w * scale,
             h: self.h * scale,
         }
+    }
+}
+
+impl core::ops::Mul<Mat4> for Rect<f32> {
+    type Output = Self;
+
+    fn mul(self, transform: Mat4) -> Self {
+        let pos = self.position();
+        let size = self.size();
+
+        Self::new(
+            transform.mul_vec4(vec4(pos.x, pos.y, 1.0, 0.0)).xy(),
+            transform.mul_vec4(vec4(size.x, size.y, 1.0, 0.0)).xy(),
+        )
     }
 }
