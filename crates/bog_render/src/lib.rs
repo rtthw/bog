@@ -1,6 +1,6 @@
 //! Bog Render
 
-use bog_math::{Mat4, Rect};
+use bog_math::{Mat4, Rect, Vec2};
 
 
 
@@ -38,14 +38,18 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, target: &wgpu::TextureView) -> wgpu::SubmissionIndex {
+    pub fn render(
+        &mut self,
+        target: &wgpu::TextureView,
+        viewport: &Viewport,
+    ) -> wgpu::SubmissionIndex {
+        // 1. Prepare.
+        let scale_factor = viewport.scale_factor as f32;
         let mut encoder = self.device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
                 label: Some("bog::encoder"),
             },
         );
-
-        // 1. Prepare.
         for layer in self.layers.iter_mut() {
             if !layer.quads.is_empty() {
                 self.quad_manager.prepare(
@@ -54,8 +58,8 @@ impl Renderer {
                     &mut self.staging_belt,
                     &mut encoder,
                     &layer.quads,
-                    Mat4::IDENTITY, // TODO: viewport.projection,
-                    1.0 // TODO: viewport.scale_factor,
+                    viewport.projection,
+                    scale_factor,
                 );
             }
         }
@@ -76,8 +80,24 @@ impl Renderer {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+            let physical_bounds = Rect {
+                x: 0.0,
+                y: 0.0,
+                w: viewport.physical_size.x,
+                h: viewport.physical_size.y,
+            };
             let mut quad_layer = 0;
             for layer in self.layers.iter() {
+                let Some(physical_bounds) =
+                    physical_bounds.intersection(&(layer.bounds * scale_factor))
+                else {
+                    continue;
+                };
+
+                let Some(scissor_rect) = physical_bounds.snap_to_u32() else {
+                    continue;
+                };
+
                 if !layer.quads.is_empty() {
                     self.quad_manager.render(
                         &self.quad_pipeline,
@@ -104,7 +124,17 @@ impl Renderer {
 
 
 
+pub struct Viewport {
+    pub physical_size: Vec2,
+    pub logical_size: Vec2,
+    pub scale_factor: f64,
+    pub projection: Mat4,
+}
+
+
+
 pub struct Layer {
+    pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
 }
 

@@ -1,9 +1,12 @@
 //! Rectangle type
 
+
+
 use crate::Vec2;
 
 
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rect<T = f32> {
     pub x: T,
     pub y: T,
@@ -25,5 +28,51 @@ impl Rect<f32> {
             && point.x < self.x + self.w
             && self.y <= point.y
             && point.y < self.y + self.h
+    }
+
+    pub fn intersection(&self, other: &Self) -> Option<Self> {
+        let x = self.x.max(other.x);
+        let y = self.y.max(other.y);
+
+        let lower_right_x = (self.x + self.w).min(other.x + other.w);
+        let lower_right_y = (self.y + self.h).min(other.y + other.h);
+
+        let w = lower_right_x - x;
+        let h = lower_right_y - y;
+
+        if w > 0.0 && h > 0.0 {
+            Some(Self { x, y, w, h })
+        } else {
+            None
+        }
+    }
+
+    pub fn snap_to_u32(self) -> Option<Rect<u32>> {
+        let w = self.w as u32;
+        let h = self.h as u32;
+
+        if w < 1 || h < 1 {
+            return None;
+        }
+
+        Some(Rect {
+            x: self.x as u32,
+            y: self.y as u32,
+            w,
+            h,
+        })
+    }
+}
+
+impl core::ops::Mul<f32> for Rect<f32> {
+    type Output = Self;
+
+    fn mul(self, scale: f32) -> Self {
+        Self {
+            x: self.x * scale,
+            y: self.y * scale,
+            w: self.w * scale,
+            h: self.h * scale,
+        }
     }
 }
