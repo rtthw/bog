@@ -1,7 +1,10 @@
 //! Bog Render
 
+use bog_math::{Mat4, Rect};
 
 
+
+pub mod buffer;
 pub mod primitive;
 
 
@@ -10,8 +13,12 @@ pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     format: wgpu::TextureFormat,
+    staging_belt: wgpu::util::StagingBelt,
+
+    layers: Vec<Layer>,
 
     quad_pipeline: QuadPipeline,
+    quad_manager: QuadManager,
 }
 
 impl Renderer {
@@ -22,8 +29,200 @@ impl Renderer {
             device,
             queue,
             format,
+            staging_belt: wgpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
+
+            layers: Vec::new(),
 
             quad_pipeline,
+            quad_manager: QuadManager::new(),
+        }
+    }
+
+    pub fn render(&mut self, target: &wgpu::TextureView) -> wgpu::SubmissionIndex {
+        let mut encoder = self.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor {
+                label: Some("bog::encoder"),
+            },
+        );
+
+        // 1. Prepare.
+        for layer in self.layers.iter_mut() {
+            if !layer.quads.is_empty() {
+                self.quad_manager.prepare(
+                    &self.quad_pipeline,
+                    &self.device,
+                    &mut self.staging_belt,
+                    &mut encoder,
+                    &layer.quads,
+                    Mat4::IDENTITY, // TODO: viewport.projection,
+                    1.0 // TODO: viewport.scale_factor,
+                );
+            }
+        }
+
+        // 2. Render.
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("bog::render_pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: target,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            let mut quad_layer = 0;
+            for layer in self.layers.iter() {
+                if !layer.quads.is_empty() {
+                    self.quad_manager.render(
+                        &self.quad_pipeline,
+                        quad_layer,
+                        scissor_rect,
+                        &layer.quads,
+                        &mut render_pass,
+                    );
+
+                    quad_layer += 1;
+                }
+            }
+        }
+
+        // 3. Finalize.
+        self.quad_manager.cleanup();
+        self.staging_belt.finish();
+        let submission = self.queue.submit([encoder.finish()]);
+        self.staging_belt.recall();
+
+        submission
+    }
+}
+
+
+
+pub struct Layer {
+    pub quads: Vec<QuadSolid>,
+}
+
+pub struct QuadManager {
+    pub layers: Vec<QuadLayer>,
+    pub prepare_layer: usize,
+}
+
+impl QuadManager {
+    pub fn new() -> Self {
+        Self {
+            layers: Vec::with_capacity(3),
+            prepare_layer: 0,
+        }
+    }
+
+    pub fn prepare(
+        &mut self,
+        pipeline: &QuadPipeline,
+        device: &wgpu::Device,
+        belt: &mut wgpu::util::StagingBelt,
+        encoder: &mut wgpu::CommandEncoder,
+        quads: &[QuadSolid],
+        transform: Mat4,
+        scale: f32,
+    ) {
+        if self.layers.len() <= self.prepare_layer {
+            self.layers.push(QuadLayer::new(device, &pipeline.constants_layout));
+        }
+
+        let layer = &mut self.layers[self.prepare_layer];
+        layer.prepare(device, encoder, belt, quads, transform, scale);
+
+        self.prepare_layer += 1;
+    }
+
+    pub fn render<'a>(
+        &'a self,
+        pipeline: &'a QuadPipeline,
+        layer: usize,
+        bounds: Rect<u32>,
+        quads: &[QuadSolid],
+        render_pass: &mut wgpu::RenderPass<'a>,
+    ) {
+        if let Some(layer) = self.layers.get(layer) {
+            render_pass.set_scissor_rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            pipeline.render(render_pass, &layer.constants, layer, 0..quads.len());
+        }
+    }
+
+    pub fn cleanup(&mut self) {
+        self.prepare_layer = 0;
+    }
+}
+
+pub struct QuadLayer {
+    constants: wgpu::BindGroup,
+    constants_buffer: wgpu::Buffer,
+    instance_buffer: buffer::Buffer<QuadSolid>,
+    instance_count: usize,
+}
+
+impl QuadLayer {
+    pub fn new(device: &wgpu::Device, constant_layout: &wgpu::BindGroupLayout) -> Self {
+        let constants_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("bog::uniforms_buffer::quad"),
+            size: std::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let constants = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bog::uniforms_bind_group::quad"),
+            layout: constant_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: constants_buffer.as_entire_binding(),
+            }],
+        });
+        let instance_buffer = buffer::Buffer::new(
+            device,
+            "bog::buffer::quad",
+            2000,
+            wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        );
+
+        Self {
+            constants,
+            constants_buffer,
+            instance_buffer,
+            instance_count: 2000,
+        }
+    }
+
+    pub fn prepare(
+        &mut self,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        belt: &mut wgpu::util::StagingBelt,
+        quads: &[QuadSolid],
+        transform: Mat4,
+        scale: f32,
+    ) {
+        let uniforms = Uniforms::new(transform, scale);
+        let bytes = bytemuck::bytes_of(&uniforms);
+
+        belt.write_buffer(
+            encoder,
+            &self.constants_buffer,
+            0,
+            (bytes.len() as u64).try_into().expect("sized uniforms"),
+            device,
+        ).copy_from_slice(bytes);
+
+        if !quads.is_empty() {
+            let _ = self.instance_buffer.resize(device, quads.len());
+            let _ = self.instance_buffer.write(device, encoder, belt, 0, quads);
+
+            self.instance_count = quads.len();
         }
     }
 }
@@ -37,6 +236,16 @@ struct Uniforms {
     transform: [f32; 16],
     scale: f32,
     _padding: [f32; 3], // Align to `mat4x4<f32>`.
+}
+
+impl Uniforms {
+    fn new(transform: Mat4, scale: f32) -> Self {
+        Self {
+            transform: transform.to_cols_array(),
+            scale,
+            _padding: [0.0, 0.0, 0.0],
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -61,8 +270,9 @@ pub struct QuadSolid {
     pub quad: Quad,
 }
 
-struct QuadPipeline {
+pub struct QuadPipeline {
     pipeline: wgpu::RenderPipeline,
+    constants_layout: wgpu::BindGroupLayout,
 }
 
 impl QuadPipeline {
@@ -167,6 +377,21 @@ impl QuadPipeline {
 
         Self {
             pipeline,
+            constants_layout,
         }
+    }
+
+    pub fn render<'a>(
+        &'a self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        constants: &'a wgpu::BindGroup,
+        layer: &'a QuadLayer,
+        range: std::ops::Range<usize>,
+    ) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, constants, &[]);
+        render_pass.set_vertex_buffer(0, layer.instance_buffer.slice(..));
+
+        render_pass.draw(0..6, range.start as u32..range.end as u32);
     }
 }
