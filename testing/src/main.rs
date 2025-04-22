@@ -151,6 +151,13 @@ impl<'w> Client for App<'w> {
                     display.renderer.fill_quad(button.quad);
                 }
                 display.renderer.end_layer();
+                if let Some(drag_indicator) = &display.drag_indicator {
+                    display.renderer.start_layer(
+                        Rect::new(Vec2::ZERO, display.viewport.physical_size),
+                    );
+                    display.renderer.fill_quad(*drag_indicator);
+                    display.renderer.end_layer();
+                }
 
                 let texture = display.graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -207,30 +214,19 @@ impl<'w> GuiHandler for Display<'w> {
 
     fn on_drag_update(
         &mut self,
-        tree: &mut LayoutTree,
-        _element: Element,
+        _tree: &mut LayoutTree,
+        element: Element,
         hovered: Option<Element>,
-        _delta: Vec2,
+        delta: Vec2,
     ) {
-        if let Some(placement) = hovered.and_then(|e| tree.placement(e)) {
-            let pos = vec2(
-                (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
-                placement.position().y + placement.layout.size.height + 5.0,
-            );
-            self.drag_indicator = Some(Quad {
-                bounds: Rect::new(pos, vec2(10.0, 10.0)),
-                border: Border {
-                    color: Color::from_u32(0xb7b7c0ff),
-                    width: 3.0,
-                    radius: [7.0, 3.0, 11.0, 19.0],
-                },
-                shadow: Shadow {
-                    color: Color::from_u32(0x3c3c44ff),
-                    offset: vec2(2.0, 5.0),
-                    blur_radius: 3.0,
-                },
-                bg_color: Color::from_u32(0xaaaaabff),
-            });
+        self.graphics.window().request_redraw();
+        let Some(button) = self.elements.get(&element) else { return; };
+        self.drag_indicator = Some(Quad {
+            bounds: Rect::new(button.quad.bounds.position() + delta, button.quad.bounds.size()),
+            ..button.quad
+        });
+        if let Some(button) = hovered.and_then(|e| self.elements.get_mut(&e)) {
+            button.quad.border.color = Color::from_u32(0xaaaaabff);
         }
     }
 
