@@ -4,13 +4,14 @@
 use std::collections::HashMap;
 
 use bog::*;
+use color::*;
 use event::*;
 use fonts::*;
 use graphics::*;
 use gui::*;
 use layout::*;
 use math::*;
-use painter::*;
+use render::*;
 use window::*;
 
 
@@ -57,17 +58,11 @@ impl<'w> Client for App<'w> {
             }).unwrap());
         }
         if self.display.is_none() && self.window.is_some() {
-            let graphics = futures::executor::block_on(async {
+            let (graphics, device, queue, format) = futures::executor::block_on(async {
                 WindowGraphics::from_window(self.window.clone().unwrap()).await
             }).unwrap();
 
-            let font = load_font_face(include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf"))
-                .unwrap();
-            let parsed_font = font.parse().unwrap();
-            let indicator_glyph_id = parsed_font.char_glyph('A').unwrap();
-            let indicator_glyph_mesh = parsed_font.glyph_mesh(indicator_glyph_id, 20.0).unwrap();
-
-            let painter = Painter::new(&graphics);
+            let renderer = Renderer::new(device, queue, format);
             let mut gui = Gui::new(Layout::default()
                 .flex_row()
                 .flex_wrap()
@@ -78,26 +73,43 @@ impl<'w> Client for App<'w> {
                 .align_content_center()
                 .align_items_center());
             let mut elements = HashMap::with_capacity(5);
-            let mut paints = Vec::with_capacity(5);
-            paints.push(PaintMesh::glyph(indicator_glyph_mesh, 0xaaaaabff)); // Dragging indicator.
-            for (index, layout) in [
+            for layout in [
                 Layout::default().width(70.0).height(50.0),
                 Layout::default().width(100.0).height(30.0),
                 Layout::default().width(50.0).height(70.0),
                 Layout::default().width(40.0).height(70.0),
                 Layout::default().width(20.0).height(40.0),
-                ].into_iter().enumerate()
-            {
+            ] {
                 let element = gui.push_element_to_root(layout);
-                elements.insert(element, index + 1); // Index 0 reserved for dragging indicator.
-                paints.push(PaintMesh::quad(vec2(0.0, 0.0), vec2(0.0, 0.0), 0xaaaaabff));
+                elements.insert(element, Button {
+                    quad: Quad {
+                        bounds: Rect::new(Vec2::ZERO, Vec2::ZERO),
+                        border: Border {
+                            color: Color::from_u32(0xb7b7c0ff),
+                            width: 3.0,
+                            radius: [7.0, 3.0, 11.0, 19.0],
+                        },
+                        shadow: Shadow {
+                            color: Color::from_u32(0x3c3c44ff),
+                            offset: vec2(2.0, 5.0),
+                            blur_radius: 3.0,
+                        },
+                        bg_color: Color::from_u32(0xaaaaabff),
+                    }
+                });
             }
 
             self.display = Some(Display {
                 graphics,
-                painter,
-                paints,
+                renderer,
+                viewport: Viewport {
+                    physical_size: vec2(1.0, 1.0),
+                    logical_size: vec2(1.0, 1.0),
+                    scale_factor: 1.0,
+                    projection: Mat4::IDENTITY,
+                },
                 elements,
+                drag_indicator: None,
             });
             self.gui = Some(gui);
         }
@@ -111,9 +123,11 @@ impl<'w> Client for App<'w> {
             WindowEvent::Resize { width, height } => {
                 display.graphics.window().request_redraw();
                 if width > 0 && height > 0 {
-                    let size = vec2(width as _, height as _);
-                    display.graphics.resize(size);
-                    gui.handle_resize(display, size);
+                    let physical_size = vec2(width as _, height as _);
+                    display.viewport.scale_factor = display.graphics.window().scale_factor();
+
+                    display.graphics.resize(display.renderer.device(), physical_size);
+                    gui.handle_resize(display, physical_size);
                 }
             }
             // WindowEvent::KeyDown { code, repeat } => {}
@@ -135,12 +149,18 @@ impl<'w> Client for App<'w> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                display.graphics
-                    .render(|render_pass| {
-                        display.painter.prepare(&display.graphics, &display.paints);
-                        display.painter.render(render_pass, &display.paints);
-                    })
-                    .unwrap();
+                display.renderer.start_layer(
+                    Rect::new(Vec2::ZERO, display.viewport.physical_size),
+                );
+                for button in display.elements.values() {
+                    display.renderer.fill_quad(button.quad);
+                }
+                display.renderer.end_layer();
+
+                let texture = display.graphics.get_current_texture();
+                let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+                display.renderer.render(&target, &display.viewport);
+                texture.present();
             }
             _ => {}
         }
@@ -151,9 +171,10 @@ impl<'w> Client for App<'w> {
 
 struct Display<'w> {
     graphics: WindowGraphics<'w>,
-    painter: Painter,
-    paints: Vec<PaintMesh>,
-    elements: HashMap<Element, usize>,
+    renderer: Renderer,
+    viewport: Viewport,
+    elements: HashMap<Element, Button>,
+    drag_indicator: Option<Quad>,
 }
 
 impl<'w> GuiHandler for Display<'w> {
@@ -164,8 +185,8 @@ impl<'w> GuiHandler for Display<'w> {
         if !state.is_dragging {
             self.graphics.window().set_cursor(CursorIcon::Pointer);
         }
-        let Some(index) = self.elements.get(&element) else { return; };
-        self.paints[*index].change_color(0xb7b7c0ff);
+        let Some(button) = self.elements.get_mut(&element) else { return; };
+        button.quad.bg_color = Color::from_u32(0xb7b7c0ff);
     }
 
     fn on_mouse_leave(&mut self, element: Element, state: &GuiState) {
@@ -173,21 +194,20 @@ impl<'w> GuiHandler for Display<'w> {
         if !state.is_dragging {
             self.graphics.window().set_cursor(CursorIcon::Default);
         }
-        let Some(index) = self.elements.get(&element) else { return; };
-        self.paints[*index].change_color(0xaaaaabff);
+        let Some(button) = self.elements.get_mut(&element) else { return; };
+        button.quad.bg_color = Color::from_u32(0xaaaaabff);
     }
 
     fn on_mouse_down(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
-        let Some(index) = self.elements.get(&element) else { return; };
-        self.paints[*index].change_color(0x3c3c44ff);
+        let Some(button) = self.elements.get_mut(&element) else { return; };
+        button.quad.bg_color = Color::from_u32(0x3c3c44ff);
     }
 
     fn on_mouse_up(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
-        let Some(index) = self.elements.get(&element) else { return; };
-        self.paints[*index].change_color(0xb7b7c0ff);
-        println!("Element #{index} clicked");
+        let Some(button) = self.elements.get_mut(&element) else { return; };
+        button.quad.bg_color = Color::from_u32(0xb7b7c0ff);
     }
 
     fn on_drag_update(
@@ -202,12 +222,20 @@ impl<'w> GuiHandler for Display<'w> {
                 (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
                 placement.position().y + placement.layout.size.height + 5.0,
             );
-            self.paints[0] = Rectangle {
-                pos,
-                size: vec2(10.0, 10.0),
-                color: 0xaaaaabff,
-                corner_radii: [2.0, 2.0, 2.0, 2.0],
-            }.to_mesh();
+            self.drag_indicator = Some(Quad {
+                bounds: Rect::new(pos, vec2(10.0, 10.0)),
+                border: Border {
+                    color: Color::from_u32(0xb7b7c0ff),
+                    width: 3.0,
+                    radius: [7.0, 3.0, 11.0, 19.0],
+                },
+                shadow: Shadow {
+                    color: Color::from_u32(0x3c3c44ff),
+                    offset: vec2(2.0, 5.0),
+                    blur_radius: 3.0,
+                },
+                bg_color: Color::from_u32(0xaaaaabff),
+            });
         }
     }
 
@@ -219,30 +247,42 @@ impl<'w> GuiHandler for Display<'w> {
                 (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
                 placement.position().y + placement.layout.size.height + 5.0,
             );
-            self.paints[0] = Rectangle {
-                pos,
-                size: vec2(10.0, 10.0),
-                color: 0xaaaaabff,
-                corner_radii: [2.0, 2.0, 2.0, 2.0],
-            }.to_mesh();
+            self.drag_indicator = Some(Quad {
+                bounds: Rect::new(pos, vec2(10.0, 10.0)),
+                border: Border {
+                    color: Color::from_u32(0xb7b7c0ff),
+                    width: 3.0,
+                    radius: [7.0, 3.0, 11.0, 19.0],
+                },
+                shadow: Shadow {
+                    color: Color::from_u32(0x3c3c44ff),
+                    offset: vec2(2.0, 5.0),
+                    blur_radius: 3.0,
+                },
+                bg_color: Color::from_u32(0xaaaaabff),
+            });
         }
     }
 
     fn on_drag_end(&mut self, _element: Element) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor(CursorIcon::Default);
-        self.paints[0] = PaintMesh::quad(vec2(-1.0, -1.0), vec2(1.0, 1.0), 0x00000000);
+        self.drag_indicator = None;
     }
 
     fn on_resize(&mut self, _size: math::Vec2) {}
 
     fn on_element_layout(&mut self, element: Element, placement: &Placement) {
-        let Some(index) = self.elements.get(&element) else { return; };
-        self.paints[*index] = Rectangle {
-            pos: placement.position(),
-            size: vec2(placement.layout.size.width, placement.layout.size.height),
-            color: 0xaaaaabff,
-            corner_radii: [3.0, 3.0, 3.0, 3.0],
-        }.to_mesh();
+        let Some(button) = self.elements.get_mut(&element) else { return; };
+        button.quad.bounds = Rect::new(
+            placement.position(),
+            vec2(placement.layout.size.width, placement.layout.size.height),
+        );
     }
+}
+
+
+
+struct Button {
+    quad: Quad,
 }

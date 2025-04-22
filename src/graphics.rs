@@ -2,9 +2,6 @@
 
 
 
-pub mod painter;
-pub mod renderer;
-
 use std::ops::Range;
 
 use crate::{math::Vec2, window::Window};
@@ -32,8 +29,6 @@ pub enum GraphicsError {
 
 pub struct WindowGraphics<'w> {
     surface: wgpu::Surface<'w>,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
 
     depth_texture_view: Option<wgpu::TextureView>,
@@ -45,7 +40,9 @@ pub struct WindowGraphics<'w> {
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
-    pub async fn from_window(window: Window) -> Result<Self> {
+    pub async fn from_window(
+        window: Window,
+    ) -> Result<(Self, wgpu::Device, wgpu::Queue, wgpu::TextureFormat)> {
         let size: [u32; 2] = window.inner_size().into();
 
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
@@ -101,15 +98,18 @@ impl<'w> WindowGraphics<'w> {
             view_formats: vec![],
         };
 
-        Ok(Self {
-            surface,
+        Ok((
+            Self {
+                surface,
+                config,
+                depth_texture_view: None,
+                multisampled_render_target: None,
+                window,
+            },
             device,
             queue,
-            config,
-            depth_texture_view: None,
-            multisampled_render_target: None,
-            window,
-        })
+            surface_format,
+        ))
     }
 }
 
@@ -127,14 +127,6 @@ impl<'w> WindowGraphics<'w> {
         &mut self.config
     }
 
-    pub fn device(&self) -> &wgpu::Device {
-        &self.device
-    }
-
-    pub fn queue(&self) -> &wgpu::Queue {
-        &self.queue
-    }
-
     pub fn window(&self) -> &Window {
         &self.window
     }
@@ -145,11 +137,20 @@ impl<'w> WindowGraphics<'w> {
 }
 
 impl<'w> WindowGraphics<'w> {
-    pub fn render(&self, mut func: impl FnMut(RenderPass)) -> Result<()> {
+    pub fn get_current_texture(&self) -> wgpu::SurfaceTexture {
+        self.surface.get_current_texture().unwrap()
+    }
+
+    pub fn render(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        mut func: impl FnMut(RenderPass),
+    ) -> Result<()> {
         let output = self.surface.get_current_texture().unwrap();
         let frame_view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self.device.create_command_encoder(
+        let mut encoder = device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             },
@@ -196,18 +197,18 @@ impl<'w> WindowGraphics<'w> {
             func(RenderPass(render_pass));
         }
 
-        self.queue.submit(std::iter::once(encoder.finish()));
+        queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
         Ok(())
     }
 
-    pub fn resize(&mut self, new_size: Vec2) {
+    pub fn resize(&mut self, device: &wgpu::Device, new_size: Vec2) {
         self.config.width = new_size.x as _;
         self.config.height = new_size.y as _;
-        self.surface.configure(&self.device, &self.config);
+        self.surface.configure(device, &self.config);
 
-        let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Depth texture"),
             size: wgpu::Extent3d {
                 width: self.config.width,
@@ -240,7 +241,7 @@ impl<'w> WindowGraphics<'w> {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             };
-            Some(self.device
+            Some(device
                 .create_texture(multisampled_frame_descriptor)
                 .create_view(&wgpu::TextureViewDescriptor::default()))
         } else {

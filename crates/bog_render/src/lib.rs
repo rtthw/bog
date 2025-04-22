@@ -13,6 +13,7 @@ use bog_math::{Mat4, Rect, Vec2};
 
 
 
+#[derive(Clone, Copy, Debug)]
 pub struct Quad {
     pub bounds: Rect,
     pub border: Border,
@@ -20,12 +21,14 @@ pub struct Quad {
     pub bg_color: Color,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Border {
     pub color: Color,
     pub width: f32,
     pub radius: [f32; 4],
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Shadow {
     pub color: Color,
     pub offset: Vec2,
@@ -106,7 +109,7 @@ impl Renderer {
                     view: target,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -153,6 +156,10 @@ impl Renderer {
         self.staging_belt.recall();
 
         submission
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
     }
 }
 
