@@ -102,12 +102,7 @@ impl<'w> Client for App<'w> {
             self.display = Some(Display {
                 graphics,
                 renderer,
-                viewport: Viewport {
-                    physical_size: vec2(1.0, 1.0),
-                    logical_size: vec2(1.0, 1.0),
-                    scale_factor: 1.0,
-                    projection: Mat4::IDENTITY,
-                },
+                viewport: Viewport::default(),
                 elements,
                 drag_indicator: None,
             });
@@ -124,14 +119,7 @@ impl<'w> Client for App<'w> {
                 display.graphics.window().request_redraw();
                 if width > 0 && height > 0 {
                     let physical_size = vec2(width as _, height as _);
-                    display.viewport.physical_size = physical_size;
-                    display.viewport.scale_factor = display.graphics.window().scale_factor();
-                    display.viewport.projection = Mat4::orthographic_rh_gl(
-                        0.0, width as f32,
-                        height as f32, 0.0,
-                        -1.0, 1.0
-                    );
-
+                    display.viewport.resize(physical_size);
                     display.graphics.resize(display.renderer.device(), physical_size);
                     gui.handle_resize(display, physical_size);
                 }

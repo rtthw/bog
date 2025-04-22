@@ -5,8 +5,10 @@
 pub mod buffer;
 mod layer;
 pub mod primitive;
+mod viewport;
 
 pub use layer::*;
+pub use viewport::*;
 
 use bog_color::Color;
 use bog_math::{Mat4, Rect, Vec2};
@@ -201,15 +203,6 @@ impl Render for Renderer {
     fn clear(&mut self) {
         self.layers.clear();
     }
-}
-
-
-
-pub struct Viewport {
-    pub physical_size: Vec2,
-    pub logical_size: Vec2,
-    pub scale_factor: f64,
-    pub projection: Mat4,
 }
 
 
