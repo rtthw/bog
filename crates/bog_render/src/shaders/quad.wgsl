@@ -48,17 +48,39 @@ fn vertex_position(vertex_index: u32) -> vec2<f32> {
     return vec2<f32>((vec2(1u, 2u) + vertex_index) % vec2(6u) < vec2(3u));
 }
 
+fn convert_color(color: u32) -> vec4<f32> {
+    let r = f32((color >> 24u) & 255u) / 255.0;
+    let g = f32((color >> 16u) & 255u) / 255.0;
+    let b = f32((color >> 8u) & 255u) / 255.0;
+    let a = f32(color & 255u) / 255.0;
+
+    return vec4<f32>(
+        color_channel_to_linear(r),
+        color_channel_to_linear(g),
+        color_channel_to_linear(b),
+        a,
+    );
+}
+
+fn color_channel_to_linear(channel: f32) -> f32 {
+    if channel < 0.04045 {
+        return channel / 12.92;
+    } else {
+        return pow((channel + 0.055) / 1.055, 2.4);
+    }
+}
+
 
 
 struct VertexInput {
     @builtin(vertex_index) vertex_index: u32,
-    @location(0) color: vec4<f32>,
+    @location(0) color: u32,
     @location(1) pos: vec2<f32>,
     @location(2) scale: vec2<f32>,
-    @location(3) border_color: vec4<f32>,
+    @location(3) border_color: u32,
     @location(4) border_radius: vec4<f32>,
     @location(5) border_width: f32,
-    @location(6) shadow_color: vec4<f32>,
+    @location(6) shadow_color: u32,
     @location(7) shadow_offset: vec2<f32>,
     @location(8) shadow_blur_radius: f32,
 }
@@ -108,13 +130,13 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     );
 
     out.position = globals.transform * transform * vec4<f32>(vertex_position(input.vertex_index), 0.0, 1.0);
-    out.color = input.color;
-    out.border_color = input.border_color;
+    out.color = convert_color(input.color);
+    out.border_color = convert_color(input.border_color);
     out.pos = input.pos * globals.scale + snap;
     out.scale = input.scale * globals.scale;
     out.border_radius = border_radius * globals.scale;
     out.border_width = input.border_width * globals.scale;
-    out.shadow_color = input.shadow_color;
+    out.shadow_color = convert_color(input.shadow_color);
     out.shadow_offset = input.shadow_offset * globals.scale;
     out.shadow_blur_radius = input.shadow_blur_radius * globals.scale;
 

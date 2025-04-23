@@ -152,10 +152,10 @@ impl Uniforms {
 pub struct QuadPrimitive {
     pub position: [f32; 2],
     pub size: [f32; 2],
-    pub border_color: [f32; 4], // linear rgb
+    pub border_color: u32,
     pub border_radius: [f32; 4], // pqdb ordering
     pub border_width: f32,
-    pub shadow_color: [f32; 4], // linear rgb
+    pub shadow_color: u32,
     pub shadow_offset: [f32; 2],
     pub shadow_blur_radius: f32,
 }
@@ -164,7 +164,7 @@ pub struct QuadPrimitive {
 #[derive(bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct QuadSolid {
-    pub color: [f32; 4], // linear rgb
+    pub color: u32,
     pub quad: QuadPrimitive,
 }
 
@@ -215,19 +215,19 @@ impl QuadPipeline {
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &wgpu::vertex_attr_array!(
                         // Color.
-                        0 => Float32x4,
+                        0 => Uint32,
                         // Position.
                         1 => Float32x2,
                         // Size.
                         2 => Float32x2,
                         // Border color.
-                        3 => Float32x4,
+                        3 => Uint32,
                         // Border radius.
                         4 => Float32x4,
                         // Border width.
                         5 => Float32,
                         // Shadow color.
-                        6 => Float32x4,
+                        6 => Uint32,
                         // Shadow offset.
                         7 => Float32x2,
                         // Shadow blur radius.

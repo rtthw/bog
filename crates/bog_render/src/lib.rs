@@ -166,14 +166,14 @@ impl Render for Renderer {
     fn fill_quad(&mut self, quad: Quad) {
         let (layer, transform) = self.layers.current_mut();
         let bounds = quad.bounds * transform;
-        let color = quad.bg_color.to_linear();
+        let color = quad.bg_color.to_u32();
         let quad = QuadPrimitive {
             position: [bounds.x, bounds.y],
             size: [bounds.w, bounds.h],
-            border_color: quad.border.color.to_linear(),
+            border_color: quad.border.color.to_u32(),
             border_radius: quad.border.radius.into(),
             border_width: quad.border.width,
-            shadow_color: quad.shadow.color.to_linear(),
+            shadow_color: quad.shadow.color.to_u32(),
             shadow_offset: quad.shadow.offset.into(),
             shadow_blur_radius: quad.shadow.blur_radius,
         };

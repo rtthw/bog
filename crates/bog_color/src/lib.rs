@@ -32,26 +32,6 @@ impl Color {
             a: color as u8,
         }
     }
-
-    /// Converts the [`Color`] into its linear RGBA value.
-    pub fn to_linear(self) -> [f32; 4] {
-        fn linear_component(u: f32) -> f32 {
-            if u < 0.04045 {
-                u / 12.92
-            } else {
-                // FIXME: This is just a temporary workaround for not having access to `f32::powf`.
-                let n = (u + 0.055) / 1.055;
-                n * n * (0.4 * n)
-            }
-        }
-
-        [
-            linear_component(self.r as f32 / 255.0),
-            linear_component(self.g as f32 / 255.0),
-            linear_component(self.b as f32 / 255.0),
-            self.a as f32 / 255.0,
-        ]
-    }
 }
 
 

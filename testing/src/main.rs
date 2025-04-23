@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use bog::*;
 use color::*;
 use event::*;
-use fonts::*;
 use graphics::*;
 use gui::*;
 use layout::*;
@@ -57,6 +56,7 @@ impl<'w> Client for App<'w> {
                 ..Default::default()
             }).unwrap());
         }
+
         if self.display.is_none() && self.window.is_some() {
             let (graphics, device, queue, format) = futures::executor::block_on(async {
                 WindowGraphics::from_window(self.window.clone().unwrap()).await
@@ -85,7 +85,7 @@ impl<'w> Client for App<'w> {
                     quad: Quad {
                         bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                         border: Border {
-                            color: Color::from_u32(0xb7b7c0ff),
+                            color: Color::from_u32(0x50505bff),
                             width: 3.0,
                             radius: [7.0, 3.0, 11.0, 19.0],
                         },
@@ -198,6 +198,7 @@ impl<'w> GuiHandler for Display<'w> {
         }
         let Some(button) = self.elements.get_mut(&element) else { return; };
         button.quad.bg_color = Color::from_u32(0xaaaaabff);
+        button.quad.border.color = Color::from_u32(0x50505bff);
     }
 
     fn on_mouse_down(&mut self, element: Element, _state: &GuiState) {
@@ -241,7 +242,7 @@ impl<'w> GuiHandler for Display<'w> {
             self.drag_indicator = Some(Quad {
                 bounds: Rect::new(pos, vec2(10.0, 10.0)),
                 border: Border {
-                    color: Color::from_u32(0xb7b7c0ff),
+                    color: Color::from_u32(0x50505bff),
                     width: 3.0,
                     radius: [7.0, 3.0, 11.0, 19.0],
                 },
