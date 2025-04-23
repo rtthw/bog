@@ -5,6 +5,8 @@
 use bog_collections::unit_map::UnitMap;
 use bog_math::Rect;
 
+use crate::Viewport;
+
 
 
 pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
@@ -15,7 +17,7 @@ pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
         format: wgpu::TextureFormat,
         storage: &mut UnitMap,
         bounds: &Rect,
-        // TODO: Setup some sort of viewport management system.
+        viewport: &Viewport,
     );
 
     fn render(
