@@ -32,7 +32,6 @@ pub trait Render {
 pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    format: wgpu::TextureFormat,
     staging_belt: wgpu::util::StagingBelt,
 
     layers: LayerStack,
@@ -48,7 +47,6 @@ impl Renderer {
         Self {
             device,
             queue,
-            format,
             staging_belt: wgpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
 
             layers: LayerStack::new(),

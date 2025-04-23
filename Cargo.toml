@@ -47,4 +47,4 @@ bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
 bog_window = { path = "crates/bog_window" }
 
-wgpu = "24"
+wgpu = "25"
