@@ -144,17 +144,21 @@ impl<'w> Client for App<'w> {
             }
             WindowEvent::RedrawRequest => {
                 display.renderer.clear();
-                display.renderer.start_layer(
-                    Rect::new(Vec2::ZERO, display.viewport.physical_size),
-                );
+                display.renderer.start_layer(display.viewport.rect());
+                display.renderer.fill_quad(Quad {
+                    bounds: display.viewport.rect(),
+                    border: Border::NONE,
+                    shadow: Shadow::NONE,
+                    bg_color: Color::from_u32(0x1e1e22ff),
+                });
+                display.renderer.end_layer();
+                display.renderer.start_layer(display.viewport.rect());
                 for button in display.elements.values() {
                     display.renderer.fill_quad(button.quad);
                 }
                 display.renderer.end_layer();
                 if let Some(drag_indicator) = &display.drag_indicator {
-                    display.renderer.start_layer(
-                        Rect::new(Vec2::ZERO, display.viewport.physical_size),
-                    );
+                display.renderer.start_layer(display.viewport.rect());
                     display.renderer.fill_quad(*drag_indicator);
                     display.renderer.end_layer();
                 }

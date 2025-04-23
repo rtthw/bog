@@ -2,7 +2,7 @@
 
 
 
-use bog_math::{Mat4, Vec2};
+use bog_math::{Mat4, Rect, Vec2};
 
 
 
@@ -28,6 +28,11 @@ impl Default for Viewport {
 }
 
 impl Viewport {
+    #[inline]
+    pub const fn rect(&self) -> Rect {
+        Rect::new(Vec2::ZERO, self.physical_size)
+    }
+
     pub fn resize(&mut self, physical_size: Vec2) {
         self.physical_size = physical_size;
         self.projection = Mat4::orthographic_rh_gl(

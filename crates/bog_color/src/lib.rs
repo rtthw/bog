@@ -13,6 +13,8 @@ pub struct Color {
 }
 
 impl Color {
+    pub const NONE: Self = Self { r: 0, g: 0, b: 0, a: 0 };
+
     /// Pack this color into a `u32` as `0xRRGGBBAA`.
     pub fn to_u32(&self) -> u32 {
         let mut color = (self.r as u32) << 24;
