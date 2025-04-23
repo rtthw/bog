@@ -6,38 +6,15 @@ pub mod buffer;
 mod layer;
 pub mod primitive;
 mod quad;
+mod types;
 mod viewport;
 
 pub use layer::*;
 use quad::*;
+pub use types::*;
 pub use viewport::*;
 
-use bog_color::Color;
-use bog_math::{Mat4, Rect, Vec2};
-
-
-
-#[derive(Clone, Copy, Debug)]
-pub struct Quad {
-    pub bounds: Rect,
-    pub border: Border,
-    pub shadow: Shadow,
-    pub bg_color: Color,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Border {
-    pub color: Color,
-    pub width: f32,
-    pub radius: [f32; 4],
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Shadow {
-    pub color: Color,
-    pub offset: Vec2,
-    pub blur_radius: f32,
-}
+use bog_math::{Mat4, Rect};
 
 
 
