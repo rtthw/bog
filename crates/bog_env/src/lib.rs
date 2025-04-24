@@ -53,6 +53,70 @@
 
 
 
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum ProcessManager {
+    Linux,
+    Windows,
+    Darwin,
+    Redox,
+
+    #[default]
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum WindowingSystem {
+    X11,
+    Wayland,
+    Dwm,
+    SurfaceFlinger,
+    Quartz,
+    Orbital,
+
+    #[default]
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum FileSystem {
+    #[default]
+    Unix,
+}
+
+
+
+pub fn guess_process_manager() -> ProcessManager {
+    match std::env::consts::OS {
+        "linux" => ProcessManager::Linux,
+        "windows" => ProcessManager::Windows,
+        "macos" => ProcessManager::Darwin,
+        "android" => ProcessManager::Linux,
+        "ios" => ProcessManager::Darwin,
+        "redox" => ProcessManager::Redox,
+
+        _ => ProcessManager::Unknown,
+    }
+}
+
+pub fn guess_windowing_system() -> WindowingSystem {
+    match std::env::consts::OS {
+        "linux" => WindowingSystem::X11, // NOTE: Change if changes.
+        "windows" => WindowingSystem::Dwm,
+        "macos" => WindowingSystem::Quartz,
+        "android" => WindowingSystem::SurfaceFlinger,
+        "ios" => WindowingSystem::Quartz,
+        "redox" => WindowingSystem::Orbital,
+
+        _ => WindowingSystem::Unknown,
+    }
+}
+
+pub const fn guess_filesystem() -> FileSystem {
+    FileSystem::Unix
+}
+
+
+
 pub const fn current_platform() -> Platform {
     Platform {
         cpu_arch: std::env::consts::ARCH,
