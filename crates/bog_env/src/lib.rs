@@ -1,4 +1,55 @@
-//! Bog Environment
+//! # Environment management
+//!
+//! You can think of your computer's "environment" as a set of components. The core components to
+//! the average user's environment are:
+//!
+//! 1. Process manager.
+//! 2. Filesystem.
+//! 3. Device drivers.
+//! 4. Windowing system.
+//! 5. Networking interface.
+//!     **Networking support is not yet planned.**
+//!
+//! ## Supported Environments
+//!
+//! - Linux
+//!     - X11 and Wayland both supported.
+//! - Android
+//! - Windows
+//!     - All versions released within the last 20 years are supported (Vista, 7, 8, 10, 11).
+//! - Redox
+//! - macOS
+//! - iOS
+//!
+//! ## Features
+//!
+//! - Processing.
+//!     - Spawning child processes.
+//!     - Listing other processes.
+//!     - Killing other processes.
+//! - Windowing.
+//!     - Creation.
+//!     - Event processing.
+//!     - Multiple windows.
+//!
+//! ## Component Lists
+//!
+//! ### Filesystems
+//!
+//! 1. [Unix-like](https://en.wikipedia.org/wiki/File_system#Unix_and_Unix-like_operating_systems),
+//!    for Linux, Android, macOS, Redox, and pretty much anything else that isn't Windows.
+//!
+//! ### Windowing Systems
+//!
+//! The most common windowing systems accounted for are:
+//!
+//! 1. [X11](https://en.wikipedia.org/wiki/X_Window_System), for Linux.
+//! 2. [Wayland](https://en.wikipedia.org/wiki/Wayland_(protocol)), for Linux.
+//! 3. [DWM](https://en.wikipedia.org/wiki/Desktop_Window_Manager), for Windows.
+//! 4. [SurfaceFlinger](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager),
+//!    for Android
+//! 5. [Quartz](https://en.wikipedia.org/wiki/Quartz_Compositor), for macOS.
+//! 6. [Orbital](https://github.com/redox-os/orbital), for Redox.
 
 
 

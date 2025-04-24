@@ -20,6 +20,7 @@ all = []
 bog_alloc.workspace = true
 bog_collections.workspace = true
 bog_color.workspace = true
+bog_env.workspace = true
 bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true

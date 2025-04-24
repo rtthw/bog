@@ -177,6 +177,7 @@ dependencies = [
  "bog_alloc",
  "bog_collections",
  "bog_color",
+ "bog_env",
  "bog_event",
  "bog_layout",
  "bog_math",
