@@ -52,7 +52,7 @@ impl<'w> Client for App<'w> {
             }
 
             self.window = Some(wm.create_window(WindowDescriptor {
-                title: "Bog Testing",
+                title: "Bog Showcase",
                 ..Default::default()
             }).unwrap());
         }

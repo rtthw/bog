@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*", "testing"]
+members = ["crates/*", "showcase"]
 
 [package]
 name = "bog"
