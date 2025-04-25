@@ -4,7 +4,7 @@
 
 use bog_math::{Mat4, Rect};
 
-use crate::{QuadSolid, Text};
+use crate::{QuadSolid, TextBuffer};
 
 
 
@@ -12,7 +12,7 @@ use crate::{QuadSolid, Text};
 pub struct Layer {
     pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
-    pub texts: Vec<Text>,
+    pub texts: Vec<TextBuffer>,
 }
 
 impl Default for Layer {

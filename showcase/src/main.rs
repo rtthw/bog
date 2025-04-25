@@ -121,6 +121,7 @@ impl<'w> Client for App<'w> {
                     let physical_size = vec2(width as _, height as _);
                     display.viewport.resize(physical_size);
                     display.graphics.resize(display.renderer.device(), physical_size);
+                    display.renderer.resize(physical_size);
                     gui.handle_resize(display, physical_size);
                 }
             }

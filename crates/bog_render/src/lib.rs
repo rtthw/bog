@@ -15,7 +15,7 @@ pub use types::*;
 pub use viewport::*;
 
 use bog_color::Color;
-use bog_math::{Mat4, Rect};
+use bog_math::{Mat4, Rect, Vec2};
 
 
 
@@ -25,6 +25,7 @@ pub trait Render {
     fn start_transform(&mut self, transform: Mat4);
     fn end_transform(&mut self);
     fn fill_quad(&mut self, quad: Quad);
+    fn fill_text(&mut self, text: &Text);
     fn clear(&mut self);
 }
 
@@ -88,6 +89,15 @@ impl Renderer {
                     scale_factor,
                 );
             }
+            if !layer.texts.is_empty() {
+                self.text_manager.prepare(
+                    &mut self.text_pipeline,
+                    &self.device,
+                    &self.queue,
+                    &layer.texts,
+                    viewport.projection,
+                );
+            }
         }
 
         // 2. Render.
@@ -113,6 +123,7 @@ impl Renderer {
                 h: viewport.physical_size.y,
             };
             let mut quad_layer = 0;
+            let mut text_layer = 0;
             for layer in self.layers.iter() {
                 let Some(physical_bounds) =
                     physical_bounds.intersection(&(layer.bounds * scale_factor))
@@ -135,6 +146,16 @@ impl Renderer {
 
                     quad_layer += 1;
                 }
+                if !layer.texts.is_empty() {
+                    self.text_manager.render(
+                        &self.text_pipeline,
+                        text_layer,
+                        scissor_rect,
+                        &mut render_pass,
+                    );
+
+                    text_layer += 1;
+                }
             }
         }
 
@@ -149,6 +170,13 @@ impl Renderer {
 
     pub fn device(&self) -> &wgpu::Device {
         &self.device
+    }
+
+    pub fn resize(&mut self, viewport_size: Vec2) {
+        self.text_pipeline.viewport.update(&self.queue, glyphon::Resolution {
+            width: viewport_size.x as u32,
+            height: viewport_size.y as u32,
+        });
     }
 }
 
@@ -187,9 +215,44 @@ impl Render for Renderer {
         layer.quads.push(QuadSolid { color, quad });
     }
 
+    fn fill_text(&mut self, text: &Text) {
+        let (layer, _transform) = self.layers.current_mut();
+        let mut buffer = glyphon::Buffer::new(
+            &mut self.text_pipeline.font_system,
+            glyphon::Metrics { font_size: text.size, line_height: text.line_height },
+        );
+        buffer.set_text(
+            &mut self.text_pipeline.font_system,
+            &text.content,
+            &glyphon::Attrs::new()
+                // TODO: Setup font attrs selection system.
+                .family(glyphon::Family::Monospace),
+            glyphon::Shaping::Basic,
+        );
+        buffer.shape_until_scroll(&mut self.text_pipeline.font_system, false);
+        let text = TextBuffer {
+            buffer,
+            bounds: Rect::new(text.pos, text.bounds),
+            color: text.color,
+        };
+
+        layer.texts.push(text);
+    }
+
     fn clear(&mut self) {
         self.layers.clear();
     }
+}
+
+
+
+pub struct Text {
+    pub content: String,
+    pub pos: Vec2,
+    pub size: f32,
+    pub color: Color,
+    pub line_height: f32,
+    pub bounds: Vec2,
 }
 
 
@@ -199,7 +262,7 @@ impl Render for Renderer {
 
 
 #[derive(Debug)]
-pub struct Text {
+pub struct TextBuffer {
     buffer: glyphon::Buffer,
     bounds: Rect,
     color: Color,
@@ -223,8 +286,7 @@ impl TextManager {
         pipeline: &mut TextPipeline,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        encoder: &mut wgpu::CommandEncoder,
-        texts: &[Text],
+        texts: &[TextBuffer],
         transform: Mat4,
     ) {
         if self.layers.len() <= self.prepare_layer {
@@ -266,6 +328,20 @@ impl TextManager {
             &mut pipeline.swash_cache,
         )
             .unwrap();
+    }
+
+    fn render<'a>(
+        &'a self,
+        pipeline: &'a TextPipeline,
+        layer: usize,
+        bounds: Rect<u32>,
+        render_pass: &mut wgpu::RenderPass<'a>,
+    ) {
+        if let Some(layer) = self.layers.get(layer) {
+            render_pass.set_scissor_rect(bounds.x, bounds.y, bounds.w, bounds.h);
+            layer.renderer.render(&pipeline.atlas, &pipeline.viewport, render_pass)
+                .unwrap();
+        }
     }
 }
 
