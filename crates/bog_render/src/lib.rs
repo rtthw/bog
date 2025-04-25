@@ -9,6 +9,8 @@ mod quad;
 mod types;
 mod viewport;
 
+use core::hash::Hash as _;
+
 pub use layer::*;
 use quad::*;
 pub use types::*;
@@ -25,7 +27,7 @@ pub trait Render {
     fn start_transform(&mut self, transform: Mat4);
     fn end_transform(&mut self);
     fn fill_quad(&mut self, quad: Quad);
-    fn fill_text(&mut self, text: &Text);
+    fn fill_text(&mut self, text: Text);
     fn clear(&mut self);
 }
 
@@ -161,6 +163,7 @@ impl Renderer {
 
         // 3. Finalize.
         self.quad_manager.cleanup();
+        self.text_manager.cleanup();
         self.staging_belt.finish();
         let submission = self.queue.submit(std::iter::once(encoder.finish()));
         self.staging_belt.recall();
@@ -215,26 +218,8 @@ impl Render for Renderer {
         layer.quads.push(QuadSolid { color, quad });
     }
 
-    fn fill_text(&mut self, text: &Text) {
+    fn fill_text(&mut self, text: Text) {
         let (layer, _transform) = self.layers.current_mut();
-        let mut buffer = glyphon::Buffer::new(
-            &mut self.text_pipeline.font_system,
-            glyphon::Metrics { font_size: text.size, line_height: text.line_height },
-        );
-        buffer.set_text(
-            &mut self.text_pipeline.font_system,
-            &text.content,
-            &glyphon::Attrs::new()
-                // TODO: Setup font attrs selection system.
-                .family(glyphon::Family::Monospace),
-            glyphon::Shaping::Basic,
-        );
-        buffer.shape_until_scroll(&mut self.text_pipeline.font_system, false);
-        let text = TextBuffer {
-            buffer,
-            bounds: Rect::new(text.pos, text.bounds),
-            color: text.color,
-        };
 
         layer.texts.push(text);
     }
@@ -246,14 +231,18 @@ impl Render for Renderer {
 
 
 
+#[derive(Debug)]
 pub struct Text {
     pub content: String,
     pub pos: Vec2,
     pub size: f32,
     pub color: Color,
     pub line_height: f32,
+    pub font_family: FontFamily<'static>,
     pub bounds: Vec2,
 }
+
+pub type FontFamily<'a> = glyphon::Family<'a>;
 
 
 
@@ -261,14 +250,141 @@ pub struct Text {
 
 
 
-#[derive(Debug)]
-pub struct TextBuffer {
-    buffer: glyphon::Buffer,
-    bounds: Rect,
-    color: Color,
+#[derive(Clone, Copy, Debug)]
+struct TextCacheKey<'a> {
+    content: &'a str,
+    size: f32,
+    line_height: f32,
+    font_family: glyphon::Family<'a>,
+    bounds: Vec2,
 }
 
+impl TextCacheKey<'_> {
+    fn hash<H: core::hash::Hasher>(self, mut hasher: H) -> u64 {
+        self.content.hash(&mut hasher);
+        self.size.to_bits().hash(&mut hasher);
+        self.line_height.to_bits().hash(&mut hasher);
+        self.font_family.hash(&mut hasher);
+        self.bounds.x.to_bits().hash(&mut hasher);
+        self.bounds.y.to_bits().hash(&mut hasher);
+
+        hasher.finish()
+    }
+}
+
+struct TextCacheEntry {
+    buffer: glyphon::Buffer,
+    min_bounds: Vec2,
+}
+
+#[derive(Default)]
+struct TextCache {
+    entries: rustc_hash::FxHashMap<u64, TextCacheEntry>,
+    aliases: rustc_hash::FxHashMap<u64, u64>,
+    recently_used: rustc_hash::FxHashSet<u64>,
+}
+
+impl TextCache {
+    fn get(&self, key: &u64) -> Option<&TextCacheEntry> {
+        self.entries.get(key)
+    }
+
+    fn allocate<'a>(
+        &mut self,
+        font_system: &mut glyphon::FontSystem,
+        key: TextCacheKey<'a>,
+    ) -> (u64, &mut TextCacheEntry)
+    {
+        let hash = key.hash(rustc_hash::FxHasher::default());
+        if let Some(hash) = self.aliases.get(&hash) {
+            let _ = self.recently_used.insert(*hash);
+
+            return (*hash, self.entries.get_mut(hash).unwrap());
+        }
+
+        if let std::collections::hash_map::Entry::Vacant(entry) = self.entries.entry(hash) {
+            let metrics = glyphon::Metrics::new(
+                key.size,
+                key.line_height.max(f32::MIN_POSITIVE),
+            );
+            let mut buffer = glyphon::Buffer::new(font_system, metrics);
+
+            buffer.set_size(
+                font_system,
+                Some(key.bounds.x),
+                Some(key.bounds.y.max(key.line_height)),
+            );
+            buffer.set_text(
+                font_system,
+                key.content,
+                &glyphon::Attrs::new()
+                    .family(key.font_family),
+                glyphon::Shaping::Basic,
+            );
+
+            let (bounds, has_rtl) = measure_glyphon_buffer(&buffer);
+
+            if has_rtl {
+                buffer.set_size(
+                    font_system,
+                    Some(bounds.x),
+                    Some(bounds.y),
+                );
+            }
+
+            let _ = entry.insert(TextCacheEntry {
+                buffer,
+                min_bounds: bounds,
+            });
+
+            for bounds in [
+                bounds,
+                Vec2 {
+                    x: key.bounds.x,
+                    ..bounds
+                },
+            ] {
+                if key.bounds != bounds {
+                    let _ = self.aliases.insert(
+                        TextCacheKey { bounds, ..key }.hash(rustc_hash::FxHasher::default()),
+                        hash,
+                    );
+                }
+            }
+        }
+
+        let _ = self.recently_used.insert(hash);
+
+        (hash, self.entries.get_mut(&hash).unwrap())
+    }
+
+    fn trim(&mut self) {
+        self.entries.retain(|key, _| self.recently_used.contains(key));
+        self.aliases.retain(|_, value| self.recently_used.contains(value));
+
+        self.recently_used.clear();
+    }
+}
+
+fn measure_glyphon_buffer(buffer: &glyphon::Buffer) -> (Vec2, bool) {
+    let (width, height, has_rtl) = buffer.layout_runs().fold(
+        (0.0, 0.0, false),
+        |(width, height, has_rtl), run| {
+            (
+                run.line_w.max(width),
+                height + run.line_height,
+                has_rtl || run.rtl,
+            )
+        },
+    );
+
+    (Vec2::new(width, height), has_rtl)
+}
+
+
+
 struct TextManager {
+    cache: TextCache,
     layers: Vec<TextLayer>,
     prepare_layer: usize,
 }
@@ -276,6 +392,7 @@ struct TextManager {
 impl TextManager {
     fn new() -> Self {
         Self {
+            cache: TextCache::default(),
             layers: Vec::new(),
             prepare_layer: 0,
         }
@@ -286,7 +403,7 @@ impl TextManager {
         pipeline: &mut TextPipeline,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        texts: &[TextBuffer],
+        texts: &[Text],
         transform: Mat4,
     ) {
         if self.layers.len() <= self.prepare_layer {
@@ -301,23 +418,38 @@ impl TextManager {
         }
 
         let layer = &mut self.layers[self.prepare_layer];
-        let text_areas = texts.iter().map(|t| {
-            let bounds = t.bounds * transform; // TODO: Add `* t.transform`.
+        let keys = texts.iter()
+            .map(|t| {
+                let key = TextCacheKey {
+                    content: &t.content,
+                    size: t.size,
+                    line_height: t.line_height,
+                    font_family: t.font_family,
+                    bounds: t.bounds,
+                };
+                let (hash, _entry) = self.cache.allocate(&mut pipeline.font_system, key);
+
+                hash
+            })
+            .collect::<Vec<_>>();
+        let text_areas = texts.iter().zip(keys.iter()).map(|(t, key)| {
+            let entry = self.cache.get(&key).unwrap();
             glyphon::TextArea {
-                buffer: &t.buffer,
-                left: bounds.x,
-                top: bounds.y,
+                buffer: &entry.buffer,
+                left: t.pos.x,
+                top: t.pos.y,
                 scale: 1.0, // TODO: Scaling?
                 bounds: glyphon::TextBounds {
-                    left: bounds.x as i32,
-                    top: bounds.y as i32,
-                    right: (bounds.x + bounds.w) as i32,
-                    bottom: (bounds.y + bounds.h) as i32,
+                    left: t.pos.x as i32,
+                    top: t.pos.y as i32,
+                    right: (t.pos.x + entry.min_bounds.x) as i32,
+                    bottom: (t.pos.y + entry.min_bounds.y) as i32,
                 },
                 default_color: glyphon::Color(t.color.to_u32()),
                 custom_glyphs: &[],
             }
         });
+
         layer.renderer.prepare(
             device,
             queue,
@@ -342,6 +474,12 @@ impl TextManager {
             layer.renderer.render(&pipeline.atlas, &pipeline.viewport, render_pass)
                 .unwrap();
         }
+    }
+
+    fn cleanup(&mut self) {
+        self.cache.trim();
+
+        self.prepare_layer = 0;
     }
 }
 

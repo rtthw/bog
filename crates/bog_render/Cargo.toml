@@ -10,4 +10,5 @@ bog_math.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
 glyphon = "0.9"
+rustc-hash = "2"
 wgpu.workspace = true
