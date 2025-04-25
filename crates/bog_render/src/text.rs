@@ -4,7 +4,7 @@
 
 use core::hash::Hash as _;
 
-use bog_math::{Mat4, Rect, Vec2};
+use bog_math::{Rect, Vec2};
 
 use crate::{FontFamily, FontStyle, Text};
 
@@ -31,7 +31,7 @@ impl TextManager {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         texts: &[Text],
-        transform: Mat4,
+        // transform: Mat4,
     ) {
         if self.layers.len() <= self.prepare_layer {
             self.layers.push(TextLayer {

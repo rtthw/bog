@@ -16,7 +16,6 @@ use text::*;
 pub use types::*;
 pub use viewport::*;
 
-use bog_color::Color;
 use bog_math::{Mat4, Rect, Vec2};
 
 
@@ -97,7 +96,7 @@ impl Renderer {
                     &self.device,
                     &self.queue,
                     &layer.texts,
-                    viewport.projection,
+                    // viewport.projection,
                 );
             }
         }
@@ -252,20 +251,3 @@ impl Render for Renderer {
         self.layers.clear();
     }
 }
-
-
-
-#[derive(Clone, Debug)]
-pub struct Text {
-    pub content: String,
-    pub pos: Vec2,
-    pub size: f32,
-    pub color: Color,
-    pub line_height: f32,
-    pub font_family: FontFamily<'static>,
-    pub font_style: FontStyle,
-    pub bounds: Vec2,
-}
-
-pub type FontFamily<'a> = glyphon::Family<'a>;
-pub type FontStyle = glyphon::Style;
