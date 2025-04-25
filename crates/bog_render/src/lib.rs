@@ -14,6 +14,7 @@ use quad::*;
 pub use types::*;
 pub use viewport::*;
 
+use bog_color::Color;
 use bog_math::{Mat4, Rect};
 
 
@@ -38,11 +39,15 @@ pub struct Renderer {
 
     quad_pipeline: QuadPipeline,
     quad_manager: QuadManager,
+
+    text_pipeline: TextPipeline,
+    text_manager: TextManager,
 }
 
 impl Renderer {
     pub fn new(device: wgpu::Device, queue: wgpu::Queue, format: wgpu::TextureFormat) -> Self {
         let quad_pipeline = QuadPipeline::new(&device, format);
+        let text_pipeline = TextPipeline::new(&device, &queue, format);
 
         Self {
             device,
@@ -53,6 +58,9 @@ impl Renderer {
 
             quad_pipeline,
             quad_manager: QuadManager::new(),
+
+            text_pipeline,
+            text_manager: TextManager::new(),
         }
     }
 
@@ -181,5 +189,108 @@ impl Render for Renderer {
 
     fn clear(&mut self) {
         self.layers.clear();
+    }
+}
+
+
+
+// ---
+
+
+
+#[derive(Debug)]
+pub struct Text {
+    buffer: glyphon::Buffer,
+    bounds: Rect,
+    color: Color,
+}
+
+struct TextManager {
+    layers: Vec<TextLayer>,
+    prepare_layer: usize,
+}
+
+impl TextManager {
+    fn new() -> Self {
+        Self {
+            layers: Vec::new(),
+            prepare_layer: 0,
+        }
+    }
+
+    fn prepare(
+        &mut self,
+        pipeline: &mut TextPipeline,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        encoder: &mut wgpu::CommandEncoder,
+        texts: &[Text],
+        transform: Mat4,
+    ) {
+        if self.layers.len() <= self.prepare_layer {
+            self.layers.push(TextLayer {
+                renderer: glyphon::TextRenderer::new(
+                    &mut pipeline.atlas,
+                    device,
+                    wgpu::MultisampleState::default(),
+                    None,
+                ),
+            });
+        }
+
+        let layer = &mut self.layers[self.prepare_layer];
+        let text_areas = texts.iter().map(|t| {
+            let bounds = t.bounds * transform; // TODO: Add `* t.transform`.
+            glyphon::TextArea {
+                buffer: &t.buffer,
+                left: bounds.x,
+                top: bounds.y,
+                scale: 1.0, // TODO: Scaling?
+                bounds: glyphon::TextBounds {
+                    left: bounds.x as i32,
+                    top: bounds.y as i32,
+                    right: (bounds.x + bounds.w) as i32,
+                    bottom: (bounds.y + bounds.h) as i32,
+                },
+                default_color: glyphon::Color(t.color.to_u32()),
+                custom_glyphs: &[],
+            }
+        });
+        layer.renderer.prepare(
+            device,
+            queue,
+            &mut pipeline.font_system,
+            &mut pipeline.atlas,
+            &mut pipeline.viewport,
+            text_areas,
+            &mut pipeline.swash_cache,
+        )
+            .unwrap();
+    }
+}
+
+struct TextLayer {
+    renderer: glyphon::TextRenderer,
+}
+
+struct TextPipeline {
+    font_system: glyphon::FontSystem,
+    atlas: glyphon::TextAtlas,
+    viewport: glyphon::Viewport,
+    cache: glyphon::Cache,
+    swash_cache: glyphon::SwashCache,
+}
+
+impl TextPipeline {
+    fn new(device: &wgpu::Device, queue: &wgpu::Queue, format: wgpu::TextureFormat) -> Self {
+        let cache = glyphon::Cache::new(device);
+
+        Self {
+            font_system: glyphon::FontSystem::new(),
+            atlas: glyphon::TextAtlas::new(device, queue, &cache, format),
+            viewport: glyphon::Viewport::new(device, &cache),
+            cache,
+            swash_cache: glyphon::SwashCache::new(),
+        }
     }
 }

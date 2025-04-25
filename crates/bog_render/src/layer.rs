@@ -4,7 +4,7 @@
 
 use bog_math::{Mat4, Rect};
 
-use crate::QuadSolid;
+use crate::{QuadSolid, Text};
 
 
 
@@ -12,6 +12,7 @@ use crate::QuadSolid;
 pub struct Layer {
     pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
+    pub texts: Vec<Text>,
 }
 
 impl Default for Layer {
@@ -19,6 +20,7 @@ impl Default for Layer {
         Self {
             bounds: Rect::INFINITE,
             quads: Vec::new(),
+            texts: Vec::new(),
         }
     }
 }
@@ -41,6 +43,7 @@ impl Layer {
         self.bounds = Rect::INFINITE;
 
         self.quads.clear();
+        self.texts.clear();
     }
 }
 
