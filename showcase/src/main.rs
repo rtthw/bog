@@ -62,7 +62,10 @@ impl<'w> Client for App<'w> {
                 WindowGraphics::from_window(self.window.clone().unwrap()).await
             }).unwrap();
 
-            let renderer = Renderer::new(device, queue, format);
+            let mut renderer = Renderer::new(device, queue, format);
+            renderer.load_font(
+                include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
+            );
             let mut gui = Gui::new(Layout::default()
                 .flex_row()
                 .flex_wrap()
@@ -97,12 +100,13 @@ impl<'w> Client for App<'w> {
                         bg_color: Color::from_u32(0xaaaaabff),
                     },
                     text: Text {
-                        content: "E".to_string(),
+                        content: "...".to_string(),
                         pos: Vec2::ZERO,
                         size: 20.0,
                         color: Color::from_u32(0x4d4d55ff),
                         line_height: 20.0 * 1.2,
-                        font_family: FontFamily::Monospace,
+                        font_family: FontFamily::Name("JetBrainsMono"),
+                        font_style: FontStyle::Normal,
                         bounds: Vec2::new(100.0, 100.0),
                     },
                 });
@@ -208,6 +212,7 @@ impl<'w> GuiHandler for Display<'w> {
         }
         let Some(button) = self.elements.get_mut(&element) else { return; };
         button.quad.bg_color = Color::from_u32(0xb7b7c0ff);
+        button.text.size = 30.0;
     }
 
     fn on_mouse_leave(&mut self, element: Element, state: &GuiState) {
@@ -218,6 +223,7 @@ impl<'w> GuiHandler for Display<'w> {
         let Some(button) = self.elements.get_mut(&element) else { return; };
         button.quad.bg_color = Color::from_u32(0xaaaaabff);
         button.quad.border.color = Color::from_u32(0x50505bff);
+        button.text.size = 20.0;
     }
 
     fn on_mouse_down(&mut self, element: Element, _state: &GuiState) {

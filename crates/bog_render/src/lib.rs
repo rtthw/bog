@@ -181,6 +181,30 @@ impl Renderer {
             height: viewport_size.y as u32,
         });
     }
+
+    pub fn load_font(&mut self, bytes: impl Into<Vec<u8>>) {
+        self.text_pipeline.font_system.db_mut().load_font_data(bytes.into());
+    }
+
+    pub fn set_serif_family<S: Into<String>>(&mut self, name: impl Into<String>) {
+        self.text_pipeline.font_system.db_mut().set_serif_family(name);
+    }
+
+    pub fn set_sans_serif_family<S: Into<String>>(&mut self, name: impl Into<String>) {
+        self.text_pipeline.font_system.db_mut().set_sans_serif_family(name);
+    }
+
+    pub fn set_cursive_family<S: Into<String>>(&mut self, name: impl Into<String>) {
+        self.text_pipeline.font_system.db_mut().set_cursive_family(name);
+    }
+
+    pub fn set_fantasy_family<S: Into<String>>(&mut self, name: impl Into<String>) {
+        self.text_pipeline.font_system.db_mut().set_fantasy_family(name);
+    }
+
+    pub fn set_monospace_family(&mut self, name: impl Into<String>) {
+        self.text_pipeline.font_system.db_mut().set_monospace_family(name);
+    }
 }
 
 impl Render for Renderer {
@@ -239,10 +263,12 @@ pub struct Text {
     pub color: Color,
     pub line_height: f32,
     pub font_family: FontFamily<'static>,
+    pub font_style: FontStyle,
     pub bounds: Vec2,
 }
 
 pub type FontFamily<'a> = glyphon::Family<'a>;
+pub type FontStyle = glyphon::Style;
 
 
 
@@ -255,7 +281,8 @@ struct TextCacheKey<'a> {
     content: &'a str,
     size: f32,
     line_height: f32,
-    font_family: glyphon::Family<'a>,
+    font_family: FontFamily<'a>,
+    font_style: FontStyle,
     bounds: Vec2,
 }
 
@@ -265,6 +292,7 @@ impl TextCacheKey<'_> {
         self.size.to_bits().hash(&mut hasher);
         self.line_height.to_bits().hash(&mut hasher);
         self.font_family.hash(&mut hasher);
+        self.font_style.hash(&mut hasher);
         self.bounds.x.to_bits().hash(&mut hasher);
         self.bounds.y.to_bits().hash(&mut hasher);
 
@@ -318,8 +346,9 @@ impl TextCache {
                 font_system,
                 key.content,
                 &glyphon::Attrs::new()
-                    .family(key.font_family),
-                glyphon::Shaping::Basic,
+                    .family(key.font_family)
+                    .style(key.font_style),
+                glyphon::Shaping::Advanced,
             );
 
             let (bounds, has_rtl) = measure_glyphon_buffer(&buffer);
@@ -425,6 +454,7 @@ impl TextManager {
                     size: t.size,
                     line_height: t.line_height,
                     font_family: t.font_family,
+                    font_style: t.font_style,
                     bounds: t.bounds,
                 };
                 let (hash, _entry) = self.cache.allocate(&mut pipeline.font_system, key);
