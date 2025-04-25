@@ -231,7 +231,7 @@ impl Render for Renderer {
 
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Text {
     pub content: String,
     pub pos: Vec2,

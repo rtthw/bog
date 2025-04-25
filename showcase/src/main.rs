@@ -95,7 +95,16 @@ impl<'w> Client for App<'w> {
                             blur_radius: 3.0,
                         },
                         bg_color: Color::from_u32(0xaaaaabff),
-                    }
+                    },
+                    text: Text {
+                        content: "E".to_string(),
+                        pos: Vec2::ZERO,
+                        size: 20.0,
+                        color: Color::from_u32(0x4d4d55ff),
+                        line_height: 20.0 * 1.2,
+                        font_family: FontFamily::Monospace,
+                        bounds: Vec2::new(100.0, 100.0),
+                    },
                 });
             }
 
@@ -156,6 +165,11 @@ impl<'w> Client for App<'w> {
                 display.renderer.start_layer(display.viewport.rect());
                 for button in display.elements.values() {
                     display.renderer.fill_quad(button.quad);
+                }
+                display.renderer.end_layer();
+                display.renderer.start_layer(display.viewport.rect());
+                for button in display.elements.values() {
+                    display.renderer.fill_text(button.text.clone());
                 }
                 display.renderer.end_layer();
                 if let Some(drag_indicator) = &display.drag_indicator {
@@ -275,6 +289,7 @@ impl<'w> GuiHandler for Display<'w> {
             placement.position(),
             vec2(placement.layout.size.width, placement.layout.size.height),
         );
+        button.text.pos = placement.content_position();
     }
 }
 
@@ -282,4 +297,5 @@ impl<'w> GuiHandler for Display<'w> {
 
 struct Button {
     quad: Quad,
+    text: Text,
 }
