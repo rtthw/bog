@@ -434,6 +434,8 @@ impl TextManager {
             .collect::<Vec<_>>();
         let text_areas = texts.iter().zip(keys.iter()).map(|(t, key)| {
             let entry = self.cache.get(&key).unwrap();
+            let (r, g, b, a) = (t.color.r, t.color.g, t.color.b, t.color.a);
+
             glyphon::TextArea {
                 buffer: &entry.buffer,
                 left: t.pos.x,
@@ -445,7 +447,7 @@ impl TextManager {
                     right: (t.pos.x + entry.min_bounds.x) as i32,
                     bottom: (t.pos.y + entry.min_bounds.y) as i32,
                 },
-                default_color: glyphon::Color(t.color.to_u32()),
+                default_color: glyphon::Color::rgba(r, g, b, a),
                 custom_glyphs: &[],
             }
         });
