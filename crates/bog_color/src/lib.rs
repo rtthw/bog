@@ -13,7 +13,11 @@ pub struct Color {
 }
 
 impl Color {
-    pub const NONE: Self = Self { r: 0, g: 0, b: 0, a: 0 };
+    pub const NONE: Self = Self::new(0, 0, 0, 0);
+
+    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
 
     /// Pack this color into a `u32` as `0xRRGGBBAA`.
     pub fn to_u32(&self) -> u32 {

@@ -15,6 +15,19 @@ use window::*;
 
 
 
+pub const GRAY_0: Color = Color::new(13, 13, 23, 255); // 0d0d17
+pub const GRAY_1: Color = Color::new(29, 29, 39, 255); // 1d1d27
+pub const GRAY_2: Color = Color::new(43, 43, 53, 255); // 2b2b35
+pub const GRAY_3: Color = Color::new(59, 59, 67, 255); // 3b3b43
+pub const GRAY_4: Color = Color::new(73, 73, 83, 255); // 494953
+pub const GRAY_5: Color = Color::new(89, 89, 109, 255); // 59596d
+pub const GRAY_6: Color = Color::new(113, 113, 127, 255); // 71717f
+pub const GRAY_7: Color = Color::new(139, 139, 149, 255); // 8b8b95
+pub const GRAY_8: Color = Color::new(163, 163, 173, 255); // a3a3ad
+pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
+
+
+
 fn main() -> Result<()> {
     let window_system = WindowingSystem::new()?;
     let mut app = App { window: None, display: None, gui: None };
@@ -92,22 +105,22 @@ impl<'w> Client for App<'w> {
                 quad: Quad {
                     bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                     border: Border {
-                        color: Color::from_u32(0x50505bff),
+                        color: GRAY_5,
                         width: 3.0,
                         radius: [7.0, 3.0, 11.0, 19.0],
                     },
                     shadow: Shadow {
-                        color: Color::from_u32(0x3c3c44ff),
+                        color: GRAY_3,
                         offset: vec2(2.0, 5.0),
                         blur_radius: 3.0,
                     },
-                    bg_color: Color::from_u32(0x2b2b33ff),
+                    bg_color: GRAY_2,
                 },
                 text: Text {
                     content: "LEFT".to_string(),
                     pos: Vec2::ZERO,
                     size: 50.0,
-                    color: Color::from_u32(0x4d4d55ff),
+                    color: GRAY_8,
                     line_height: 50.0 * 1.2,
                     font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
                     font_style: FontStyle::Italic,
@@ -119,22 +132,22 @@ impl<'w> Client for App<'w> {
                 quad: Quad {
                     bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                     border: Border {
-                        color: Color::from_u32(0x50505bff),
+                        color: GRAY_5,
                         width: 3.0,
                         radius: [7.0, 3.0, 11.0, 19.0],
                     },
                     shadow: Shadow {
-                        color: Color::from_u32(0x3c3c44ff),
+                        color: GRAY_3,
                         offset: vec2(2.0, 5.0),
                         blur_radius: 3.0,
                     },
-                    bg_color: Color::from_u32(0x2b2b33ff),
+                    bg_color: GRAY_2,
                 },
                 text: Text {
-                    content: "RIGHT".to_string(),
+                    content: "LEFT".to_string(),
                     pos: Vec2::ZERO,
                     size: 50.0,
-                    color: Color::from_u32(0x4d4d55ff),
+                    color: GRAY_8,
                     line_height: 50.0 * 1.2,
                     font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
                     font_style: FontStyle::Italic,
@@ -154,22 +167,22 @@ impl<'w> Client for App<'w> {
                     quad: Quad {
                         bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                         border: Border {
-                            color: Color::from_u32(0x50505bff),
+                            color: GRAY_5,
                             width: 3.0,
                             radius: [7.0, 3.0, 11.0, 19.0],
                         },
                         shadow: Shadow {
-                            color: Color::from_u32(0x3c3c44ff),
+                            color: GRAY_3,
                             offset: vec2(2.0, 5.0),
                             blur_radius: 3.0,
                         },
-                        bg_color: Color::from_u32(0xaaaaabff),
+                        bg_color: GRAY_6,
                     },
                     text: Text {
                         content: "=>".to_string(),
                         pos: Vec2::ZERO,
                         size: 20.0,
-                        color: Color::from_u32(0x4d4d55ff),
+                        color: GRAY_6,
                         line_height: 20.0 * 1.2,
                         font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
                         font_style: FontStyle::Normal,
@@ -230,7 +243,7 @@ impl<'w> Client for App<'w> {
                     bounds: display.viewport.rect(),
                     border: Border::NONE,
                     shadow: Shadow::NONE,
-                    bg_color: Color::from_u32(0x1e1e22ff),
+                    bg_color: GRAY_0,
                 });
                 display.renderer.end_layer();
                 display.renderer.start_layer(display.viewport.rect());
@@ -278,7 +291,8 @@ impl<'w> GuiHandler for Display<'w> {
             self.graphics.window().set_cursor(CursorIcon::Pointer);
         }
         let Some(button) = self.elements.get_mut(&element) else { return; };
-        button.quad.bg_color = Color::from_u32(0xb7b7c0ff);
+        if !button.draggable { return; }
+        button.quad.bg_color = GRAY_7;
         button.text.size = 30.0;
     }
 
@@ -288,21 +302,24 @@ impl<'w> GuiHandler for Display<'w> {
             self.graphics.window().set_cursor(CursorIcon::Default);
         }
         let Some(button) = self.elements.get_mut(&element) else { return; };
-        button.quad.bg_color = Color::from_u32(0xaaaaabff);
-        button.quad.border.color = Color::from_u32(0x50505bff);
+        if !button.draggable { return; }
+        button.quad.bg_color = GRAY_6;
+        button.quad.border.color = GRAY_5;
         button.text.size = 20.0;
     }
 
     fn on_mouse_down(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
         let Some(button) = self.elements.get_mut(&element) else { return; };
-        button.quad.bg_color = Color::from_u32(0x3c3c44ff);
+        if !button.draggable { return; }
+        button.quad.bg_color = GRAY_3;
     }
 
     fn on_mouse_up(&mut self, element: Element, _state: &GuiState) {
         self.graphics.window().request_redraw();
         let Some(button) = self.elements.get_mut(&element) else { return; };
-        button.quad.bg_color = Color::from_u32(0xb7b7c0ff);
+        if !button.draggable { return; }
+        button.quad.bg_color = GRAY_6;
     }
 
     fn on_drag_update(
@@ -320,33 +337,14 @@ impl<'w> GuiHandler for Display<'w> {
             ..button.quad
         });
         if let Some(button) = hovered.and_then(|e| self.elements.get_mut(&e)) {
-            button.quad.border.color = Color::from_u32(0xaaaaabff);
+            if !button.draggable { return; }
+            button.quad.border.color = GRAY_9;
         }
     }
 
-    fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree) {
+    fn on_drag_start(&mut self, _element: Element, _tree: &mut LayoutTree) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor(CursorIcon::Grab);
-        if let Some(placement) = tree.placement(element) {
-            let pos = vec2(
-                (placement.position().x + placement.layout.size.width / 2.0) - 5.0,
-                placement.position().y + placement.layout.size.height + 5.0,
-            );
-            self.drag_indicator = Some(Quad {
-                bounds: Rect::new(pos, vec2(10.0, 10.0)),
-                border: Border {
-                    color: Color::from_u32(0x50505bff),
-                    width: 3.0,
-                    radius: [7.0, 3.0, 11.0, 19.0],
-                },
-                shadow: Shadow {
-                    color: Color::from_u32(0x3c3c44ff),
-                    offset: vec2(2.0, 5.0),
-                    blur_radius: 3.0,
-                },
-                bg_color: Color::from_u32(0xaaaaabff),
-            });
-        }
     }
 
     fn on_drag_end(&mut self, _element: Element) {
