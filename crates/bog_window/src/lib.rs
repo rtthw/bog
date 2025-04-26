@@ -30,6 +30,7 @@ impl std::ops::Deref for Window {
 
 pub trait Client {
     fn on_resume(&mut self, wm: WindowManager);
+    fn on_suspend(&mut self, wm: WindowManager);
     fn on_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
 }
 
@@ -40,6 +41,10 @@ struct ClientProxy<'a, C: Client> {
 impl<'a, C: Client> winit::application::ApplicationHandler for ClientProxy<'a, C> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.client.on_resume(WindowManager { event_loop })
+    }
+
+    fn suspended(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.client.on_suspend(WindowManager { event_loop })
     }
 
     fn window_event(

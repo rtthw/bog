@@ -48,7 +48,11 @@ impl<'a> Client for Proxy<'a> {
         };
     }
 
-    // TODO: on_suspend
+    fn on_suspend(&mut self, _wm: WindowManager) {
+        if let AppState::Active { window } = &self.state {
+            self.state = AppState::Suspended(Some(window.clone()));
+        }
+    }
 
     fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
         let AppState::Active { window } = &mut self.state else {

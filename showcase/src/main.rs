@@ -203,6 +203,8 @@ impl<'w> Client for App<'w> {
         }
     }
 
+    fn on_suspend(&mut self, _wm: WindowManager) {}
+
     fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
         let Some(display) = &mut self.display else { return; };
         let Some(gui) = &mut self.gui else { return; };
