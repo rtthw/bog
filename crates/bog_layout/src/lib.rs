@@ -93,10 +93,11 @@ fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: LayoutNode, func: &mut 
 where F: FnMut(LayoutNode, &Placement),
 {
     let top_layout = tree.layout(node).unwrap();
+    let top_pos = Vec2::new(top_layout.location.x, top_layout.location.y);
 
     for child in tree.children(node).unwrap().into_iter() {
         let placement = Placement {
-            parent_pos: Vec2::new(top_layout.location.x, top_layout.location.y),
+            parent_pos: top_pos,
             layout: *tree.layout(child).unwrap(),
         };
         func(child, &placement);
@@ -115,8 +116,7 @@ where F: FnMut(LayoutNode, &Placement),
     for child in tree.children(node).unwrap().into_iter() {
         let layout = *tree.layout(child).unwrap();
         let child_placement = Placement {
-            parent_pos: placement.parent_pos
-                + Vec2::new(layout.location.x, layout.location.y),
+            parent_pos: placement.position(),
             layout,
         };
         func(child, &child_placement);
@@ -151,6 +151,10 @@ impl Placement {
             self.parent_pos.x + self.layout.content_box_x(),
             self.parent_pos.y + self.layout.content_box_y(),
         )
+    }
+
+    pub fn content_size(&self) -> Vec2 {
+        Vec2::new(self.layout.content_box_width(), self.layout.content_box_height())
     }
 }
 

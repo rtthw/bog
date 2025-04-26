@@ -70,7 +70,7 @@ impl<'w> Client for App<'w> {
                 .fill_width()
                 .fill_height()
                 .gap_x(23.0)
-                .margin(11.0));
+                .padding(11.0));
 
             let left_panel_layout = Layout::default()
                 .width_percent(0.2)
@@ -78,8 +78,9 @@ impl<'w> Client for App<'w> {
             let right_panel_layout = Layout::default()
                 .flex_row()
                 .flex_wrap()
-                .width_percent(0.8)
+                .fill_width()
                 .fill_height()
+                .gap_x(11.0)
                 .align_items_center()
                 .justify_content_center();
 
@@ -363,6 +364,7 @@ impl<'w> GuiHandler for Display<'w> {
             vec2(placement.layout.size.width, placement.layout.size.height),
         );
         button.text.pos = placement.content_position();
+        button.text.bounds = placement.content_size();
     }
 }
 
