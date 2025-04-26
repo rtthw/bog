@@ -67,23 +67,88 @@ impl<'w> Client for App<'w> {
                 include_bytes!("../data/JetBrainsMonoNerdFont_Regular.ttf").to_vec(),
             );
             let mut gui = Gui::new(Layout::default()
-                .flex_row()
-                .flex_wrap()
                 .fill_width()
                 .fill_height()
-                .gap_x(10.0)
-                .gap_y(5.0)
-                .align_content_center()
-                .align_items_center());
-            let mut elements = HashMap::with_capacity(5);
+                .gap_x(23.0)
+                .margin(11.0));
+
+            let left_panel_layout = Layout::default()
+                .width_percent(0.2)
+                .fill_height();
+            let right_panel_layout = Layout::default()
+                .flex_row()
+                .flex_wrap()
+                .width_percent(0.8)
+                .fill_height()
+                .align_items_center()
+                .justify_content_center();
+
+            let left_panel = gui.push_element_to_root(left_panel_layout);
+            let right_panel = gui.push_element_to_root(right_panel_layout);
+
+            let mut elements = HashMap::with_capacity(7);
+            elements.insert(left_panel, Button {
+                quad: Quad {
+                    bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
+                    border: Border {
+                        color: Color::from_u32(0x50505bff),
+                        width: 3.0,
+                        radius: [7.0, 3.0, 11.0, 19.0],
+                    },
+                    shadow: Shadow {
+                        color: Color::from_u32(0x3c3c44ff),
+                        offset: vec2(2.0, 5.0),
+                        blur_radius: 3.0,
+                    },
+                    bg_color: Color::from_u32(0x2b2b33ff),
+                },
+                text: Text {
+                    content: "LEFT".to_string(),
+                    pos: Vec2::ZERO,
+                    size: 50.0,
+                    color: Color::from_u32(0x4d4d55ff),
+                    line_height: 50.0 * 1.2,
+                    font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
+                    font_style: FontStyle::Italic,
+                    bounds: Vec2::new(100.0, 100.0),
+                },
+                draggable: false,
+            });
+            elements.insert(right_panel, Button {
+                quad: Quad {
+                    bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
+                    border: Border {
+                        color: Color::from_u32(0x50505bff),
+                        width: 3.0,
+                        radius: [7.0, 3.0, 11.0, 19.0],
+                    },
+                    shadow: Shadow {
+                        color: Color::from_u32(0x3c3c44ff),
+                        offset: vec2(2.0, 5.0),
+                        blur_radius: 3.0,
+                    },
+                    bg_color: Color::from_u32(0x2b2b33ff),
+                },
+                text: Text {
+                    content: "RIGHT".to_string(),
+                    pos: Vec2::ZERO,
+                    size: 50.0,
+                    color: Color::from_u32(0x4d4d55ff),
+                    line_height: 50.0 * 1.2,
+                    font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
+                    font_style: FontStyle::Italic,
+                    bounds: Vec2::new(100.0, 100.0),
+                },
+                draggable: false,
+            });
             for layout in [
-                Layout::default().width(70.0).height(50.0),
-                Layout::default().width(100.0).height(30.0),
-                Layout::default().width(50.0).height(70.0),
-                Layout::default().width(40.0).height(70.0),
-                Layout::default().width(20.0).height(40.0),
+                Layout::default().width(70.0).height(50.0).padding(5.0),
+                Layout::default().width(100.0).height(30.0).padding(5.0),
+                Layout::default().width(50.0).height(70.0).padding(5.0),
+                Layout::default().width(40.0).height(70.0).padding(5.0),
+                Layout::default().width(20.0).height(40.0).padding(5.0),
             ] {
-                let element = gui.push_element_to_root(layout);
+                let element = gui.push_element(right_panel, layout);
                 elements.insert(element, Button {
                     quad: Quad {
                         bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
@@ -109,6 +174,7 @@ impl<'w> Client for App<'w> {
                         font_style: FontStyle::Normal,
                         bounds: Vec2::new(100.0, 100.0),
                     },
+                    draggable: true,
                 });
             }
 
@@ -247,6 +313,7 @@ impl<'w> GuiHandler for Display<'w> {
     ) {
         self.graphics.window().request_redraw();
         let Some(button) = self.elements.get(&element) else { return; };
+        if !button.draggable { return; }
         self.drag_indicator = Some(Quad {
             bounds: Rect::new(button.quad.bounds.position() + delta, button.quad.bounds.size()),
             ..button.quad
@@ -304,4 +371,5 @@ impl<'w> GuiHandler for Display<'w> {
 struct Button {
     quad: Quad,
     text: Text,
+    draggable: bool,
 }

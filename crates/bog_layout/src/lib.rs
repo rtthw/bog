@@ -171,6 +171,7 @@ impl Into<taffy::Style> for Layout {
     }
 }
 
+// Sizing.
 impl Layout {
     pub fn width(mut self, width: f32) -> Self {
         self.0.size.width = taffy::prelude::length(width);
@@ -179,6 +180,16 @@ impl Layout {
 
     pub fn height(mut self, height: f32) -> Self {
         self.0.size.height = taffy::prelude::length(height);
+        self
+    }
+
+    pub fn width_percent(mut self, width: f32) -> Self {
+        self.0.size.width = taffy::prelude::percent(width);
+        self
+    }
+
+    pub fn height_percent(mut self, height: f32) -> Self {
+        self.0.size.height = taffy::prelude::percent(height);
         self
     }
 
@@ -193,6 +204,7 @@ impl Layout {
     }
 }
 
+// Margin, spacing, and padding.
 impl Layout {
     pub fn gap_x(mut self, width: f32) -> Self {
         self.0.gap.width = taffy::LengthPercentage::Length(width);
@@ -279,6 +291,7 @@ impl Layout {
     }
 }
 
+// Alignment and justification.
 impl Layout {
     pub fn align_items_center(mut self) -> Self {
         self.0.align_items = Some(taffy::AlignItems::Center);

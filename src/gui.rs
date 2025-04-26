@@ -37,6 +37,10 @@ impl Gui {
         self.layout_tree.push_to_root(layout, true)
     }
 
+    pub fn push_element(&mut self, parent: Element, layout: Layout) -> Element {
+        self.layout_tree.push(layout, parent, true)
+    }
+
     pub fn handle_resize(&mut self, handler: &mut impl GuiHandler, size: Vec2) {
         if size == self.state.size {
             return;
@@ -57,18 +61,14 @@ impl Gui {
 
         handler.on_mouse_move(pos);
 
-        let mut hover_changed_to = None;
+        let mut hovered = Vec::with_capacity(3);
         self.layout_tree.iter_placements(&mut |node, placement| {
             let place_pos = placement.position();
 
             if place_pos.x > pos.x
                 || place_pos.y > pos.y
-                || place_pos.x
-                    + placement.layout.size.width
-                    + placement.layout.padding.horizontal_components().sum() < pos.x
-                || place_pos.y
-                    + placement.layout.size.height
-                    + placement.layout.padding.vertical_components().sum() < pos.y
+                || place_pos.x + placement.layout.size.width < pos.x
+                || place_pos.y + placement.layout.size.height < pos.y
             {
                 return; // Breaks out of `iter_placements`.
             }
@@ -78,8 +78,10 @@ impl Gui {
             }
 
             // TODO: See if there should be some multi-hovering system.
-            hover_changed_to = Some(node.into());
+            hovered.push(node.into());
         });
+
+        let topmost_hovered = hovered.last().copied();
 
         if let Some(drag_origin_pos) = self.drag_start_pos {
             if let Some(drag_element) = self.drag_start_element {
@@ -97,18 +99,18 @@ impl Gui {
                     handler.on_drag_update(
                         &mut self.layout_tree,
                         drag_element,
-                        hover_changed_to,
+                        topmost_hovered,
                         delta,
                     );
                 }
             }
         }
 
-        if self.hovered_element != hover_changed_to {
+        if self.hovered_element != topmost_hovered {
             if let Some(left_element) = self.hovered_element.take() {
                 handler.on_mouse_leave(left_element, &self.state);
             }
-            if let Some(entered_element) = hover_changed_to {
+            if let Some(entered_element) = topmost_hovered {
                 handler.on_mouse_enter(entered_element, &self.state);
                 self.hovered_element = Some(entered_element);
             }
