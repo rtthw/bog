@@ -2,6 +2,7 @@
 
 
 
+pub mod app;
 pub mod fonts;
 pub mod graphics;
 pub mod gui;
