@@ -39,7 +39,7 @@ fn main() -> Result<()> {
 
 
 struct Showcase {
-    elements: HashMap<Element, Button>,
+    elements: HashMap<Node, Button>,
     drag_indicator: Option<Quad>,
 }
 
@@ -84,8 +84,8 @@ impl AppHandler for Showcase {
             .align_items_center()
             .justify_content_center();
 
-        let left_panel = ui.push_element_to_root(left_panel_layout);
-        let right_panel = ui.push_element_to_root(right_panel_layout);
+        let left_panel = ui.push_node_to_root(left_panel_layout);
+        let right_panel = ui.push_node_to_root(right_panel_layout);
 
         self.elements.insert(left_panel, Button {
             quad: Quad {
@@ -148,8 +148,8 @@ impl AppHandler for Showcase {
             Layout::default().width(40.0).height(70.0).padding(5.0),
             Layout::default().width(20.0).height(40.0).padding(5.0),
         ] {
-            let element = ui.push_element(right_panel, layout);
-            self.elements.insert(element, Button {
+            let node = ui.push_node(right_panel, layout);
+            self.elements.insert(node, Button {
                 quad: Quad {
                     bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                     border: Border {
@@ -193,76 +193,70 @@ impl AppHandler for Showcase {
 
     fn on_mousemove(&mut self, _pos: Vec2) {}
 
-    fn on_mouseover(&mut self, element: Element, cx: AppContext) {
+    fn on_mouseover(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Pointer);
         }
-        let Some(button) = self.elements.get_mut(&element) else { return; };
+        let Some(button) = self.elements.get_mut(&node) else { return; };
         if !button.draggable { return; }
         button.quad.bg_color = GRAY_7;
         button.text.size = 30.0;
     }
 
-    fn on_mouseleave(&mut self, element: Element, cx: AppContext) {
+    fn on_mouseleave(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Default);
         }
-        let Some(button) = self.elements.get_mut(&element) else { return; };
+        let Some(button) = self.elements.get_mut(&node) else { return; };
         if !button.draggable { return; }
         button.quad.bg_color = GRAY_6;
         button.quad.border.color = GRAY_5;
         button.text.size = 20.0;
     }
 
-    fn on_mousedown(&mut self, element: Element, cx: AppContext) {
+    fn on_mousedown(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&element) else { return; };
+        let Some(button) = self.elements.get_mut(&node) else { return; };
         if !button.draggable { return; }
         button.quad.bg_color = GRAY_3;
     }
 
-    fn on_mouseup(&mut self, element: Element, cx: AppContext) {
+    fn on_mouseup(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&element) else { return; };
+        let Some(button) = self.elements.get_mut(&node) else { return; };
         if !button.draggable { return; }
         button.quad.bg_color = GRAY_6;
     }
 
-    fn on_dragmove(
-        &mut self,
-        element: Element,
-        cx: AppContext,
-        delta: Vec2,
-        hovered: Option<Element>,
-    ) {
+    fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get(&element) else { return; };
+        let Some(button) = self.elements.get(&node) else { return; };
         if !button.draggable { return; }
         self.drag_indicator = Some(Quad {
             bounds: Rect::new(button.quad.bounds.position() + delta, button.quad.bounds.size()),
             ..button.quad
         });
-        if let Some(button) = hovered.and_then(|e| self.elements.get_mut(&e)) {
+        if let Some(button) = over.and_then(|e| self.elements.get_mut(&e)) {
             if !button.draggable { return; }
             button.quad.border.color = GRAY_9;
         }
     }
 
-    fn on_dragstart(&mut self, _element: Element, cx: AppContext) {
+    fn on_dragstart(&mut self, _node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
         cx.graphics.window().set_cursor(CursorIcon::Grab);
     }
 
-    fn on_dragend(&mut self, _element: Element, cx: AppContext) {
+    fn on_dragend(&mut self, _node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
         cx.graphics.window().set_cursor(CursorIcon::Default);
         self.drag_indicator = None;
     }
 
-    fn on_layout(&mut self, element: Element, placement: &Placement) {
-        let Some(button) = self.elements.get_mut(&element) else { return; };
+    fn on_layout(&mut self, node: Node, placement: &Placement) {
+        let Some(button) = self.elements.get_mut(&node) else { return; };
         button.quad.bounds = Rect::new(
             placement.position(),
             vec2(placement.layout.size.width, placement.layout.size.height),
