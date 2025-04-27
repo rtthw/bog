@@ -3,22 +3,25 @@
 
 
 use bog_event::WindowEvent;
-use bog_layout::{Layout, LayoutTree, Placement};
-use bog_math::{glam::vec2, Vec2};
+use bog_layout::{Layout, Placement};
+use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
 use bog_window::{Client, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
 
-use crate::{graphics::WindowGraphics, gui::{Element, Gui, GuiHandler, GuiState}, Result};
+use crate::{graphics::WindowGraphics, gui::{Element, Gui, GuiContext, GuiHandler}, Result};
 
 
 
 pub fn run_app(mut app: impl AppHandler) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
-    let root_layout = app.root_layout();
+
+    let mut ui = Gui::new(app.root_layout());
+    app.init(&mut ui);
+
     let mut proxy = AppRunner {
         app: &mut app,
         state: AppState::Suspended(None),
-        ui: Gui::new(root_layout),
+        ui,
     };
 
     windowing_system.run_client(&mut proxy)?;
@@ -31,20 +34,21 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler: 'static {
-    fn render(&mut self, renderer: &mut Renderer);
+    fn render(&mut self, renderer: &mut Renderer, viewport_rect: Rect);
+    fn init(&mut self, ui: &mut Gui);
 
     fn title(&self) -> &str;
     fn root_layout(&self) -> Layout;
 
     fn on_resize(&mut self, size: Vec2) {}
     fn on_mousemove(&mut self, pos: Vec2) {}
-    fn on_mouseover(&mut self, element: Element, state: &GuiState) {}
-    fn on_mouseleave(&mut self, element: Element, state: &GuiState) {}
-    fn on_mousedown(&mut self, element: Element, state: &GuiState) {}
-    fn on_mouseup(&mut self, element: Element, state: &GuiState) {}
-    fn on_dragstart(&mut self, element: Element, tree: &mut LayoutTree) {}
-    fn on_dragend(&mut self, element: Element, tree: &mut LayoutTree) {}
-    fn on_dragmove(&mut self, element: Element, tree: &mut LayoutTree, delta: Vec2, over: Option<Element>) {}
+    fn on_mouseover(&mut self, element: Element, cx: AppContext) {}
+    fn on_mouseleave(&mut self, element: Element, cx: AppContext) {}
+    fn on_mousedown(&mut self, element: Element, cx: AppContext) {}
+    fn on_mouseup(&mut self, element: Element, cx: AppContext) {}
+    fn on_dragstart(&mut self, element: Element, cx: AppContext) {}
+    fn on_dragend(&mut self, element: Element, cx: AppContext) {}
+    fn on_dragmove(&mut self, element: Element, cx: AppContext, delta: Vec2, over: Option<Element>) {}
     fn on_layout(&mut self, element: Element, placement: &Placement) {}
 }
 
@@ -89,7 +93,7 @@ impl<'a> Client for AppRunner<'a> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer);
+                self.app.render(renderer, viewport.rect());
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
@@ -105,16 +109,19 @@ impl<'a> Client for AppRunner<'a> {
             // WindowEvent::KeyDown { code, repeat } => {}
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
-                self.ui.handle_mouse_move(&mut Proxy { app: self.app }, vec2(x, y));
+                self.ui.handle_mouse_move(
+                    &mut Proxy { app: self.app, graphics, renderer },
+                    vec2(x, y),
+                );
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_down(&mut Proxy { app: self.app });
+                    self.ui.handle_mouse_down(&mut Proxy { app: self.app, graphics, renderer });
                 }
             }
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_up(&mut Proxy { app: self.app });
+                    self.ui.handle_mouse_up(&mut Proxy { app: self.app, graphics, renderer });
                 }
             }
             _ => {}
@@ -124,6 +131,8 @@ impl<'a> Client for AppRunner<'a> {
 
 struct Proxy<'a> {
     app: &'a mut dyn AppHandler,
+    graphics: &'a mut WindowGraphics<'static>,
+    renderer: &'a mut Renderer,
 }
 
 impl<'a> GuiHandler for Proxy<'a> {
@@ -131,34 +140,67 @@ impl<'a> GuiHandler for Proxy<'a> {
         self.app.on_mousemove(pos);
     }
 
-    fn on_mouse_enter(&mut self, element: Element, state: &GuiState) {
-        self.app.on_mouseover(element, state);
+    fn on_mouse_enter(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_mouseover(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
-    fn on_mouse_leave(&mut self, element: Element, state: &GuiState) {
-        self.app.on_mouseleave(element, state);
+    fn on_mouse_leave(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_mouseleave(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
-    fn on_mouse_down(&mut self, element: Element, state: &GuiState) {
-        self.app.on_mousedown(element, state);
+    fn on_mouse_down(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_mousedown(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
-    fn on_mouse_up(&mut self, element: Element, state: &GuiState) {
-        self.app.on_mouseup(element, state);
+    fn on_mouse_up(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_mouseup(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
     fn on_drag_update(
-        &mut self, element: Element, tree: &mut LayoutTree, delta: Vec2, hovered: Option<Element>,
+        &mut self, element: Element, gui_cx: GuiContext, delta: Vec2, hovered: Option<Element>,
     ) {
-        self.app.on_dragmove(element, tree, delta, hovered);
+        self.app.on_dragmove(
+            element,
+            AppContext {
+                graphics: self.graphics,
+                renderer: self.renderer,
+                gui_cx,
+            },
+            delta,
+            hovered,
+        );
     }
 
-    fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree) {
-        self.app.on_dragstart(element, tree);
+    fn on_drag_start(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_dragstart(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
-    fn on_drag_end(&mut self, element: Element, tree: &mut LayoutTree) {
-        self.app.on_dragend(element, tree);
+    fn on_drag_end(&mut self, element: Element, gui_cx: GuiContext) {
+        self.app.on_dragend(element, AppContext {
+            graphics: self.graphics,
+            renderer: self.renderer,
+            gui_cx,
+        });
     }
 
     fn on_resize(&mut self, size: Vec2) {
@@ -168,6 +210,12 @@ impl<'a> GuiHandler for Proxy<'a> {
     fn on_element_layout(&mut self, element: Element, placement: &Placement) {
         self.app.on_layout(element, placement);
     }
+}
+
+pub struct AppContext<'a> {
+    pub graphics: &'a mut WindowGraphics<'static>,
+    pub renderer: &'a mut Renderer,
+    pub gui_cx: GuiContext<'a>,
 }
 
 enum AppState {
