@@ -104,6 +104,10 @@ impl<'a> Client for AppRunner<'a> {
                 graphics.resize(renderer.device(), physical_size);
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
+                self.ui.handle_resize(
+                    &mut Proxy { app: self.app, graphics, renderer },
+                    physical_size,
+                );
                 window.request_redraw();
             }
             // WindowEvent::KeyDown { code, repeat } => {}

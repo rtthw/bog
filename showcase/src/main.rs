@@ -130,7 +130,7 @@ impl AppHandler for Showcase {
                 bg_color: GRAY_2,
             },
             text: Text {
-                content: "LEFT".to_string(),
+                content: "RIGHT".to_string(),
                 pos: Vec2::ZERO,
                 size: 50.0,
                 color: GRAY_8,
