@@ -2,12 +2,12 @@
 
 
 
-use std::sync::Arc;
-
 use bog_event::WindowEvent;
+use bog_math::glam::vec2;
+use bog_render::{Renderer, Viewport};
 use bog_window::{Client, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
 
-use crate::Result;
+use crate::{graphics::WindowGraphics, Result};
 
 
 
@@ -30,6 +30,8 @@ pub trait AppHandler: 'static {
     fn title(&self) -> String {
         "Untitled".to_string()
     }
+
+    fn render(&mut self, renderer: &mut Renderer);
 }
 
 struct Proxy<'a> {
@@ -43,19 +45,27 @@ impl<'a> Client for Proxy<'a> {
             return;
         };
         let window = window.take().unwrap_or_else(|| make_window(&mut wm, self.app));
+        let (graphics, device, queue, format) = pollster::block_on(async {
+            WindowGraphics::from_window(window.clone()).await
+        }).unwrap();
+        let renderer = Renderer::new(device, queue, format);
+
         self.state = AppState::Active {
             window,
+            graphics,
+            viewport: Viewport::default(),
+            renderer,
         };
     }
 
     fn on_suspend(&mut self, _wm: WindowManager) {
-        if let AppState::Active { window } = &self.state {
+        if let AppState::Active { window, .. } = &self.state {
             self.state = AppState::Suspended(Some(window.clone()));
         }
     }
 
     fn on_event(&mut self, wm: WindowManager, _id: WindowId, event: WindowEvent) {
-        let AppState::Active { window } = &mut self.state else {
+        let AppState::Active { window, graphics, viewport, renderer } = &mut self.state else {
             return;
         };
 
@@ -63,21 +73,38 @@ impl<'a> Client for Proxy<'a> {
             WindowEvent::CloseRequest => {
                 wm.exit();
             }
+            WindowEvent::RedrawRequest => {
+                self.app.render(renderer);
+                let texture = graphics.get_current_texture();
+                let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+                renderer.render(&target, &viewport);
+                texture.present();
+            }
+            WindowEvent::Resize { width, height } => {
+                let physical_size = vec2(width as f32, height as f32);
+                graphics.resize(renderer.device(), physical_size);
+                viewport.resize(physical_size);
+                renderer.resize(physical_size);
+                window.request_redraw();
+            }
             _ => {}
         }
     }
 }
 
 enum AppState {
-    Suspended(Option<Arc<Window>>),
+    Suspended(Option<Window>),
     Active {
-        window: Arc<Window>,
+        window: Window,
+        graphics: WindowGraphics<'static>,
+        viewport: Viewport,
+        renderer: Renderer,
     },
 }
 
-fn make_window(wm: &mut WindowManager, app: &mut dyn AppHandler) -> Arc<Window> {
-    Arc::new(wm.create_window(WindowDescriptor {
+fn make_window(wm: &mut WindowManager, app: &mut dyn AppHandler) -> Window {
+    wm.create_window(WindowDescriptor {
         title: &app.title(),
         ..Default::default()
-    }).unwrap())
+    }).unwrap()
 }
