@@ -1,6 +1,6 @@
 //! Bog Layout
 
-#![no_std]
+// TODO: #![no_std]
 
 
 
@@ -27,6 +27,14 @@ impl LayoutTree {
             root,
             available_space: vec2(0.0, 0.0),
         }
+    }
+
+    pub fn root_node(&self) -> LayoutNode {
+        self.root
+    }
+
+    pub fn children_of(&self, node: LayoutNode) -> Vec<LayoutNode> {
+        self.tree.children(node).unwrap()
     }
 
     // FIXME: This can be optimized.

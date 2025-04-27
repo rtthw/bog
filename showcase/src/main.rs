@@ -44,7 +44,7 @@ struct Showcase {
 }
 
 impl AppHandler for Showcase {
-    fn render(&mut self, renderer: &mut Renderer, viewport_rect: Rect) {
+    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect) {
         renderer.clear();
         renderer.start_layer(viewport_rect);
         renderer.fill_quad(Quad {
@@ -55,8 +55,17 @@ impl AppHandler for Showcase {
         });
         renderer.end_layer();
         renderer.start_layer(viewport_rect);
-        for button in self.elements.values() {
-            renderer.fill_quad(button.quad);
+        for panel_node in tree.children_of(tree.root_node()) {
+            let Some(panel) = self.elements.get(&panel_node) else { continue; };
+            renderer.fill_quad(panel.quad);
+        }
+        renderer.end_layer();
+        renderer.start_layer(viewport_rect);
+        for panel_node in tree.children_of(tree.root_node()) {
+            for button_node in tree.children_of(panel_node) {
+                let Some(button) = self.elements.get(&button_node) else { continue; };
+                renderer.fill_quad(button.quad);
+            }
         }
         renderer.end_layer();
         renderer.start_layer(viewport_rect);

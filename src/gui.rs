@@ -33,6 +33,10 @@ impl Gui {
         }
     }
 
+    pub fn tree(&mut self) -> &mut LayoutTree {
+        &mut self.layout_tree
+    }
+
     pub fn push_node_to_root(&mut self, layout: Layout) -> Node {
         self.layout_tree.push_to_root(layout, true)
     }

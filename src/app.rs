@@ -3,7 +3,7 @@
 
 
 use bog_event::WindowEvent;
-use bog_layout::{Layout, Placement};
+use bog_layout::{Layout, LayoutTree, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
 use bog_window::{Client, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
@@ -34,7 +34,7 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler: 'static {
-    fn render(&mut self, renderer: &mut Renderer, viewport_rect: Rect);
+    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
     fn init(&mut self, ui: &mut Gui);
 
     fn title(&self) -> &str;
@@ -93,7 +93,7 @@ impl<'a> Client for AppRunner<'a> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer, viewport.rect());
+                self.app.render(renderer, self.ui.tree(), viewport.rect());
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
