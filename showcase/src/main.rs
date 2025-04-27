@@ -326,10 +326,10 @@ impl<'w> GuiHandler for Display<'w> {
 
     fn on_drag_update(
         &mut self,
-        _tree: &mut LayoutTree,
         element: Element,
-        hovered: Option<Element>,
+        _tree: &mut LayoutTree,
         delta: Vec2,
+        hovered: Option<Element>,
     ) {
         self.graphics.window().request_redraw();
         let Some(button) = self.elements.get(&element) else { return; };
@@ -349,7 +349,7 @@ impl<'w> GuiHandler for Display<'w> {
         self.graphics.window().set_cursor(CursorIcon::Grab);
     }
 
-    fn on_drag_end(&mut self, _element: Element) {
+    fn on_drag_end(&mut self, _element: Element, _tree: &mut LayoutTree) {
         self.graphics.window().request_redraw();
         self.graphics.window().set_cursor(CursorIcon::Default);
         self.drag_indicator = None;

@@ -97,10 +97,10 @@ impl Gui {
                 if self.state.is_dragging {
                     let delta = pos - drag_origin_pos;
                     handler.on_drag_update(
-                        &mut self.layout_tree,
                         drag_element,
-                        topmost_hovered,
+                        &mut self.layout_tree,
                         delta,
+                        topmost_hovered,
                     );
                 }
             }
@@ -134,7 +134,7 @@ impl Gui {
         if let Some(element) = self.drag_start_element.take() {
             if self.state.is_dragging {
                 self.state.is_dragging = false;
-                handler.on_drag_end(element);
+                handler.on_drag_end(element, &mut self.layout_tree);
             }
         }
     }
@@ -166,13 +166,13 @@ pub trait GuiHandler {
     fn on_mouse_up(&mut self, element: Element, state: &GuiState);
     fn on_drag_update(
         &mut self,
-        tree: &mut LayoutTree,
         element: Element,
-        hovered: Option<Element>,
+        tree: &mut LayoutTree,
         delta: Vec2,
+        hovered: Option<Element>,
     );
     fn on_drag_start(&mut self, element: Element, tree: &mut LayoutTree);
-    fn on_drag_end(&mut self, element: Element);
+    fn on_drag_end(&mut self, element: Element, tree: &mut LayoutTree);
     fn on_resize(&mut self, size: Vec2);
     fn on_element_layout(&mut self, element: Element, placement: &Placement);
 }
