@@ -46,35 +46,33 @@ struct Showcase {
 impl AppHandler for Showcase {
     fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect) {
         renderer.clear();
-        renderer.start_layer(viewport_rect);
-        renderer.fill_quad(Quad {
-            bounds: viewport_rect,
-            border: Border::NONE,
-            shadow: Shadow::NONE,
-            bg_color: GRAY_0,
-        });
-        renderer.end_layer();
-        renderer.start_layer(viewport_rect);
-        for panel_node in tree.children_of(tree.root_node()) {
-            let Some(panel) = self.elements.get(&panel_node) else { continue; };
-            renderer.fill_quad(panel.quad);
+
+        { // Background layer.
+            renderer.start_layer(viewport_rect);
+            renderer.fill_quad(Quad {
+                bounds: viewport_rect,
+                border: Border::NONE,
+                shadow: Shadow::NONE,
+                bg_color: GRAY_0,
+            });
+            renderer.end_layer();
         }
-        renderer.end_layer();
-        renderer.start_layer(viewport_rect);
-        for panel_node in tree.children_of(tree.root_node()) {
-            for button_node in tree.children_of(panel_node) {
-                let Some(button) = self.elements.get(&button_node) else { continue; };
-                renderer.fill_quad(button.quad);
-            }
+
+        { // Main layer.
+            renderer.start_layer(viewport_rect);
+            // The `iter_placements` call will iterate bottom-up, so rendering each element through
+            // this method is ideal.
+            tree.iter_placements(&mut |node, _placement| {
+                let Some(element) = self.elements.get(&node) else { return; };
+                renderer.fill_quad(element.quad);
+                renderer.fill_text(element.text.clone());
+            });
+            renderer.end_layer();
         }
-        renderer.end_layer();
-        renderer.start_layer(viewport_rect);
-        for button in self.elements.values() {
-            renderer.fill_text(button.text.clone());
-        }
-        renderer.end_layer();
+
+        // Overlay layer.
         if let Some(drag_indicator) = &self.drag_indicator {
-        renderer.start_layer(viewport_rect);
+            renderer.start_layer(viewport_rect);
             renderer.fill_quad(*drag_indicator);
             renderer.end_layer();
         }
