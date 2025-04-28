@@ -1,7 +1,11 @@
 //! Bog Collections
 
-#![no_std]
+// TODO: #![no_std]
 
 
 
-pub mod unit_map;
+mod nohash_map;
+mod unit_map;
+
+pub use nohash_map::NoHashMap;
+pub use unit_map::UnitMap;
