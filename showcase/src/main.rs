@@ -256,10 +256,14 @@ impl AppHandler for Showcase {
         cx.graphics.window().set_cursor(CursorIcon::Grab);
     }
 
-    fn on_dragend(&mut self, _node: Node, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        cx.graphics.window().set_cursor(CursorIcon::Default);
+    fn on_dragend(&mut self, node: Node, cx: AppContext, over: Option<Node>) {
         self.drag_indicator = None;
+        if let Some(over_node) = over {
+            cx.gui_cx.tree.try_swap_nodes(node, over_node);
+            cx.gui_cx.tree.do_layout(self);
+        }
+        cx.graphics.window().set_cursor(CursorIcon::Default);
+        cx.graphics.window().request_redraw();
     }
 
     fn on_layout(&mut self, node: Node, placement: &Placement) {
@@ -270,6 +274,12 @@ impl AppHandler for Showcase {
         );
         button.text.pos = placement.content_position();
         button.text.bounds = placement.content_size();
+    }
+}
+
+impl LayoutHandler for Showcase {
+    fn on_layout(&mut self, node: LayoutNode, placement: &Placement) {
+        AppHandler::on_layout(self, node, placement);
     }
 }
 

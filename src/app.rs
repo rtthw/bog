@@ -47,7 +47,7 @@ pub trait AppHandler: 'static {
     fn on_mousedown(&mut self, node: Node, cx: AppContext) {}
     fn on_mouseup(&mut self, node: Node, cx: AppContext) {}
     fn on_dragstart(&mut self, node: Node, cx: AppContext) {}
-    fn on_dragend(&mut self, node: Node, cx: AppContext) {}
+    fn on_dragend(&mut self, node: Node, cx: AppContext, over: Option<Node>) {}
     fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {}
     fn on_layout(&mut self, node: Node, placement: &Placement) {}
 }
@@ -176,9 +176,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_update(
-        &mut self, node: Node, gui_cx: GuiContext, delta: Vec2, hovered: Option<Node>,
-    ) {
+    fn on_drag_update(&mut self, node: Node, gui_cx: GuiContext, delta: Vec2, over: Option<Node>) {
         self.app.on_dragmove(
             node,
             AppContext {
@@ -187,7 +185,7 @@ impl<'a> GuiHandler for Proxy<'a> {
                 gui_cx,
             },
             delta,
-            hovered,
+            over,
         );
     }
 
@@ -199,12 +197,12 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_end(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_drag_end(&mut self, node: Node, gui_cx: GuiContext, over: Option<Node>) {
         self.app.on_dragend(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
             gui_cx,
-        });
+        }, over);
     }
 
     fn on_resize(&mut self, size: Vec2) {

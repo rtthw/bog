@@ -81,7 +81,6 @@ impl Gui {
                 return; // Breaks out of `iter_placements`.
             }
 
-            // TODO: See if there should be some multi-hovering system.
             hovered.push(node.into());
         });
 
@@ -159,7 +158,7 @@ impl Gui {
                 handler.on_drag_end(node, GuiContext {
                     state: &self.state,
                     tree: &mut self.layout_tree,
-                });
+                }, self.hovered_node);
             }
         }
     }
@@ -194,15 +193,9 @@ pub trait GuiHandler {
     fn on_mouse_leave(&mut self, node: Node, cx: GuiContext);
     fn on_mouse_down(&mut self, node: Node, cx: GuiContext);
     fn on_mouse_up(&mut self, node: Node, cx: GuiContext);
-    fn on_drag_update(
-        &mut self,
-        node: Node,
-        cx: GuiContext,
-        delta: Vec2,
-        hovered: Option<Node>,
-    );
+    fn on_drag_update(&mut self, node: Node, cx: GuiContext, delta: Vec2, over: Option<Node>);
     fn on_drag_start(&mut self, node: Node, cx: GuiContext);
-    fn on_drag_end(&mut self, node: Node, cx: GuiContext);
+    fn on_drag_end(&mut self, node: Node, cx: GuiContext, over: Option<Node>);
     fn on_resize(&mut self, size: Vec2);
     fn on_node_layout(&mut self, node: Node, placement: &Placement);
 }

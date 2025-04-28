@@ -49,6 +49,7 @@ impl LayoutTree {
         found
     }
 
+    // TODO: Make the function return a bool to indicate if this should continue iterating.
     pub fn iter_placements(&self, func: &mut impl FnMut(LayoutNode, &Placement)) {
         for_each_node(&self.tree, self.root, func);
     }
@@ -74,6 +75,36 @@ impl LayoutTree {
             .unwrap(); // Cannot fail.
 
         id
+    }
+
+    /// # Panics
+    ///
+    /// - If either node is the root node.
+    // FIXME: This can probably be optimized.
+    pub fn try_swap_nodes(&mut self, node_a: LayoutNode, node_b: LayoutNode) {
+        if node_a == node_b {
+            return;
+        }
+
+        let node_a_parent = self.tree.parent(node_a).unwrap();
+        let node_b_parent = self.tree.parent(node_b).unwrap();
+
+        if node_a_parent == node_b_parent {
+            let mut children = self.tree.children(node_a_parent).unwrap();
+            let index_of = |children: &Vec<taffy::NodeId>, node: &taffy::NodeId| -> usize {
+                children.iter()
+                    .enumerate()
+                    .find(|(_i, n)| n == &node)
+                    .unwrap()
+                    .0
+            };
+            let index_a = index_of(&children, &node_a);
+            let index_b = index_of(&children, &node_b);
+            children.swap(index_a, index_b);
+            self.tree.set_children(node_a_parent, &children).unwrap();
+        } else {
+            todo!("support swapping nodes with different parents")
+        }
     }
 
     pub fn resize(&mut self, available_space: Vec2) {
