@@ -19,8 +19,16 @@ impl<K: Default + Eq + core::hash::Hash + Into<u64>, V> NoHashMap<K, V> {
         }
     }
 
-    pub fn get(&self, key: &K) -> Option<&V> {
-        self.map.get(key)
+    pub fn get(&self, k: &K) -> Option<&V> {
+        self.map.get(k)
+    }
+
+    pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+        self.map.get_mut(k)
+    }
+
+    pub fn insert(&mut self, k: K, v: V) -> Option<V> {
+        self.map.insert(k, v)
     }
 }
 

@@ -2,7 +2,7 @@
 
 
 
-use bog_collections::unit_map::UnitMap;
+use bog_collections::UnitMap;
 use bog_math::Rect;
 
 use crate::Viewport;

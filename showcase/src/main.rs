@@ -1,10 +1,10 @@
 
 
 
-use std::collections::HashMap;
 
 use app::{run_app, AppContext, AppHandler};
 use bog::*;
+use collections::NoHashMap;
 use color::*;
 use gui::*;
 use layout::*;
@@ -29,7 +29,7 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 fn main() -> Result<()> {
     run_app(Showcase {
-        elements: HashMap::with_capacity(7),
+        elements: NoHashMap::with_capacity(7),
         drag_indicator: None,
     })?;
 
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
 
 
 struct Showcase {
-    elements: HashMap<Node, Button>,
+    elements: NoHashMap<Node, Button>,
     drag_indicator: Option<Quad>,
 }
 
@@ -278,7 +278,7 @@ impl AppHandler for Showcase {
 }
 
 impl LayoutHandler for Showcase {
-    fn on_layout(&mut self, node: LayoutNode, placement: &Placement) {
+    fn on_layout(&mut self, node: Node, placement: &Placement) {
         AppHandler::on_layout(self, node, placement);
     }
 }

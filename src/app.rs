@@ -3,12 +3,12 @@
 
 
 use bog_event::WindowEvent;
-use bog_layout::{Layout, LayoutTree, Placement};
+use bog_layout::{Layout, LayoutTree, Node, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
 use bog_window::{Client, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
 
-use crate::{graphics::WindowGraphics, gui::{Node, Gui, GuiContext, GuiHandler}, Result};
+use crate::{graphics::WindowGraphics, gui::{Gui, GuiContext, GuiHandler}, Result};
 
 
 

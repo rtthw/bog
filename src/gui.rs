@@ -6,15 +6,13 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 
 
-pub type Node = LayoutNode;
-
 pub struct Gui {
     state: GuiState,
     layout_tree: LayoutTree,
-    hovered_node: Option<LayoutNode>,
+    hovered_node: Option<Node>,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
-    drag_start_node: Option<LayoutNode>,
+    drag_start_node: Option<Node>,
 }
 
 impl Gui {
@@ -180,7 +178,7 @@ struct Proxy<'a> {
 }
 
 impl<'a> LayoutHandler for Proxy<'a> {
-    fn on_layout(&mut self, node: LayoutNode, placement: &Placement) {
+    fn on_layout(&mut self, node: Node, placement: &Placement) {
         self.handler.on_node_layout(node, placement);
     }
 }
