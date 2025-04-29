@@ -12,7 +12,6 @@ use bog_math::{vec2, Vec2};
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent},
-    monitor::MonitorHandle,
     window::{CursorIcon, WindowId},
 };
 
@@ -30,6 +29,40 @@ impl std::ops::Deref for Window {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+
+
+/// A reference to a physical monitor display.
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Monitor(winit::monitor::MonitorHandle);
+
+impl Monitor {
+    /// Get the name of this monitor. If this monitor doesn't exist (has been disconnected since
+    /// the creation of this reference), this returns `None`.
+    #[inline]
+    pub fn name(&self) -> Option<String> {
+        self.0.name()
+    }
+
+    /// Get the resolution of this monitor, in physical pixels.
+    #[inline]
+    #[doc(alias = "size")]
+    pub fn resolution(&self) -> Vec2 {
+        let (x, y) = self.0.size().into();
+        Vec2::new(x, y)
+    }
+
+    /// Get the position of this monitor, in physical pixels relative to the origin of the user's
+    /// setup.
+    ///
+    /// This means that if the user has a 2 monitor setup, then the left one would return `(0, 0)`
+    /// and the right one would return `(<left_monitor_width>, 0)`.
+    #[inline]
+    pub fn position(&self) -> Vec2 {
+        let (x, y) = self.0.size().into();
+        Vec2::new(x, y)
     }
 }
 
@@ -297,15 +330,15 @@ impl<'a> WindowManager<'a> {
         self.event_loop.exit();
     }
 
-    /// Get the user's "main" monitor. If the user hasn't explicitly defined one, this returns
+    /// Get the user's primary [`Monitor`]. If the user hasn't explicitly defined one, this returns
     /// `None`.
-    pub fn primary_monitor(&self) -> Option<MonitorHandle> {
-        self.event_loop.primary_monitor()
+    pub fn primary_monitor(&self) -> Option<Monitor> {
+        self.event_loop.primary_monitor().map(|monitor_handle| Monitor(monitor_handle))
     }
 
-    /// Get an iterator over the available [`MonitorHandle`]s for a user's system.
-    pub fn available_monitors(&self) -> impl Iterator<Item = MonitorHandle> {
-        self.event_loop.available_monitors()
+    /// Get an iterator over the available [`Monitor`]s for a user's system.
+    pub fn available_monitors(&self) -> impl Iterator<Item = Monitor> {
+        self.event_loop.available_monitors().map(|monitor_handle| Monitor(monitor_handle))
     }
 }
 
