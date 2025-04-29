@@ -132,17 +132,6 @@ impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientPr
             self.client.on_event(WindowManager { event_loop }, id, raw_event);
         }
     }
-
-    fn device_event(
-        &mut self,
-        _event_loop: &winit::event_loop::ActiveEventLoop,
-        device_id: winit::event::DeviceId,
-        event: winit::event::DeviceEvent,
-    ) {
-        if matches!(event, winit::event::DeviceEvent::MouseMotion { .. }
-        | winit::event::DeviceEvent::Motion { .. }) { return; }
-        println!("\nDEVICE EVENT:\n\tID: {:?};\n\tEVENT:{:?};\n", device_id, event);
-    }
 }
 
 
