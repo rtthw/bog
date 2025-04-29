@@ -9,6 +9,7 @@ use bog_math::{Rect, Vec2};
 
 
 
+/// A renderable piece of text.
 #[derive(Clone, Debug)]
 pub struct Text {
     pub content: String,
@@ -36,37 +37,52 @@ impl Default for Text {
     }
 }
 
+/// The family for a piece of [`Text`].
 pub type FontFamily<'a> = glyphon::Family<'a>;
+/// The style (italic, oblique, or normal) used for a piece of [`Text`].
 pub type FontStyle = glyphon::Style;
+/// The weight applied to a piece of [`Text`].
 pub type FontWeight = glyphon::Weight;
+/// The character width applied to a piece of [`Text`].
 pub type FontWidth = glyphon::Stretch;
 
 
 
+/// A renderable rectangle that can have a [`Border`] and [`Shadow`].
 #[derive(Clone, Copy, Debug)]
 pub struct Quad {
+    /// The size and position of the quad.
     pub bounds: Rect,
+    /// The [`Border`] applied around the quad.
     pub border: Border,
+    /// The [`Shadow`]] applied under the quad.
     pub shadow: Shadow,
+    /// The color used to fill in the quad.
     pub bg_color: Color,
 }
 
 
 
+/// The border of a [`Quad`].
 #[derive(Clone, Copy, Debug)]
 pub struct Border {
+    /// The color of the border.
     pub color: Color,
+    /// The border's width, in pixels.
     pub width: f32,
+    /// The radius of the border in `pqdb` order (top-left, top-right, bottom-right, bottom-left).
     pub radius: [f32; 4],
 }
 
 impl Border {
+    /// No border.
     pub const NONE: Self = Self {
         color: Color::NONE,
         width: 0.0,
         radius: [0.0; 4],
     };
 
+    /// Create a new border with the given color, width, and radius on all 4 corners.
     pub const fn new(color: Color, width: f32, radius: f32) -> Self {
         Self {
             color,
@@ -78,20 +94,26 @@ impl Border {
 
 
 
+/// The border of a [`Quad`].
 #[derive(Clone, Copy, Debug)]
 pub struct Shadow {
+    /// The color of the shading.
     pub color: Color,
+    /// The offset of the shadow, in pixels.
     pub offset: Vec2,
+    /// The "spread" for the blurring effect of the shadow.
     pub blur_radius: f32,
 }
 
 impl Shadow {
+    /// No shadow.
     pub const NONE: Self = Self {
         color: Color::NONE,
         offset: Vec2::ZERO,
         blur_radius: 0.0,
     };
 
+    /// Create a new shadow with the given color, offset, and blur radius.
     pub const fn new(color: Color, offset: Vec2, blur_radius: f32) -> Self {
         Self {
             color,
