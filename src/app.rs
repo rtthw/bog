@@ -59,6 +59,8 @@ struct AppRunner<'a> {
 }
 
 impl<'a> WindowingClient for AppRunner<'a> {
+    fn on_startup(&mut self, _wm: WindowManager) {}
+
     fn on_resume(&mut self, mut wm: WindowManager) {
         let AppState::Suspended(window) = &mut self.state else {
             return;

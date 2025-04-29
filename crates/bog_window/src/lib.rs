@@ -72,8 +72,27 @@ impl Monitor {
 /// the [`WindowManager`]. Once registered, the client will receive events from the windowing
 /// system that it can then use to perform some behavior.
 pub trait WindowingClient {
+    /// Called when this client's connection to the [`WindowManager`] is first established. This
+    /// can be used to create an initial window if the client is some sort of application.
+    ///
+    /// It should be noted that the client will also receive a resume event after this one.
+    fn on_startup(&mut self, wm: WindowManager);
+    /// Called when this client is resumed.
+    ///
+    /// There is no guarantee that a client will recieve suspend and resume events in any
+    /// particular order.
+    ///
+    /// On certain platforms, this may only be called when the [`WindowManager`] is first
+    /// initialized. See [`WindowingClient::on_startup`].
     fn on_resume(&mut self, wm: WindowManager);
+    /// Called when this client is suspended.
+    ///
+    /// There is no guarantee that a client will recieve suspend and resume events in any
+    /// particular order.
+    ///
+    /// On certain platforms, this may never be called.
     fn on_suspend(&mut self, wm: WindowManager);
+    /// Called when one of this client's windows receives a [`WindowEvent`].
     fn on_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
 }
 
@@ -82,6 +101,19 @@ struct ClientProxy<'a, C: WindowingClient> {
 }
 
 impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientProxy<'a, C> {
+    fn new_events(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        cause: winit::event::StartCause,
+    ) {
+        match cause {
+            winit::event::StartCause::Init => {
+                self.client.on_startup(WindowManager { event_loop });
+            }
+            _ => {}
+        }
+    }
+
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.client.on_resume(WindowManager { event_loop })
     }
@@ -99,6 +131,17 @@ impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientPr
         if let Some(raw_event) = translate_window_event(event) {
             self.client.on_event(WindowManager { event_loop }, id, raw_event);
         }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &winit::event_loop::ActiveEventLoop,
+        device_id: winit::event::DeviceId,
+        event: winit::event::DeviceEvent,
+    ) {
+        if matches!(event, winit::event::DeviceEvent::MouseMotion { .. }
+        | winit::event::DeviceEvent::Motion { .. }) { return; }
+        println!("\nDEVICE EVENT:\n\tID: {:?};\n\tEVENT:{:?};\n", device_id, event);
     }
 }
 
