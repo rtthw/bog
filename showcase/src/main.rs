@@ -81,13 +81,15 @@ impl AppHandler for Showcase {
     fn init(&mut self, ui: &mut Gui) {
         let left_panel_layout = Layout::default()
             .width_percent(0.2)
-            .fill_height();
+            .fill_height()
+            .padding(11.0);
         let right_panel_layout = Layout::default()
             .flex_row()
             .flex_wrap()
             .fill_width()
             .fill_height()
             .gap_x(11.0)
+            .padding(11.0)
             .align_items_center()
             .justify_content_center();
 
@@ -113,10 +115,10 @@ impl AppHandler for Showcase {
                 content: "LEFT".to_string(),
                 pos: Vec2::ZERO,
                 size: 50.0,
-                color: GRAY_8,
+                color: GRAY_7,
                 line_height: 50.0 * 1.2,
                 font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-                font_style: FontStyle::Italic,
+                font_style: FontStyle::Normal,
                 bounds: Vec2::new(100.0, 100.0),
             },
             draggable: false,
@@ -140,10 +142,10 @@ impl AppHandler for Showcase {
                 content: "RIGHT".to_string(),
                 pos: Vec2::ZERO,
                 size: 50.0,
-                color: GRAY_8,
+                color: GRAY_7,
                 line_height: 50.0 * 1.2,
                 font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-                font_style: FontStyle::Italic,
+                font_style: FontStyle::Normal,
                 bounds: Vec2::new(100.0, 100.0),
             },
             draggable: false,
@@ -156,33 +158,7 @@ impl AppHandler for Showcase {
             Layout::default().width(20.0).height(40.0).padding(5.0),
         ] {
             let node = ui.push_node(right_panel, layout);
-            self.elements.insert(node, Button {
-                quad: Quad {
-                    bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
-                    border: Border {
-                        color: GRAY_5,
-                        width: 3.0,
-                        radius: [7.0, 3.0, 11.0, 19.0],
-                    },
-                    shadow: Shadow {
-                        color: GRAY_3,
-                        offset: vec2(2.0, 5.0),
-                        blur_radius: 3.0,
-                    },
-                    bg_color: GRAY_6,
-                },
-                text: Text {
-                    content: "=>".to_string(),
-                    pos: Vec2::ZERO,
-                    size: 20.0,
-                    color: GRAY_6,
-                    line_height: 20.0 * 1.2,
-                    font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-                    font_style: FontStyle::Normal,
-                    bounds: Vec2::new(100.0, 100.0),
-                },
-                draggable: true,
-            });
+            self.elements.insert(node, simple_button("<>\n<-"));
         }
     }
 
@@ -202,22 +178,22 @@ impl AppHandler for Showcase {
 
     fn on_mouseover(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
+        let Some(button) = self.elements.get_mut(&node) else { return; };
+        if !button.draggable { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Pointer);
         }
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
         button.quad.bg_color = GRAY_7;
         button.text.size = 30.0;
     }
 
     fn on_mouseleave(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
+        let Some(button) = self.elements.get_mut(&node) else { return; };
+        if !button.draggable { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Default);
         }
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
         button.quad.bg_color = GRAY_6;
         button.quad.border.color = GRAY_5;
         button.text.size = 20.0;
@@ -238,9 +214,9 @@ impl AppHandler for Showcase {
     }
 
     fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {
-        cx.graphics.window().request_redraw();
         let Some(button) = self.elements.get(&node) else { return; };
         if !button.draggable { return; }
+        cx.graphics.window().request_redraw();
         self.drag_indicator = Some(Quad {
             bounds: Rect::new(button.quad.bounds.position() + delta, button.quad.bounds.size()),
             ..button.quad
@@ -251,7 +227,9 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn on_dragstart(&mut self, _node: Node, cx: AppContext) {
+    fn on_dragstart(&mut self, node: Node, cx: AppContext) {
+        let Some(button) = self.elements.get_mut(&node) else { return; };
+        if !button.draggable { return; }
         cx.graphics.window().request_redraw();
         cx.graphics.window().set_cursor(CursorIcon::Grab);
     }
@@ -260,6 +238,7 @@ impl AppHandler for Showcase {
         self.drag_indicator = None;
         if let Some(over_node) = over {
             cx.gui_cx.tree.try_swap_nodes(node, over_node);
+            // See: `impl LayoutHandler for Showcase`.
             cx.gui_cx.tree.do_layout(self);
         }
         cx.graphics.window().set_cursor(CursorIcon::Default);
@@ -289,4 +268,35 @@ struct Button {
     quad: Quad,
     text: Text,
     draggable: bool,
+}
+
+fn simple_button(text: &str) -> Button {
+    Button {
+        quad: Quad {
+            // The bounds will be determined by the layout engine. You can put anything here.
+            bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
+            border: Border {
+                color: GRAY_5,
+                width: 3.0,
+                radius: [7.0, 3.0, 11.0, 19.0],
+            },
+            shadow: Shadow {
+                color: GRAY_3,
+                offset: vec2(2.0, 5.0),
+                blur_radius: 3.0,
+            },
+            bg_color: GRAY_6,
+        },
+        text: Text {
+            content: text.to_string(),
+            pos: Vec2::ZERO,
+            size: 20.0,
+            color: GRAY_8,
+            line_height: 20.0 * 1.2,
+            font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
+            font_style: FontStyle::Normal,
+            bounds: Vec2::new(100.0, 100.0),
+        },
+        draggable: true,
+    }
 }
