@@ -1,4 +1,6 @@
-//! Bog Window
+//! # Bog Window
+//!
+//! A set of types and abstractions useful for managing [`Window`]s through [`WindowingSystem`]s.
 
 
 
@@ -6,6 +8,7 @@ use std::sync::Arc;
 
 use bog_event::{KeyCode, WindowEvent};
 use bog_math::{vec2, Vec2};
+
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent},
@@ -15,6 +18,10 @@ pub use winit::{
 
 
 
+/// A reference to a managed window.
+///
+/// You can safely clone this object and access clones the same as would the original. When the
+/// last reference to this window is dropped, the window will be closed.
 #[derive(Clone, Debug)]
 pub struct Window(Arc<winit::window::Window>);
 
@@ -28,17 +35,20 @@ impl std::ops::Deref for Window {
 
 
 
-pub trait Client {
+/// Wndowing clients can be registered through the [`WindowingSystem`] and create windows through
+/// the [`WindowManager`]. Once registered, the client will receive events from the windowing
+/// system that it can then use to perform some behavior.
+pub trait WindowingClient {
     fn on_resume(&mut self, wm: WindowManager);
     fn on_suspend(&mut self, wm: WindowManager);
     fn on_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
 }
 
-struct ClientProxy<'a, C: Client> {
+struct ClientProxy<'a, C: WindowingClient> {
     client: &'a mut C,
 }
 
-impl<'a, C: Client> winit::application::ApplicationHandler for ClientProxy<'a, C> {
+impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientProxy<'a, C> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.client.on_resume(WindowManager { event_loop })
     }
@@ -58,6 +68,8 @@ impl<'a, C: Client> winit::application::ApplicationHandler for ClientProxy<'a, C
         }
     }
 }
+
+
 
 fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<WindowEvent> {
     match window_event {
@@ -220,6 +232,15 @@ fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) -> u8 {
 
 
 
+/// A reference to the platform's windowing system.
+///
+/// The windowing system for a platform is responsible for creating, destroying, and positioning
+/// windows. Sometimes (usually on mobile and web platforms), the windowing system is also
+/// responsible for managing the "lifecycle" of its clients. This takes the form of resume,
+/// suspend, and wakeup events that are passed to the clients managing the affected window(s).
+///
+/// To access a windowing system, you create a [`Client`] object that will be capable of creating
+/// windows through the [`WindowManager`] object.
 pub struct WindowingSystem {
     event_loop: winit::event_loop::EventLoop<()>,
 }
@@ -231,18 +252,30 @@ impl WindowingSystem {
         })
     }
 
-    pub fn run_client(self, client: &mut impl Client) -> Result<(), WindowManagerError> {
+    pub fn run_client(self, client: &mut impl WindowingClient) -> Result<(), WindowManagerError> {
         self.event_loop.run_app(&mut ClientProxy { client })
     }
 }
 
 
 
+/// A reference to the platform's window manager.
+///
+/// Not to be confused with the [`WindowingSystem`], the window manager is responsible for the
+/// actual window management behavior associated with a windowing system. You can think of this
+/// object as a sort of "dispatcher" for requests to the system.
+///
+/// This window manager object is tied to the [`WindowingClient`] you provided to the windowing
+/// system. Calling [`WindowManager::exit`] will ask the windowing system to shutdown the client.
 pub struct WindowManager<'a> {
     event_loop: &'a winit::event_loop::ActiveEventLoop,
 }
 
 impl<'a> WindowManager<'a> {
+    /// Attempt to create a new [`Window`] as defined by the given [`WindowDescriptor`].
+    ///
+    /// This could return an error if the platform does not support windowing, there is no
+    /// available memory for the window, or the platform denies the request.
     pub fn create_window(&self, desc: WindowDescriptor) -> Result<Window, WindowError> {
         let inner = self.event_loop.create_window(winit::window::WindowAttributes::default()
             .with_title(desc.title)
@@ -259,14 +292,18 @@ impl<'a> WindowManager<'a> {
         Ok(Window(Arc::new(inner)))
     }
 
+    /// Stop processing window manager events.
     pub fn exit(&self) {
         self.event_loop.exit();
     }
 
+    /// Get the user's "main" monitor. If the user hasn't explicitly defined one, this returns
+    /// `None`.
     pub fn primary_monitor(&self) -> Option<MonitorHandle> {
         self.event_loop.primary_monitor()
     }
 
+    /// Get an iterator over the available [`MonitorHandle`]s for a user's system.
     pub fn available_monitors(&self) -> impl Iterator<Item = MonitorHandle> {
         self.event_loop.available_monitors()
     }
@@ -274,14 +311,27 @@ impl<'a> WindowManager<'a> {
 
 
 
+/// The initial description of a [`Window`] used by [`WindowManager::create_window`].
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WindowDescriptor<'a> {
+    /// The window's title.
+    ///
+    /// Does nothing on platforms that don't manage window titles (most notably, mobile platforms).
     pub title: &'a str,
+    /// The inner size of the window. Some platforms add decorations to windows, so this is the
+    /// size of the actual display surface.
     pub inner_size: Vec2,
+    /// Whether the window is active.
     pub active: bool,
+    /// Whether the window is maximized.
     pub maximized: bool,
+    /// Whether the window is visible.
     pub visible: bool,
+    /// Whether the window is transparent.
     pub transparent: bool,
+    /// Whether the window is blurred.
     pub blurred: bool,
+    /// Whether the window is decorated.
     pub decorated: bool,
 }
 

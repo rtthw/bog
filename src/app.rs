@@ -6,7 +6,7 @@ use bog_event::WindowEvent;
 use bog_layout::{Layout, LayoutTree, Node, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
-use bog_window::{Client, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
+use bog_window::{WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
 
 use crate::{graphics::WindowGraphics, gui::{Gui, GuiContext, GuiHandler}, Result};
 
@@ -58,7 +58,7 @@ struct AppRunner<'a> {
     ui: Gui,
 }
 
-impl<'a> Client for AppRunner<'a> {
+impl<'a> WindowingClient for AppRunner<'a> {
     fn on_resume(&mut self, mut wm: WindowManager) {
         let AppState::Suspended(window) = &mut self.state else {
             return;
