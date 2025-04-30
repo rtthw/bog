@@ -104,7 +104,8 @@ impl LayoutTree {
             children.swap(index_a, index_b);
             self.tree.set_children(node_a_parent, &children).unwrap();
         } else {
-            todo!("support swapping nodes with different parents")
+            // Don't panic here in case the user makes a mistake.
+            println!("[TODO]: Support swapping nodes with different parents");
         }
     }
 
