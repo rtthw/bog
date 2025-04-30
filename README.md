@@ -9,6 +9,7 @@
   - [Elevator Pitch](#elevator-pitch)
   - [Quickstart](#quickstart)
   - [Features](#features)
+  - [Learn More](#learn-more)
   - [License](#license)
 
 </details>
@@ -31,7 +32,7 @@ The primary goal of Bog is to have a set of interoperable tools that you can use
 
 There is no "one size fits all" abstraction. That's why everthing in Bog is divorced from everthing else. Rendering is not tied to window management. User interfacing is not tied to layout. UI elements are not tied to the user interface. You can pick and choose what fits your specific use case best.
 
-I want to provide a set of tools you can use to make your project *your project*.
+I want to provide a set of tools you can use to make your project *your project*. This is not a framework, it's a toolkit.
 
 ## Quickstart
 
@@ -55,6 +56,11 @@ bog = { version = "*", default-features = false, features = ["window", "render"]
 - `layout`, for CSS-style layout management.
 - `render`, for rendering to surfaces with the GPU.
 - `window`, for connecting to the platform's windowing system.
+
+## Learn More
+
+- [Notes on the project's architecture](./docs/ARCHITECTURE.md)
+- [Reference sheet for various interfaces](./docs/REFERENCE.md)
 
 ## License
 
