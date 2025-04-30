@@ -82,13 +82,17 @@ impl LayoutTree {
         self.tree.set_style(node.into(), layout.0).unwrap();
     }
 
+    pub fn get_node_layout(&mut self, node: Node) -> Layout {
+        Layout(self.tree.style(node.into()).unwrap().clone())
+    }
+
     /// # Panics
     ///
     /// - If either node is the root node.
     // FIXME: This can probably be optimized.
-    pub fn try_swap_nodes(&mut self, node_a: Node, node_b: Node) {
+    pub fn try_swap_nodes(&mut self, node_a: Node, node_b: Node) -> bool {
         if node_a == node_b {
-            return;
+            return false;
         }
 
         let node_a_parent = self.tree.parent(node_a.into()).unwrap();
@@ -107,9 +111,12 @@ impl LayoutTree {
             let index_b = index_of(&children, node_b.into());
             children.swap(index_a, index_b);
             self.tree.set_children(node_a_parent, &children).unwrap();
+
+            true
         } else {
-            // Don't panic here in case the user makes a mistake.
             println!("[TODO]: Support swapping nodes with different parents");
+
+            false
         }
     }
 
@@ -250,6 +257,14 @@ impl Layout {
     pub fn fill_height(mut self) -> Self {
         self.0.size.height = taffy::prelude::percent(1.0);
         self
+    }
+
+    pub fn get_width(&self) -> Option<f32> {
+        self.0.size.width.into_option()
+    }
+
+    pub fn get_height(&self) -> Option<f32> {
+        self.0.size.height.into_option()
     }
 }
 
