@@ -8,6 +8,7 @@
 - [Bog](#bog)
   - [Elevator Pitch](#elevator-pitch)
   - [Quickstart](#quickstart)
+  - [Features](#features)
   - [License](#license)
 
 </details>
@@ -41,6 +42,19 @@ fn main() {
     todo!("Make quickstart example!");
 }
 ```
+
+## Features
+
+By default, all features are enabled and available. You can choose which ones you want by setting `default-features` to `false` in your `Cargo.toml`, and then enabling the ones you want:
+
+```toml
+bog = { version = "*", default-features = false, features = ["window", "render"] }
+```
+
+- `app`, an easy way to create cross-platform applications.
+- `layout`, for CSS-style layout management.
+- `render`, for rendering to surfaces with the GPU.
+- `window`, for connecting to the platform's windowing system.
 
 ## License
 
