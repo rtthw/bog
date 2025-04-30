@@ -38,6 +38,13 @@ impl Color {
             a: color as u8,
         }
     }
+
+    pub fn with_alpha(self, alpha: u8) -> Self {
+        Self {
+            a: alpha,
+            ..self
+        }
+    }
 }
 
 

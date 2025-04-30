@@ -39,7 +39,7 @@ fn main() -> Result<()> {
 
 
 struct Showcase {
-    elements: NoHashMap<Node, Button>,
+    elements: NoHashMap<Node, Box<dyn Element>>,
     drag_indicator: Option<Quad>,
 }
 
@@ -64,8 +64,7 @@ impl AppHandler for Showcase {
             // this method is ideal.
             tree.iter_placements(&mut |node, _placement| {
                 let Some(element) = self.elements.get(&node) else { return; };
-                renderer.fill_quad(element.quad);
-                renderer.fill_text(element.text.clone());
+                element.render(renderer);
             });
             renderer.end_layer();
         }
@@ -96,7 +95,7 @@ impl AppHandler for Showcase {
         let left_panel = ui.push_node_to_root(left_panel_layout);
         let right_panel = ui.push_node_to_root(right_panel_layout);
 
-        self.elements.insert(left_panel, Button {
+        self.elements.insert(left_panel, Box::new(Button {
             quad: Quad {
                 bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                 border: Border {
@@ -118,8 +117,8 @@ impl AppHandler for Showcase {
                 bounds: Vec2::new(100.0, 100.0),
             },
             draggable: false,
-        });
-        self.elements.insert(right_panel, Button {
+        }));
+        self.elements.insert(right_panel, Box::new(Button {
             quad: Quad {
                 bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                 border: Border {
@@ -141,7 +140,7 @@ impl AppHandler for Showcase {
                 bounds: Vec2::new(100.0, 100.0),
             },
             draggable: false,
-        });
+        }));
         for (index, layout) in [
             Layout::default().width(40.0).height(70.0).padding(7.0),
             Layout::default().width(30.0).height(70.0).padding(7.0),
@@ -152,7 +151,7 @@ impl AppHandler for Showcase {
             .into_iter().enumerate()
         {
             let node = ui.push_node(right_panel, layout);
-            self.elements.insert(node, draggable_button(&format!("{}", index + 1)));
+            self.elements.insert(node, Box::new(draggable_button(&format!("{}", index + 1))));
         }
     }
 
@@ -174,55 +173,57 @@ impl AppHandler for Showcase {
 
     fn on_mouseover(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        if !element.draggable() { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Pointer);
         }
-        button.on_mouseover(cx.gui_cx.state.is_dragging);
+        element.on_mouseover(cx.gui_cx.state.is_dragging);
     }
 
     fn on_mouseleave(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        if !element.draggable() { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Default);
         }
-        button.on_mouseleave(cx.gui_cx.state.is_dragging);
+        element.on_mouseleave(cx.gui_cx.state.is_dragging);
     }
 
     fn on_mousedown(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
-        button.on_mousedown();
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        if !element.draggable() { return; }
+        element.on_mousedown();
     }
 
     fn on_mouseup(&mut self, node: Node, cx: AppContext) {
         cx.graphics.window().request_redraw();
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
-        button.on_mouseup();
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        if !element.draggable() { return; }
+        element.on_mouseup();
     }
 
     fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {
-        let Some(button) = self.elements.get(&node) else { return; };
-        if !button.draggable { return; }
+        let Some(element) = self.elements.get(&node) else { return; };
+        if !element.draggable() { return; }
         cx.graphics.window().request_redraw();
         self.drag_indicator = Some(Quad {
-            bounds: Rect::new(button.quad.bounds.position() + delta, button.quad.bounds.size()),
-            ..button.quad
+            bounds: Rect::new(element.position() + delta, element.size()),
+            border: Border::NONE,
+            shadow: Shadow::NONE,
+            bg_color: GRAY_0.with_alpha(137),
         });
         if let Some(button) = over.and_then(|e| self.elements.get_mut(&e)) {
-            if !button.draggable { return; }
+            if !button.draggable() { return; }
             button.on_mouseover(true);
         }
     }
 
     fn on_dragstart(&mut self, node: Node, cx: AppContext) {
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        if !button.draggable { return; }
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        if !element.draggable() { return; }
         cx.graphics.window().request_redraw();
         cx.graphics.window().set_cursor(CursorIcon::Grab);
     }
@@ -239,13 +240,8 @@ impl AppHandler for Showcase {
     }
 
     fn on_layout(&mut self, node: Node, placement: &Placement) {
-        let Some(button) = self.elements.get_mut(&node) else { return; };
-        button.quad.bounds = Rect::new(
-            placement.position(),
-            vec2(placement.layout.size.width, placement.layout.size.height),
-        );
-        button.text.pos = placement.content_position();
-        button.text.bounds = placement.content_size();
+        let Some(element) = self.elements.get_mut(&node) else { return; };
+        element.on_layout(placement);
     }
 }
 
@@ -257,13 +253,55 @@ impl LayoutHandler for Showcase {
 
 
 
+trait Element {
+    fn render(&self, renderer: &mut Renderer);
+    fn on_layout(&mut self, placement: &Placement);
+
+    fn position(&self) -> Vec2;
+    fn size(&self) -> Vec2;
+    fn draggable(&self) -> bool { false }
+
+    fn on_mouseover(&mut self, dragging: bool);
+    fn on_mouseleave(&mut self, dragging: bool);
+    fn on_mousedown(&mut self);
+    fn on_mouseup(&mut self);
+}
+
+
+
 struct Button {
     quad: Quad,
     text: Text,
     draggable: bool,
 }
 
-impl Button {
+impl Element for Button {
+    fn render(&self, renderer: &mut Renderer) {
+        renderer.fill_quad(self.quad);
+        renderer.fill_text(self.text.clone());
+    }
+
+    fn on_layout(&mut self, placement: &Placement) {
+        self.quad.bounds = Rect::new(
+            placement.position(),
+            vec2(placement.layout.size.width, placement.layout.size.height),
+        );
+        self.text.pos = placement.content_position();
+        self.text.bounds = placement.content_size();
+    }
+
+    fn position(&self) -> Vec2 {
+        self.quad.bounds.position()
+    }
+
+    fn size(&self) -> Vec2 {
+        self.quad.bounds.size()
+    }
+
+    fn draggable(&self) -> bool {
+        self.draggable
+    }
+
     fn on_mouseover(&mut self, dragging: bool) {
         self.quad.bg_color = GRAY_7;
         self.text.size = 30.0;
