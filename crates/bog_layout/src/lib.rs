@@ -78,6 +78,10 @@ impl LayoutTree {
         id.into()
     }
 
+    pub fn set_node_layout(&mut self, node: Node, layout: Layout) {
+        self.tree.set_style(node.into(), layout.0).unwrap();
+    }
+
     /// # Panics
     ///
     /// - If either node is the root node.

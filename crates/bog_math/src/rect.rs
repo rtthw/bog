@@ -16,9 +16,17 @@ pub struct Rect<T = f32> {
     pub h: T,
 }
 
+impl Default for Rect<f32> {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 impl Rect<f32> {
+    /// A zero-sized rectangle located at the origin.
+    pub const NONE: Self = Self::new(Vec2::ZERO, Vec2::ZERO);
     pub const INFINITE: Self = Self::new(
-        Vec2::new(0.0, 0.0),
+        Vec2::ZERO,
         Vec2::new(f32::INFINITY, f32::INFINITY),
     );
 

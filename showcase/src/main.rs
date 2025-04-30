@@ -81,18 +81,22 @@ impl AppHandler for Showcase {
         let left_panel_layout = Layout::default()
             .width_percent(0.2)
             .fill_height()
-            .padding(11.0);
+            .padding(7.0);
+        let spacer_layout = Layout::default()
+            .width(7.0)
+            .fill_height();
         let right_panel_layout = Layout::default()
             .flex_row()
             .flex_wrap()
             .fill_width()
             .fill_height()
             .gap_x(11.0)
-            .padding(11.0)
+            .padding(7.0)
             .align_items_center()
             .justify_content_center();
 
         let left_panel = ui.push_node_to_root(left_panel_layout);
+        let spacer = ui.push_node_to_root(spacer_layout);
         let right_panel = ui.push_node_to_root(right_panel_layout);
 
         self.elements.insert(left_panel, Box::new(Button {
@@ -117,6 +121,9 @@ impl AppHandler for Showcase {
                 bounds: Vec2::new(100.0, 100.0),
             },
             draggable: false,
+        }));
+        self.elements.insert(spacer, Box::new(Spacer {
+            quad: Quad::new_colored(Rect::NONE, GRAY_6),
         }));
         self.elements.insert(right_panel, Box::new(Button {
             quad: Quad {
@@ -353,5 +360,50 @@ fn draggable_button(text: &str) -> Button {
             bounds: Vec2::new(100.0, 100.0),
         },
         draggable: true,
+    }
+}
+
+
+
+struct Spacer {
+    quad: Quad,
+}
+
+impl Element for Spacer {
+    fn render(&self, renderer: &mut Renderer) {
+        renderer.fill_quad(self.quad);
+    }
+
+    fn on_layout(&mut self, placement: &Placement) {
+        self.quad.bounds = Rect::new(
+            placement.position(),
+            vec2(placement.layout.size.width, placement.layout.size.height),
+        );
+    }
+
+    fn position(&self) -> Vec2 {
+        self.quad.bounds.position()
+    }
+
+    fn size(&self) -> Vec2 {
+        self.quad.bounds.size()
+    }
+
+    fn draggable(&self) -> bool { false }
+
+    fn on_mouseover(&mut self, _dragging: bool) {
+        self.quad.bg_color = GRAY_7;
+    }
+
+    fn on_mouseleave(&mut self, _dragging: bool) {
+        self.quad.bg_color = GRAY_6;
+    }
+
+    fn on_mousedown(&mut self) {
+        self.quad.bg_color = GRAY_3;
+    }
+
+    fn on_mouseup(&mut self) {
+        self.quad.bg_color = GRAY_6;
     }
 }

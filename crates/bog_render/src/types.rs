@@ -61,6 +61,28 @@ pub struct Quad {
     pub bg_color: Color,
 }
 
+impl Default for Quad {
+    fn default() -> Self {
+        Self {
+            bounds: Rect::default(),
+            border: Border::default(),
+            shadow: Shadow::default(),
+            bg_color: Color::default(),
+        }
+    }
+}
+
+impl Quad {
+    /// Create a new quad with the given bounds and [`Color`], but no border or shadow.
+    pub fn new_colored(bounds: Rect, bg_color: Color) -> Self {
+        Self {
+            bounds,
+            bg_color,
+            ..Default::default()
+        }
+    }
+}
+
 
 
 /// The border of a [`Quad`].
@@ -72,6 +94,12 @@ pub struct Border {
     pub width: f32,
     /// The radius of the border in `pqdb` order (top-left, top-right, bottom-right, bottom-left).
     pub radius: [f32; 4],
+}
+
+impl Default for Border {
+    fn default() -> Self {
+        Self::NONE
+    }
 }
 
 impl Border {
@@ -103,6 +131,12 @@ pub struct Shadow {
     pub offset: Vec2,
     /// The "spread" for the blurring effect of the shadow.
     pub blur_radius: f32,
+}
+
+impl Default for Shadow {
+    fn default() -> Self {
+        Self::NONE
+    }
 }
 
 impl Shadow {
