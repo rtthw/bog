@@ -297,7 +297,7 @@ impl Layout {
     }
 }
 
-// Display attribute.
+// Display.
 impl Layout {
     pub fn display_none(mut self) -> Self {
         self.0.display = taffy::Display::None;
@@ -355,15 +355,25 @@ impl Layout {
     }
 }
 
-// Alignment and justification.
+// Align self.
 impl Layout {
-    pub fn align_items_center(mut self) -> Self {
-        self.0.align_items = Some(taffy::AlignItems::Center);
+    pub fn align_self_start(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::Start);
         self
     }
 
-    pub fn align_content_center(mut self) -> Self {
-        self.0.align_content = Some(taffy::AlignContent::Center);
+    pub fn align_self_end(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::End);
+        self
+    }
+
+    pub fn align_self_flex_start(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::FlexStart);
+        self
+    }
+
+    pub fn align_self_flex_end(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::FlexEnd);
         self
     }
 
@@ -372,13 +382,117 @@ impl Layout {
         self
     }
 
-    pub fn justify_items_center(mut self) -> Self {
-        self.0.justify_items = Some(taffy::AlignItems::Center);
+    pub fn align_self_stretch(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::Stretch);
         self
     }
 
-    pub fn justify_content_center(mut self) -> Self {
-        self.0.justify_content = Some(taffy::AlignContent::Center);
+    pub fn align_self_baseline(mut self) -> Self {
+        self.0.align_self = Some(taffy::AlignItems::Baseline);
+        self
+    }
+}
+
+// Align items.
+impl Layout {
+    pub fn align_items_start(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Start);
+        self
+    }
+
+    pub fn align_items_end(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::End);
+        self
+    }
+
+    pub fn align_items_flex_start(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::FlexStart);
+        self
+    }
+
+    pub fn align_items_flex_end(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::FlexEnd);
+        self
+    }
+
+    pub fn align_items_center(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn align_items_stretch(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Stretch);
+        self
+    }
+
+    pub fn align_items_baseline(mut self) -> Self {
+        self.0.align_items = Some(taffy::AlignItems::Baseline);
+        self
+    }
+}
+
+// Align content.
+impl Layout {
+    pub fn align_content_start(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::Start);
+        self
+    }
+
+    pub fn align_content_end(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::End);
+        self
+    }
+
+    pub fn align_content_flex_start(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::FlexStart);
+        self
+    }
+
+    pub fn align_content_flex_end(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::FlexEnd);
+        self
+    }
+
+    pub fn align_content_center(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::Center);
+        self
+    }
+
+    pub fn align_content_stretch(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::Stretch);
+        self
+    }
+
+    pub fn align_content_space_evenly(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::SpaceEvenly);
+        self
+    }
+
+    pub fn align_content_space_around(mut self) -> Self {
+        self.0.align_content = Some(taffy::AlignContent::SpaceAround);
+        self
+    }
+}
+
+// Justify self.
+impl Layout {
+    pub fn justify_self_start(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::Start);
+        self
+    }
+
+    pub fn justify_self_end(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::End);
+        self
+    }
+
+    pub fn justify_self_flex_start(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::FlexStart);
+        self
+    }
+
+    pub fn justify_self_flex_end(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::FlexEnd);
         self
     }
 
@@ -387,33 +501,94 @@ impl Layout {
         self
     }
 
-    pub fn align_items_start(mut self) -> Self {
-        self.0.align_items = Some(taffy::AlignItems::Start);
+    pub fn justify_self_stretch(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::Stretch);
         self
     }
 
-    pub fn align_content_start(mut self) -> Self {
-        self.0.align_content = Some(taffy::AlignContent::Start);
+    pub fn justify_self_baseline(mut self) -> Self {
+        self.0.justify_self = Some(taffy::AlignItems::Baseline);
         self
     }
+}
 
-    pub fn align_self_start(mut self) -> Self {
-        self.0.align_self = Some(taffy::AlignItems::Start);
-        self
-    }
-
+// Justify items.
+impl Layout {
     pub fn justify_items_start(mut self) -> Self {
         self.0.justify_items = Some(taffy::AlignItems::Start);
         self
     }
 
+    pub fn justify_items_end(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::End);
+        self
+    }
+
+    pub fn justify_items_flex_start(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::FlexStart);
+        self
+    }
+
+    pub fn justify_items_flex_end(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::FlexEnd);
+        self
+    }
+
+    pub fn justify_items_center(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::Center);
+        self
+    }
+
+    pub fn justify_items_stretch(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::Stretch);
+        self
+    }
+
+    pub fn justify_items_baseline(mut self) -> Self {
+        self.0.justify_items = Some(taffy::AlignItems::Baseline);
+        self
+    }
+}
+
+// Justify content.
+impl Layout {
     pub fn justify_content_start(mut self) -> Self {
         self.0.justify_content = Some(taffy::AlignContent::Start);
         self
     }
 
-    pub fn justify_self_start(mut self) -> Self {
-        self.0.justify_self = Some(taffy::AlignItems::Start);
+    pub fn justify_content_end(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::End);
+        self
+    }
+
+    pub fn justify_content_flex_start(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::FlexStart);
+        self
+    }
+
+    pub fn justify_content_flex_end(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::FlexEnd);
+        self
+    }
+
+    pub fn justify_content_center(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::Center);
+        self
+    }
+
+    pub fn justify_content_stretch(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::Stretch);
+        self
+    }
+
+    pub fn justify_content_space_evenly(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::SpaceEvenly);
+        self
+    }
+
+    pub fn justify_content_space_around(mut self) -> Self {
+        self.0.justify_content = Some(taffy::AlignContent::SpaceAround);
         self
     }
 }
