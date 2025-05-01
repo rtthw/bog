@@ -79,17 +79,15 @@ impl AppHandler for Showcase {
 
     fn init(&mut self, ui: &mut Gui) {
         let left_panel_layout = Layout::default()
-            .width(200.0)
-            .fill_height()
+            .flex_initial()
+            .width(300.0)
             .padding(7.0);
         let spacer_layout = Layout::default()
-            .width(5.0)
-            .fill_height();
+            .flex_initial()
+            .width(5.0);
         let right_panel_layout = Layout::default()
-            .flex_row()
+            .flex_auto()
             .flex_wrap()
-            .fill_width()
-            .fill_height()
             .gap_x(11.0)
             .padding(7.0)
             .align_items_center()
@@ -150,11 +148,13 @@ impl AppHandler for Showcase {
             draggable: false,
         }));
         for (index, layout) in [
-            Layout::default().width(40.0).height(70.0).padding(7.0),
-            Layout::default().width(30.0).height(70.0).padding(7.0),
-            Layout::default().width(90.0).height(70.0).padding(7.0),
-            Layout::default().width(70.0).height(70.0).padding(7.0),
-            Layout::default().width(50.0).height(70.0).padding(7.0),
+            Layout::default().width(40.0).height(40.0).padding(7.0),
+            Layout::default().width(45.0).height(40.0).padding(7.0),
+            Layout::default().width(55.0).height(50.0).padding(7.0),
+            Layout::default().width(50.0).height(40.0).padding(7.0),
+            Layout::default().width(45.0).height(45.0).padding(7.0),
+            Layout::default().width(50.0).height(45.0).padding(7.0),
+            Layout::default().width(50.0).height(55.0).padding(7.0),
         ]
             .into_iter().enumerate()
         {
@@ -169,8 +169,9 @@ impl AppHandler for Showcase {
 
     fn root_layout(&self) -> Layout {
         Layout::default()
-            .fill_width()
-            .fill_height()
+            .display_flex()
+            .width(1280.0)
+            .height(720.0)
             .gap_x(11.0)
             .padding(11.0)
     }
@@ -435,11 +436,10 @@ impl Element for Spacer {
 
     fn on_dragend(&mut self, cx: &mut AppContext, _this: Node, _over: Option<Node>) -> bool {
         let left_panel_layout = cx.gui_cx.tree.get_node_layout(self.left_panel);
-        if let Some(width_len) = left_panel_layout.get_width() {
+        if let Some(_width_len) = left_panel_layout.get_width() {
             cx.gui_cx.tree.set_node_layout(
                 self.left_panel,
-                left_panel_layout.width(width_len
-                    + (cx.gui_cx.state.mouse_pos.x - self.quad.bounds.position().x)),
+                left_panel_layout.width(cx.gui_cx.state.mouse_pos.x),
             );
 
             true
