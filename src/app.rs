@@ -43,7 +43,7 @@ pub trait AppHandler: 'static {
     fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
     fn init(&mut self, ui: &mut UserInterface);
 
-    fn title(&self) -> &str;
+    fn window_desc(&self) -> WindowDescriptor;
     fn root_layout(&self) -> Layout;
 
     fn on_resize(&mut self, size: Vec2) {}
@@ -67,11 +67,13 @@ struct AppRunner<'a> {
 impl<'a> WindowingClient for AppRunner<'a> {
     fn on_startup(&mut self, _wm: WindowManager) {}
 
-    fn on_resume(&mut self, mut wm: WindowManager) {
+    fn on_resume(&mut self, wm: WindowManager) {
         let AppState::Suspended(window) = &mut self.state else {
             return;
         };
-        let window = window.take().unwrap_or_else(|| make_window(&mut wm, self.app));
+        let window = window.take().unwrap_or_else(|| {
+            wm.create_window(self.app.window_desc()).unwrap()
+        });
         let (graphics, device, queue, format) = pollster::block_on(async {
             WindowGraphics::from_window(window.clone()).await
         }).unwrap();
@@ -236,11 +238,4 @@ enum AppState {
         viewport: Viewport,
         renderer: Renderer,
     },
-}
-
-fn make_window(wm: &mut WindowManager, app: &mut dyn AppHandler) -> Window {
-    wm.create_window(WindowDescriptor {
-        title: app.title(),
-        ..Default::default()
-    }).unwrap()
 }

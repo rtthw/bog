@@ -163,8 +163,12 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn title(&self) -> &str {
-        "Bog Showcase"
+    fn window_desc(&self) -> WindowDescriptor {
+        WindowDescriptor {
+            title: "Bog Showcase",
+            inner_size: Vec2::new(1280.0, 720.0),
+            ..Default::default()
+        }
     }
 
     fn root_layout(&self) -> Layout {
