@@ -6,8 +6,23 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 
 
-pub struct Gui {
-    state: GuiState,
+pub trait UserInterfaceHandler {
+    fn on_mouse_move(&mut self, pos: Vec2);
+    fn on_mouse_enter(&mut self, node: Node, cx: UserInterfaceContext);
+    fn on_mouse_leave(&mut self, node: Node, cx: UserInterfaceContext);
+    fn on_mouse_down(&mut self, node: Node, cx: UserInterfaceContext);
+    fn on_mouse_up(&mut self, node: Node, cx: UserInterfaceContext);
+    fn on_drag_move(&mut self, node: Node, cx: UserInterfaceContext, delta: Vec2, over: Option<Node>);
+    fn on_drag_start(&mut self, node: Node, cx: UserInterfaceContext);
+    fn on_drag_end(&mut self, node: Node, cx: UserInterfaceContext, over: Option<Node>);
+    fn on_resize(&mut self, size: Vec2);
+    fn on_node_layout(&mut self, node: Node, placement: &Placement);
+}
+
+
+
+pub struct UserInterface {
+    state: UserInterfaceState,
     layout_tree: LayoutTree,
     hovered_node: Option<Node>,
     drag_start_pos: Option<Vec2>,
@@ -15,10 +30,10 @@ pub struct Gui {
     drag_start_node: Option<Node>,
 }
 
-impl Gui {
+impl UserInterface {
     pub fn new(root_layout: Layout) -> Self {
         Self {
-            state: GuiState {
+            state: UserInterfaceState {
                 size: vec2(0.0, 0.0),
                 mouse_pos: vec2(0.0, 0.0),
                 is_dragging: false,
@@ -43,7 +58,7 @@ impl Gui {
         self.layout_tree.push(layout, parent, true)
     }
 
-    pub fn handle_resize(&mut self, handler: &mut impl GuiHandler, size: Vec2) {
+    pub fn handle_resize(&mut self, handler: &mut impl UserInterfaceHandler, size: Vec2) {
         if size == self.state.size {
             return;
         }
@@ -55,7 +70,7 @@ impl Gui {
         handler.on_resize(size);
     }
 
-    pub fn handle_mouse_move(&mut self, handler: &mut impl GuiHandler, pos: Vec2) {
+    pub fn handle_mouse_move(&mut self, handler: &mut impl UserInterfaceHandler, pos: Vec2) {
         if pos == self.state.mouse_pos {
             return;
         }
@@ -92,7 +107,7 @@ impl Gui {
                     if dur_since.as_secs_f64() > 0.1 {
                         // User is likely dragging.
                         self.state.is_dragging = true;
-                        handler.on_drag_start(drag_node, GuiContext {
+                        handler.on_drag_start(drag_node, UserInterfaceContext {
                             state: &self.state,
                             tree: &mut self.layout_tree,
                         });
@@ -100,9 +115,9 @@ impl Gui {
                 }
                 if self.state.is_dragging {
                     let delta = pos - drag_origin_pos;
-                    handler.on_drag_update(
+                    handler.on_drag_move(
                         drag_node,
-                        GuiContext {
+                        UserInterfaceContext {
                             state: &self.state,
                             tree: &mut self.layout_tree,
                         },
@@ -115,13 +130,13 @@ impl Gui {
 
         if self.hovered_node != topmost_hovered {
             if let Some(left_node) = self.hovered_node.take() {
-                handler.on_mouse_leave(left_node, GuiContext {
+                handler.on_mouse_leave(left_node, UserInterfaceContext {
                     state: &self.state,
                     tree: &mut self.layout_tree,
                 });
             }
             if let Some(entered_node) = topmost_hovered {
-                handler.on_mouse_enter(entered_node, GuiContext {
+                handler.on_mouse_enter(entered_node, UserInterfaceContext {
                     state: &self.state,
                     tree: &mut self.layout_tree,
                 });
@@ -130,9 +145,9 @@ impl Gui {
         }
     }
 
-    pub fn handle_mouse_down(&mut self, handler: &mut impl GuiHandler) {
+    pub fn handle_mouse_down(&mut self, handler: &mut impl UserInterfaceHandler) {
         if let Some(node) = self.hovered_node {
-            handler.on_mouse_down(node, GuiContext {
+            handler.on_mouse_down(node, UserInterfaceContext {
                 state: &self.state,
                 tree: &mut self.layout_tree,
             });
@@ -142,9 +157,9 @@ impl Gui {
         self.drag_start_node = self.hovered_node.clone();
     }
 
-    pub fn handle_mouse_up(&mut self, handler: &mut impl GuiHandler) {
+    pub fn handle_mouse_up(&mut self, handler: &mut impl UserInterfaceHandler) {
         if let Some(node) = self.hovered_node {
-            handler.on_mouse_up(node, GuiContext {
+            handler.on_mouse_up(node, UserInterfaceContext {
                 state: &self.state,
                 tree: &mut self.layout_tree,
             });
@@ -153,7 +168,7 @@ impl Gui {
         if let Some(node) = self.drag_start_node.take() {
             if self.state.is_dragging {
                 self.state.is_dragging = false;
-                handler.on_drag_end(node, GuiContext {
+                handler.on_drag_end(node, UserInterfaceContext {
                     state: &self.state,
                     tree: &mut self.layout_tree,
                 }, self.hovered_node);
@@ -162,38 +177,23 @@ impl Gui {
     }
 }
 
-pub struct GuiState {
+pub struct UserInterfaceState {
     pub size: Vec2,
     pub mouse_pos: Vec2,
     pub is_dragging: bool,
 }
 
-pub struct GuiContext<'a> {
-    pub state: &'a GuiState,
+pub struct UserInterfaceContext<'a> {
+    pub state: &'a UserInterfaceState,
     pub tree: &'a mut LayoutTree,
 }
 
 struct Proxy<'a> {
-    handler: &'a mut dyn GuiHandler,
+    handler: &'a mut dyn UserInterfaceHandler,
 }
 
 impl<'a> LayoutHandler for Proxy<'a> {
     fn on_layout(&mut self, node: Node, placement: &Placement) {
         self.handler.on_node_layout(node, placement);
     }
-}
-
-
-
-pub trait GuiHandler {
-    fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, node: Node, cx: GuiContext);
-    fn on_mouse_leave(&mut self, node: Node, cx: GuiContext);
-    fn on_mouse_down(&mut self, node: Node, cx: GuiContext);
-    fn on_mouse_up(&mut self, node: Node, cx: GuiContext);
-    fn on_drag_update(&mut self, node: Node, cx: GuiContext, delta: Vec2, over: Option<Node>);
-    fn on_drag_start(&mut self, node: Node, cx: GuiContext);
-    fn on_drag_end(&mut self, node: Node, cx: GuiContext, over: Option<Node>);
-    fn on_resize(&mut self, size: Vec2);
-    fn on_node_layout(&mut self, node: Node, placement: &Placement);
 }

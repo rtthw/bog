@@ -6,7 +6,7 @@ use app::{run_app, AppContext, AppHandler};
 use bog::*;
 use collections::NoHashMap;
 use color::*;
-use gui::*;
+use ui::*;
 use layout::*;
 use math::*;
 use render::*;
@@ -77,7 +77,7 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn init(&mut self, ui: &mut Gui) {
+    fn init(&mut self, ui: &mut UserInterface) {
         let left_panel_layout = Layout::default()
             .flex_initial()
             .width(300.0)

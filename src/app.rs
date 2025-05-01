@@ -6,16 +6,22 @@ use bog_event::WindowEvent;
 use bog_layout::{Layout, LayoutTree, Node, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
-use bog_window::{WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem};
+use bog_window::{
+    WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
+};
 
-use crate::{graphics::WindowGraphics, gui::{Gui, GuiContext, GuiHandler}, Result};
+use crate::{
+    graphics::WindowGraphics,
+    ui::{UserInterface, UserInterfaceContext, UserInterfaceHandler},
+    Result,
+};
 
 
 
 pub fn run_app(mut app: impl AppHandler) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
 
-    let mut ui = Gui::new(app.root_layout());
+    let mut ui = UserInterface::new(app.root_layout());
     app.init(&mut ui);
 
     let mut proxy = AppRunner {
@@ -35,7 +41,7 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 #[allow(unused_variables)]
 pub trait AppHandler: 'static {
     fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
-    fn init(&mut self, ui: &mut Gui);
+    fn init(&mut self, ui: &mut UserInterface);
 
     fn title(&self) -> &str;
     fn root_layout(&self) -> Layout;
@@ -55,7 +61,7 @@ pub trait AppHandler: 'static {
 struct AppRunner<'a> {
     app: &'a mut dyn AppHandler,
     state: AppState,
-    ui: Gui,
+    ui: UserInterface,
 }
 
 impl<'a> WindowingClient for AppRunner<'a> {
@@ -141,12 +147,12 @@ struct Proxy<'a> {
     renderer: &'a mut Renderer,
 }
 
-impl<'a> GuiHandler for Proxy<'a> {
+impl<'a> UserInterfaceHandler for Proxy<'a> {
     fn on_mouse_move(&mut self, pos: Vec2) {
         self.app.on_mousemove(pos);
     }
 
-    fn on_mouse_enter(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_mouse_enter(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_mouseover(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -154,7 +160,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_leave(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_mouse_leave(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_mouseleave(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -162,7 +168,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_down(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_mouse_down(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_mousedown(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -170,7 +176,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_up(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_mouse_up(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_mouseup(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -178,7 +184,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_update(&mut self, node: Node, gui_cx: GuiContext, delta: Vec2, over: Option<Node>) {
+    fn on_drag_move(&mut self, node: Node, gui_cx: UserInterfaceContext, delta: Vec2, over: Option<Node>) {
         self.app.on_dragmove(
             node,
             AppContext {
@@ -191,7 +197,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         );
     }
 
-    fn on_drag_start(&mut self, node: Node, gui_cx: GuiContext) {
+    fn on_drag_start(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_dragstart(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -199,7 +205,7 @@ impl<'a> GuiHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_end(&mut self, node: Node, gui_cx: GuiContext, over: Option<Node>) {
+    fn on_drag_end(&mut self, node: Node, gui_cx: UserInterfaceContext, over: Option<Node>) {
         self.app.on_dragend(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -219,7 +225,7 @@ impl<'a> GuiHandler for Proxy<'a> {
 pub struct AppContext<'a> {
     pub graphics: &'a mut WindowGraphics<'static>,
     pub renderer: &'a mut Renderer,
-    pub gui_cx: GuiContext<'a>,
+    pub gui_cx: UserInterfaceContext<'a>,
 }
 
 enum AppState {
