@@ -49,6 +49,16 @@ impl Layout {
         self
     }
 
+    pub fn width_auto(mut self) -> Self {
+        self.0.size.width = taffy::prelude::auto();
+        self
+    }
+
+    pub fn height_auto(mut self) -> Self {
+        self.0.size.height = taffy::prelude::auto();
+        self
+    }
+
     pub fn get_width(&self) -> Option<f32> {
         self.0.size.width.into_option()
     }
@@ -85,6 +95,14 @@ impl Layout {
         self.0.margin.bottom = taffy::LengthPercentageAuto::Length(amount);
         self
     }
+
+    pub fn margin_auto(mut self) -> Self {
+        self.0.margin.left = taffy::LengthPercentageAuto::Auto;
+        self.0.margin.right = taffy::LengthPercentageAuto::Auto;
+        self.0.margin.top = taffy::LengthPercentageAuto::Auto;
+        self.0.margin.bottom = taffy::LengthPercentageAuto::Auto;
+        self
+    }
 }
 
 // Display.
@@ -106,6 +124,50 @@ impl Layout {
 
     pub fn display_flex(mut self) -> Self {
         self.0.display = taffy::Display::Flex;
+        self
+    }
+}
+
+// Flex.
+impl Layout {
+    pub fn flex_grow(mut self, flex_grow: f32) -> Self {
+        self.0.flex_grow = flex_grow;
+        self
+    }
+
+    pub fn flex_shrink(mut self, flex_shrink: f32) -> Self {
+        self.0.flex_shrink = flex_shrink;
+        self
+    }
+
+    pub fn flex_basis_len(mut self, len: f32) -> Self {
+        self.0.flex_basis = taffy::Dimension::Length(len);
+        self
+    }
+
+    pub fn flex_basis_percent(mut self, percent: f32) -> Self {
+        self.0.flex_basis = taffy::Dimension::Percent(percent);
+        self
+    }
+
+    pub fn flex_none(mut self) -> Self {
+        self.0.flex_grow = 0.0;
+        self.0.flex_shrink = 0.0;
+        self.0.flex_basis = taffy::Dimension::Auto;
+        self
+    }
+
+    pub fn flex_auto(mut self) -> Self {
+        self.0.flex_grow = 1.0;
+        self.0.flex_shrink = 1.0;
+        self.0.flex_basis = taffy::Dimension::Auto;
+        self
+    }
+
+    pub fn flex_initial(mut self) -> Self {
+        self.0.flex_grow = 0.0;
+        self.0.flex_shrink = 1.0;
+        self.0.flex_basis = taffy::Dimension::Auto;
         self
     }
 
