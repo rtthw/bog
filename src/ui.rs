@@ -175,6 +175,14 @@ impl UserInterface {
             }
         }
     }
+
+    pub fn handle_wheel_down(&mut self, handler: &mut impl UserInterfaceHandler) {
+
+    }
+
+    pub fn handle_wheel_up(&mut self, handler: &mut impl UserInterfaceHandler) {
+
+    }
 }
 
 pub struct UserInterfaceState {

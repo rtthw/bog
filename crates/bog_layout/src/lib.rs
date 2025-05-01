@@ -6,7 +6,7 @@
 
 mod layout;
 
-use bog_math::{vec2, Vec2};
+use bog_math::{vec2, Rect, Vec2};
 use taffy::TraversePartialTree;
 
 pub use layout::Layout;
@@ -202,6 +202,14 @@ impl Placement {
         )
     }
 
+    pub fn size(&self) -> Vec2 {
+        Vec2::new(self.layout.size.width, self.layout.size.height)
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(self.position(), self.size())
+    }
+
     pub fn content_position(&self) -> Vec2 {
         Vec2::new(
             self.parent_pos.x + self.layout.content_box_x(),
@@ -211,5 +219,9 @@ impl Placement {
 
     pub fn content_size(&self) -> Vec2 {
         Vec2::new(self.layout.content_box_width(), self.layout.content_box_height())
+    }
+
+    pub fn content_rect(&self) -> Rect {
+        Rect::new(self.content_position(), self.content_size())
     }
 }

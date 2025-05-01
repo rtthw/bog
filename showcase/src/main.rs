@@ -62,9 +62,9 @@ impl AppHandler for Showcase {
             renderer.start_layer(viewport_rect);
             // The `iter_placements` call will iterate bottom-up, so rendering each element through
             // this method is ideal.
-            tree.iter_placements(&mut |node, _placement| {
+            tree.iter_placements(&mut |node, placement| {
                 let Some(element) = self.elements.get(&node) else { return; };
-                element.render(renderer);
+                element.render(renderer, placement, viewport_rect);
             });
             renderer.end_layer();
         }
@@ -263,7 +263,7 @@ impl LayoutHandler for Showcase {
 
 #[allow(unused)]
 trait Element {
-    fn render(&self, renderer: &mut Renderer);
+    fn render(&self, renderer: &mut Renderer, placement: &Placement, viewport_rect: Rect);
     fn on_layout(&mut self, placement: &Placement);
 
     fn draggable(&self) -> bool { false }
@@ -287,7 +287,7 @@ struct Button {
 }
 
 impl Element for Button {
-    fn render(&self, renderer: &mut Renderer) {
+    fn render(&self, renderer: &mut Renderer, _placement: &Placement, _viewport_rect: Rect) {
         renderer.fill_quad(self.quad);
         renderer.fill_text(self.text.clone());
     }
@@ -391,7 +391,7 @@ struct Spacer {
 }
 
 impl Element for Spacer {
-    fn render(&self, renderer: &mut Renderer) {
+    fn render(&self, renderer: &mut Renderer, _placement: &Placement, _viewport_rect: Rect) {
         renderer.fill_quad(self.quad);
     }
 
@@ -450,5 +450,26 @@ impl Element for Spacer {
         } else {
             false
         }
+    }
+}
+
+
+
+struct ScrollArea {}
+
+impl Element for ScrollArea {
+    fn render(&self, renderer: &mut Renderer, placement: &Placement, viewport_rect: Rect) {
+        let Some(bounds) = placement.rect().intersection(&viewport_rect) else {
+            return;
+        };
+        let translation = vec2(0.0, 0.0);
+
+        renderer.start_layer(bounds);
+        renderer.start_transform(Mat4::from_translation(vec3(-translation.x, -translation.y, 0.0)));
+
+
+
+        renderer.end_transform();
+        renderer.end_layer();
     }
 }
