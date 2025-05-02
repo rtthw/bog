@@ -15,13 +15,13 @@ pub use layout::Layout;
 
 pub type Node = u64;
 
-pub struct LayoutTree {
-    tree: taffy::TaffyTree<bool>,
+pub struct LayoutTree<T> {
+    tree: taffy::TaffyTree<T>,
     root: Node,
     available_space: Vec2,
 }
 
-impl LayoutTree {
+impl<T> LayoutTree<T> {
     pub fn new(root_layout: Layout) -> Self {
         let mut tree = taffy::TaffyTree::new();
         let root = tree.new_with_children(root_layout.into(), &[])
@@ -59,13 +59,16 @@ impl LayoutTree {
         for_each_node(&self.tree, self.root, func);
     }
 
-    // TODO: Node context should be generic.
-    pub fn is_interactable(&self, node: Node) -> bool {
-        *self.tree.get_node_context(node.into()).unwrap()
+    pub fn node_context(&self, node: Node) -> &T {
+        self.tree.get_node_context(node.into()).unwrap()
     }
 
-    pub fn push(&mut self, layout: Layout, parent: Node, interactable: bool) -> Node {
-        let id = self.tree.new_leaf_with_context(layout.into(), interactable)
+    pub fn node_context_mut(&mut self, node: Node) -> &mut T {
+        self.tree.get_node_context_mut(node.into()).unwrap()
+    }
+
+    pub fn push(&mut self, layout: Layout, parent: Node, context: T) -> Node {
+        let id = self.tree.new_leaf_with_context(layout.into(), context)
             .unwrap(); // Cannot fail.
         self.tree.add_child(parent.into(), id)
             .unwrap(); // Cannot fail.
@@ -73,8 +76,8 @@ impl LayoutTree {
         id.into()
     }
 
-    pub fn push_to_root(&mut self, layout: Layout, interactable: bool) -> Node {
-        let id = self.tree.new_leaf_with_context(layout.into(), interactable)
+    pub fn push_to_root(&mut self, layout: Layout, context: T) -> Node {
+        let id = self.tree.new_leaf_with_context(layout.into(), context)
             .unwrap(); // Cannot fail.
         self.tree.add_child(self.root.into(), id)
             .unwrap(); // Cannot fail.
@@ -145,7 +148,7 @@ impl LayoutTree {
     }
 }
 
-fn for_each_node<F>(tree: &taffy::TaffyTree<bool>, node: Node, func: &mut F)
+fn for_each_node<F, T>(tree: &taffy::TaffyTree<T>, node: Node, func: &mut F)
 where F: FnMut(Node, &Placement),
 {
     let top_layout = tree.layout(node.into()).unwrap();
@@ -161,8 +164,8 @@ where F: FnMut(Node, &Placement),
     }
 }
 
-fn for_each_node_inner<F>(
-    tree: &taffy::TaffyTree<bool>,
+fn for_each_node_inner<F, T>(
+    tree: &taffy::TaffyTree<T>,
     node: Node,
     placement: &Placement,
     func: &mut F,

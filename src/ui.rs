@@ -7,30 +7,32 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 
 pub trait UserInterfaceHandler {
+    type Element;
+
     fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_leave(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_down(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_up(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_drag_move(&mut self, node: Node, cx: UserInterfaceContext, delta: Vec2, over: Option<Node>);
-    fn on_drag_start(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_drag_end(&mut self, node: Node, cx: UserInterfaceContext, over: Option<Node>);
+    fn on_mouse_enter(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>);
+    fn on_mouse_leave(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>);
+    fn on_mouse_down(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>);
+    fn on_mouse_up(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>);
+    fn on_drag_move(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>, delta: Vec2, over: Option<Node>);
+    fn on_drag_start(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>);
+    fn on_drag_end(&mut self, node: Node, cx: UserInterfaceContext<Self::Element>, over: Option<Node>);
     fn on_resize(&mut self, size: Vec2);
     fn on_node_layout(&mut self, node: Node, placement: &Placement);
 }
 
 
 
-pub struct UserInterface {
+pub struct UserInterface<T> {
     state: UserInterfaceState,
-    layout_tree: LayoutTree,
+    layout_tree: LayoutTree<T>,
     hovered_node: Option<Node>,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
     drag_start_node: Option<Node>,
 }
 
-impl UserInterface {
+impl<T> UserInterface<T> {
     pub fn new(root_layout: Layout) -> Self {
         Self {
             state: UserInterfaceState {
@@ -46,19 +48,19 @@ impl UserInterface {
         }
     }
 
-    pub fn tree(&mut self) -> &mut LayoutTree {
+    pub fn tree(&mut self) -> &mut LayoutTree<T> {
         &mut self.layout_tree
     }
 
-    pub fn push_node_to_root(&mut self, layout: Layout) -> Node {
-        self.layout_tree.push_to_root(layout, true)
+    pub fn push_node_to_root(&mut self, layout: Layout, element: T) -> Node {
+        self.layout_tree.push_to_root(layout, element)
     }
 
-    pub fn push_node(&mut self, parent: Node, layout: Layout) -> Node {
-        self.layout_tree.push(layout, parent, true)
+    pub fn push_node(&mut self, parent: Node, layout: Layout, element: T) -> Node {
+        self.layout_tree.push(layout, parent, element)
     }
 
-    pub fn handle_resize(&mut self, handler: &mut impl UserInterfaceHandler, size: Vec2) {
+    pub fn handle_resize(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>, size: Vec2) {
         if size == self.state.size {
             return;
         }
@@ -70,7 +72,7 @@ impl UserInterface {
         handler.on_resize(size);
     }
 
-    pub fn handle_mouse_move(&mut self, handler: &mut impl UserInterfaceHandler, pos: Vec2) {
+    pub fn handle_mouse_move(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>, pos: Vec2) {
         if pos == self.state.mouse_pos {
             return;
         }
@@ -90,9 +92,9 @@ impl UserInterface {
                 return; // Breaks out of `iter_placements`.
             }
 
-            if !self.layout_tree.is_interactable(node) {
-                return; // Breaks out of `iter_placements`.
-            }
+            // if !self.layout_tree.is_interactable(node) {
+            //     return; // Breaks out of `iter_placements`.
+            // }
 
             hovered.push(node.into());
         });
@@ -145,7 +147,7 @@ impl UserInterface {
         }
     }
 
-    pub fn handle_mouse_down(&mut self, handler: &mut impl UserInterfaceHandler) {
+    pub fn handle_mouse_down(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>) {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_down(node, UserInterfaceContext {
                 state: &self.state,
@@ -157,7 +159,7 @@ impl UserInterface {
         self.drag_start_node = self.hovered_node.clone();
     }
 
-    pub fn handle_mouse_up(&mut self, handler: &mut impl UserInterfaceHandler) {
+    pub fn handle_mouse_up(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>) {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_up(node, UserInterfaceContext {
                 state: &self.state,
@@ -176,11 +178,11 @@ impl UserInterface {
         }
     }
 
-    pub fn handle_wheel_down(&mut self, handler: &mut impl UserInterfaceHandler) {
+    pub fn handle_wheel_down(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>) {
 
     }
 
-    pub fn handle_wheel_up(&mut self, handler: &mut impl UserInterfaceHandler) {
+    pub fn handle_wheel_up(&mut self, handler: &mut impl UserInterfaceHandler<Element = T>) {
 
     }
 }
@@ -191,16 +193,16 @@ pub struct UserInterfaceState {
     pub is_dragging: bool,
 }
 
-pub struct UserInterfaceContext<'a> {
+pub struct UserInterfaceContext<'a, T> {
     pub state: &'a UserInterfaceState,
-    pub tree: &'a mut LayoutTree,
+    pub tree: &'a mut LayoutTree<T>,
 }
 
-struct Proxy<'a> {
-    handler: &'a mut dyn UserInterfaceHandler,
+struct Proxy<'a, T> {
+    handler: &'a mut dyn UserInterfaceHandler<Element = T>,
 }
 
-impl<'a> LayoutHandler for Proxy<'a> {
+impl<'a, T> LayoutHandler for Proxy<'a, T> {
     fn on_layout(&mut self, node: Node, placement: &Placement) {
         self.handler.on_node_layout(node, placement);
     }

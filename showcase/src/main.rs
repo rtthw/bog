@@ -4,7 +4,6 @@
 
 use app::{run_app, AppContext, AppHandler};
 use bog::*;
-use collections::NoHashMap;
 use color::*;
 use ui::*;
 use layout::*;
@@ -29,7 +28,6 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 fn main() -> Result<()> {
     run_app(Showcase {
-        elements: NoHashMap::with_capacity(7),
         drag_indicator: None,
     })?;
 
@@ -39,12 +37,18 @@ fn main() -> Result<()> {
 
 
 struct Showcase {
-    elements: NoHashMap<Node, Box<dyn Element>>,
     drag_indicator: Option<Quad>,
 }
 
 impl AppHandler for Showcase {
-    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect) {
+    type Element = Box<dyn Element>;
+
+    fn render(
+        &mut self,
+        renderer: &mut Renderer,
+        tree: &mut LayoutTree<Box<dyn Element>>,
+        viewport_rect: Rect,
+    ) {
         renderer.clear();
 
         { // Background layer.
@@ -62,10 +66,10 @@ impl AppHandler for Showcase {
             renderer.start_layer(viewport_rect);
             // The `iter_placements` call will iterate bottom-up, so rendering each element through
             // this method is ideal.
-            tree.iter_placements(&mut |node, placement| {
-                let Some(element) = self.elements.get(&node) else { return; };
-                element.render(renderer, placement, viewport_rect);
-            });
+            // tree.iter_placements(&mut |node, placement| {
+            //     let Some(element) = self.elements.get(&node) else { return; };
+            //     element.render(renderer, placement, viewport_rect);
+            // });
             renderer.end_layer();
         }
 
@@ -77,7 +81,7 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn init(&mut self, ui: &mut UserInterface) {
+    fn init(&mut self, ui: &mut UserInterface<Box<dyn Element>>) {
         let left_panel_layout = Layout::default()
             .flex_initial()
             .width(300.0)
@@ -93,11 +97,7 @@ impl AppHandler for Showcase {
             .align_items_center()
             .justify_content_center();
 
-        let left_panel = ui.push_node_to_root(left_panel_layout);
-        let spacer = ui.push_node_to_root(spacer_layout);
-        let right_panel = ui.push_node_to_root(right_panel_layout);
-
-        self.elements.insert(left_panel, Box::new(Button {
+        let left_panel = ui.push_node_to_root(left_panel_layout, Box::new(Button {
             quad: Quad {
                 bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                 border: Border {
@@ -120,11 +120,11 @@ impl AppHandler for Showcase {
             },
             draggable: false,
         }));
-        self.elements.insert(spacer, Box::new(Spacer {
+        let _spacer = ui.push_node_to_root(spacer_layout, Box::new(Spacer {
             quad: Quad::new_colored(Rect::NONE, GRAY_6),
             left_panel,
         }));
-        self.elements.insert(right_panel, Box::new(Button {
+        let right_panel = ui.push_node_to_root(right_panel_layout, Box::new(Button {
             quad: Quad {
                 bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
                 border: Border {
@@ -147,6 +147,7 @@ impl AppHandler for Showcase {
             },
             draggable: false,
         }));
+
         for (index, layout) in [
             Layout::default().width(40.0).height(40.0).padding(7.0),
             Layout::default().width(45.0).height(40.0).padding(7.0),
@@ -158,8 +159,11 @@ impl AppHandler for Showcase {
         ]
             .into_iter().enumerate()
         {
-            let node = ui.push_node(right_panel, layout);
-            self.elements.insert(node, Box::new(draggable_button(&format!("{}", index + 1))));
+            let _node = ui.push_node(
+                right_panel,
+                layout,
+                Box::new(draggable_button(&format!("{}", index + 1))),
+            );
         }
     }
 
@@ -184,9 +188,9 @@ impl AppHandler for Showcase {
 
     fn on_mousemove(&mut self, _pos: Vec2) {}
 
-    fn on_mouseover(&mut self, node: Node, cx: AppContext) {
+    fn on_mouseover(&mut self, node: Node, cx: AppContext<Box<dyn Element>>) {
         cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Pointer);
@@ -194,9 +198,9 @@ impl AppHandler for Showcase {
         element.on_mouseover(cx.gui_cx.state.is_dragging);
     }
 
-    fn on_mouseleave(&mut self, node: Node, cx: AppContext) {
+    fn on_mouseleave(&mut self, node: Node, cx: AppContext<Box<dyn Element>>) {
         cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
         if !cx.gui_cx.state.is_dragging {
             cx.graphics.window().set_cursor(CursorIcon::Default);
@@ -204,42 +208,45 @@ impl AppHandler for Showcase {
         element.on_mouseleave(cx.gui_cx.state.is_dragging);
     }
 
-    fn on_mousedown(&mut self, node: Node, cx: AppContext) {
+    fn on_mousedown(&mut self, node: Node, cx: AppContext<Box<dyn Element>>) {
         cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
         element.on_mousedown();
     }
 
-    fn on_mouseup(&mut self, node: Node, cx: AppContext) {
+    fn on_mouseup(&mut self, node: Node, cx: AppContext<Box<dyn Element>>) {
         cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
         element.on_mouseup();
     }
 
-    fn on_dragmove(&mut self, node: Node, mut cx: AppContext, delta: Vec2, over: Option<Node>) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+    fn on_dragmove(&mut self, node: Node, cx: AppContext<Box<dyn Element>>, delta: Vec2, over: Option<Node>) {
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
-        element.on_dragmove(&mut cx, delta, &mut self.drag_indicator);
+        element.on_dragmove(delta, &mut self.drag_indicator);
         cx.graphics.window().request_redraw();
-        if let Some(button) = over.and_then(|e| self.elements.get_mut(&e)) {
+        if let Some(button) = over.map(|e| cx.gui_cx.tree.node_context_mut(e)) {
             if !button.draggable() { return; }
             button.on_mouseover(true);
         }
     }
 
-    fn on_dragstart(&mut self, node: Node, cx: AppContext) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+    fn on_dragstart(&mut self, node: Node, cx: AppContext<Box<dyn Element>>) {
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
-        element.on_dragstart(cx);
+        element.on_dragstart();
+        cx.graphics.window().request_redraw();
+        cx.graphics.window().set_cursor(CursorIcon::Grab);
     }
 
-    fn on_dragend(&mut self, node: Node, mut cx: AppContext, over: Option<Node>) {
+    fn on_dragend(&mut self, node: Node, cx: AppContext<Box<dyn Element>>, over: Option<Node>) {
         self.drag_indicator = None;
-        let Some(element) = self.elements.get_mut(&node) else { return; };
+        let element = cx.gui_cx.tree.node_context_mut(node);
         if !element.draggable() { return; }
-        if element.on_dragend(&mut cx, node, over) {
+        if element.on_dragend(node, over) {
+            cx.gui_cx.tree.try_swap_nodes(node, over.unwrap());
             // See: `impl LayoutHandler for Showcase`.
             cx.gui_cx.tree.do_layout(self);
         }
@@ -248,8 +255,8 @@ impl AppHandler for Showcase {
     }
 
     fn on_layout(&mut self, node: Node, placement: &Placement) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        element.on_layout(placement);
+        // let Some(element) = self.elements.get_mut(&node) else { return; };
+        // element.on_layout(placement);
     }
 }
 
@@ -273,9 +280,9 @@ trait Element {
     fn on_mousedown(&mut self);
     fn on_mouseup(&mut self);
 
-    fn on_dragmove(&mut self, cx: &mut AppContext, delta: Vec2, drag_indicator: &mut Option<Quad>) {}
-    fn on_dragstart(&mut self, cx: AppContext) {}
-    fn on_dragend(&mut self, cx: &mut AppContext, this: Node, over: Option<Node>) -> bool { false }
+    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {}
+    fn on_dragstart(&mut self) {}
+    fn on_dragend(&mut self, this: Node, over: Option<Node>) -> bool { false }
 }
 
 
@@ -327,7 +334,7 @@ impl Element for Button {
         self.quad.bg_color = GRAY_6;
     }
 
-    fn on_dragmove(&mut self, _cx: &mut AppContext, delta: Vec2, drag_indicator: &mut Option<Quad>) {
+    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {
         *drag_indicator = Some(Quad {
             bounds: Rect::new(self.quad.bounds.position() + delta, self.quad.bounds.size()),
             border: Border::NONE,
@@ -336,19 +343,8 @@ impl Element for Button {
         });
     }
 
-    fn on_dragstart(&mut self, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        cx.graphics.window().set_cursor(CursorIcon::Grab);
-    }
-
-    fn on_dragend(&mut self, cx: &mut AppContext, this: Node, over: Option<Node>) -> bool {
-        if let Some(other) = over {
-            cx.gui_cx.tree.try_swap_nodes(this, other);
-
-            true
-        } else {
-            false
-        }
+    fn on_dragend(&mut self, _this: Node, over: Option<Node>) -> bool {
+        over.is_some()
     }
 }
 
@@ -420,7 +416,7 @@ impl Element for Spacer {
         self.quad.bg_color = GRAY_6;
     }
 
-    fn on_dragmove(&mut self, _cx: &mut AppContext, delta: Vec2, drag_indicator: &mut Option<Quad>) {
+    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {
         let drag_pos_x = self.quad.bounds.position().x + delta.x;
         *drag_indicator = Some(Quad {
             bounds: Rect::new(
@@ -433,22 +429,16 @@ impl Element for Spacer {
         });
     }
 
-    fn on_dragstart(&mut self, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        cx.graphics.window().set_cursor(CursorIcon::ColResize);
-    }
-
-    fn on_dragend(&mut self, cx: &mut AppContext, _this: Node, _over: Option<Node>) -> bool {
-        let left_panel_layout = cx.gui_cx.tree.get_node_layout(self.left_panel);
-        if let Some(_width_len) = left_panel_layout.get_width() {
-            cx.gui_cx.tree.set_node_layout(
-                self.left_panel,
-                left_panel_layout.width(cx.gui_cx.state.mouse_pos.x),
-            );
-
-            true
-        } else {
-            false
-        }
-    }
+    // fn on_dragend(&mut self, _this: Node, _over: Option<Node>) -> bool {
+    //     let left_panel_layout = cx.gui_cx.tree.get_node_layout(self.left_panel);
+    //     if let Some(_width_len) = left_panel_layout.get_width() {
+    //         cx.gui_cx.tree.set_node_layout(
+    //             self.left_panel,
+    //             left_panel_layout.width(cx.gui_cx.state.mouse_pos.x),
+    //         );
+    //         true
+    //     } else {
+    //         false
+    //     }
+    // }
 }

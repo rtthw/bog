@@ -39,32 +39,34 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
-pub trait AppHandler: 'static {
-    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
-    fn init(&mut self, ui: &mut UserInterface);
+pub trait AppHandler {
+    type Element;
+
+    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree<Self::Element>, viewport_rect: Rect);
+    fn init(&mut self, ui: &mut UserInterface<Self::Element>);
 
     fn window_desc(&self) -> WindowDescriptor;
     fn root_layout(&self) -> Layout;
 
     fn on_resize(&mut self, size: Vec2) {}
     fn on_mousemove(&mut self, pos: Vec2) {}
-    fn on_mouseover(&mut self, node: Node, cx: AppContext) {}
-    fn on_mouseleave(&mut self, node: Node, cx: AppContext) {}
-    fn on_mousedown(&mut self, node: Node, cx: AppContext) {}
-    fn on_mouseup(&mut self, node: Node, cx: AppContext) {}
-    fn on_dragstart(&mut self, node: Node, cx: AppContext) {}
-    fn on_dragend(&mut self, node: Node, cx: AppContext, over: Option<Node>) {}
-    fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {}
+    fn on_mouseover(&mut self, node: Node, cx: AppContext<Self::Element>) {}
+    fn on_mouseleave(&mut self, node: Node, cx: AppContext<Self::Element>) {}
+    fn on_mousedown(&mut self, node: Node, cx: AppContext<Self::Element>) {}
+    fn on_mouseup(&mut self, node: Node, cx: AppContext<Self::Element>) {}
+    fn on_dragstart(&mut self, node: Node, cx: AppContext<Self::Element>) {}
+    fn on_dragend(&mut self, node: Node, cx: AppContext<Self::Element>, over: Option<Node>) {}
+    fn on_dragmove(&mut self, node: Node, cx: AppContext<Self::Element>, delta: Vec2, over: Option<Node>) {}
     fn on_layout(&mut self, node: Node, placement: &Placement) {}
 }
 
-struct AppRunner<'a> {
-    app: &'a mut dyn AppHandler,
+struct AppRunner<'a, T> {
+    app: &'a mut dyn AppHandler<Element = T>,
     state: AppState,
-    ui: UserInterface,
+    ui: UserInterface<T>,
 }
 
-impl<'a> WindowingClient for AppRunner<'a> {
+impl<'a, T> WindowingClient for AppRunner<'a, T> {
     fn on_startup(&mut self, _wm: WindowManager) {}
 
     fn on_resume(&mut self, wm: WindowManager) {
@@ -143,18 +145,20 @@ impl<'a> WindowingClient for AppRunner<'a> {
     }
 }
 
-struct Proxy<'a> {
-    app: &'a mut dyn AppHandler,
+struct Proxy<'a, T> {
+    app: &'a mut dyn AppHandler<Element = T>,
     graphics: &'a mut WindowGraphics<'static>,
     renderer: &'a mut Renderer,
 }
 
-impl<'a> UserInterfaceHandler for Proxy<'a> {
+impl<'a, T> UserInterfaceHandler for Proxy<'a, T> {
+    type Element = T;
+
     fn on_mouse_move(&mut self, pos: Vec2) {
         self.app.on_mousemove(pos);
     }
 
-    fn on_mouse_enter(&mut self, node: Node, gui_cx: UserInterfaceContext) {
+    fn on_mouse_enter(&mut self, node: Node, gui_cx: UserInterfaceContext<T>) {
         self.app.on_mouseover(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -162,7 +166,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_leave(&mut self, node: Node, gui_cx: UserInterfaceContext) {
+    fn on_mouse_leave(&mut self, node: Node, gui_cx: UserInterfaceContext<T>) {
         self.app.on_mouseleave(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -170,7 +174,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_down(&mut self, node: Node, gui_cx: UserInterfaceContext) {
+    fn on_mouse_down(&mut self, node: Node, gui_cx: UserInterfaceContext<T>) {
         self.app.on_mousedown(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -178,7 +182,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         });
     }
 
-    fn on_mouse_up(&mut self, node: Node, gui_cx: UserInterfaceContext) {
+    fn on_mouse_up(&mut self, node: Node, gui_cx: UserInterfaceContext<T>) {
         self.app.on_mouseup(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -186,7 +190,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_move(&mut self, node: Node, gui_cx: UserInterfaceContext, delta: Vec2, over: Option<Node>) {
+    fn on_drag_move(&mut self, node: Node, gui_cx: UserInterfaceContext<T>, delta: Vec2, over: Option<Node>) {
         self.app.on_dragmove(
             node,
             AppContext {
@@ -199,7 +203,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         );
     }
 
-    fn on_drag_start(&mut self, node: Node, gui_cx: UserInterfaceContext) {
+    fn on_drag_start(&mut self, node: Node, gui_cx: UserInterfaceContext<T>) {
         self.app.on_dragstart(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -207,7 +211,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         });
     }
 
-    fn on_drag_end(&mut self, node: Node, gui_cx: UserInterfaceContext, over: Option<Node>) {
+    fn on_drag_end(&mut self, node: Node, gui_cx: UserInterfaceContext<T>, over: Option<Node>) {
         self.app.on_dragend(node, AppContext {
             graphics: self.graphics,
             renderer: self.renderer,
@@ -224,10 +228,10 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
     }
 }
 
-pub struct AppContext<'a> {
+pub struct AppContext<'a, T> {
     pub graphics: &'a mut WindowGraphics<'static>,
     pub renderer: &'a mut Renderer,
-    pub gui_cx: UserInterfaceContext<'a>,
+    pub gui_cx: UserInterfaceContext<'a, T>,
 }
 
 enum AppState {
