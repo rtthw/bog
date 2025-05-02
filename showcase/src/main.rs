@@ -452,24 +452,3 @@ impl Element for Spacer {
         }
     }
 }
-
-
-
-struct ScrollArea {}
-
-impl Element for ScrollArea {
-    fn render(&self, renderer: &mut Renderer, placement: &Placement, viewport_rect: Rect) {
-        let Some(bounds) = placement.rect().intersection(&viewport_rect) else {
-            return;
-        };
-        let translation = vec2(0.0, 0.0);
-
-        renderer.start_layer(bounds);
-        renderer.start_transform(Mat4::from_translation(vec3(-translation.x, -translation.y, 0.0)));
-
-
-
-        renderer.end_transform();
-        renderer.end_layer();
-    }
-}
