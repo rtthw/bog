@@ -11,7 +11,7 @@ use bog_math::{vec2, Rect, Vec2};
 use taffy::TraversePartialTree;
 
 pub use layout::Layout;
-pub use tree::LayoutMap;
+pub use tree::{LayoutMap, LayoutNode};
 
 
 

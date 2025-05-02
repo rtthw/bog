@@ -6,11 +6,39 @@ use slotmap::Key as _;
 
 
 
+pub trait LayoutNode {
+    fn id(&self) -> u64;
+
+    fn children<'a>(&self, map: &'a LayoutMap) -> &'a [u64] {
+        map.children(self.id())
+    }
+
+    fn parent(&self, map: &LayoutMap) -> Option<u64> {
+        map.parent(self.id())
+    }
+
+    fn absolute_position(&self, map: &LayoutMap) -> Vec2 {
+        map.absolute_position(self.id())
+    }
+
+    fn change_layout(&self, map: &mut LayoutMap, layout: crate::Layout) {
+        map.update_layout(self.id(), layout);
+    }
+}
+
+impl LayoutNode for u64 {
+    fn id(&self) -> u64 {
+        *self
+    }
+}
+
+
+
 #[derive(Debug)]
 pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
-    children: slotmap::SlotMap<slotmap::DefaultKey, Vec<taffy::NodeId>>,
-    parents: slotmap::SlotMap<slotmap::DefaultKey, Option<taffy::NodeId>>,
+    children: slotmap::SlotMap<slotmap::DefaultKey, Vec<u64>>,
+    parents: slotmap::SlotMap<slotmap::DefaultKey, Option<u64>>,
 }
 
 impl Default for LayoutMap {
@@ -30,6 +58,18 @@ impl LayoutMap {
             children: slotmap::SlotMap::with_capacity(capacity),
             parents: slotmap::SlotMap::with_capacity(capacity),
         }
+    }
+
+    pub fn children(&self, node: u64) -> &[u64] {
+        &self.children[slotmap::KeyData::from_ffi(node).into()]
+    }
+
+    pub fn children_owned(&self, node: u64) -> Vec<u64> {
+        self.children[slotmap::KeyData::from_ffi(node).into()].clone()
+    }
+
+    pub fn parent(&self, node: u64) -> Option<u64> {
+        self.parents[slotmap::KeyData::from_ffi(node).into()]
     }
 
     pub fn add_node(&mut self, layout: crate::Layout) -> u64 {
@@ -71,13 +111,13 @@ impl LayoutMap {
     pub fn mark_dirty(&mut self, node: u64) {
         fn mark_dirty_recursive(
             nodes: &mut slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
-            parents: &slotmap::SlotMap<slotmap::DefaultKey, Option<taffy::NodeId>>,
+            parents: &slotmap::SlotMap<slotmap::DefaultKey, Option<u64>>,
             node_key: slotmap::DefaultKey,
         ) {
             nodes[node_key].cache.clear();
 
             if let Some(Some(node)) = parents.get(node_key) {
-                mark_dirty_recursive(nodes, parents, (*node).into());
+                mark_dirty_recursive(nodes, parents, slotmap::KeyData::from_ffi(*node).into());
             }
         }
 
@@ -86,6 +126,37 @@ impl LayoutMap {
             &self.parents,
             slotmap::KeyData::from_ffi(node).into(),
         );
+    }
+
+    pub fn absolute_position(&self, node: u64) -> Vec2 {
+        fn update_pos_recursive(
+            nodes: &slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
+            parents: &slotmap::SlotMap<slotmap::DefaultKey, Option<u64>>,
+            node_key: slotmap::DefaultKey,
+            positon: &mut Vec2,
+        ) {
+            let location = nodes[node_key].layout.location;
+            *positon += Vec2::new(location.x, location.y);
+
+            if let Some(Some(node)) = parents.get(node_key) {
+                update_pos_recursive(
+                    nodes,
+                    parents,
+                    slotmap::KeyData::from_ffi(*node).into(),
+                    positon,
+                );
+            }
+        }
+
+        let mut position = Vec2::ZERO;
+        update_pos_recursive(
+            &self.nodes,
+            &self.parents,
+            slotmap::KeyData::from_ffi(node).into(),
+            &mut position,
+        );
+
+        position
     }
 }
 
