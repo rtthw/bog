@@ -5,6 +5,7 @@
 
 
 mod layout;
+mod tree;
 
 use bog_math::{vec2, Rect, Vec2};
 use taffy::TraversePartialTree;
