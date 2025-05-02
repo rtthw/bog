@@ -6,14 +6,20 @@ use slotmap::Key as _;
 
 
 
-/// A collection of [`LayoutNode`]s.
-pub struct LayoutTree {
+#[derive(Debug)]
+pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
     children: slotmap::SlotMap<slotmap::DefaultKey, Vec<taffy::NodeId>>,
     parents: slotmap::SlotMap<slotmap::DefaultKey, Option<taffy::NodeId>>,
 }
 
-impl LayoutTree {
+impl Default for LayoutMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl LayoutMap {
     pub fn new() -> Self {
         Self::with_capacity(16)
     }
@@ -46,10 +52,15 @@ impl LayoutTree {
         self.mark_dirty(parent.into());
     }
 
-    pub fn compute_layout(&mut self, available_space: Vec2) {
+    pub fn update_layout(&mut self, node: u64, layout: crate::Layout) {
+        self.nodes[slotmap::KeyData::from_ffi(node).into()].style = layout.into();
+        self.mark_dirty(node);
+    }
+
+    pub fn compute_layout(&mut self, node: u64, available_space: Vec2) {
         taffy::compute_root_layout(
             self,
-            taffy::NodeId::from(usize::MAX),
+            node.into(),
             taffy::Size {
                 width: taffy::AvailableSpace::Definite(available_space.x),
                 height: taffy::AvailableSpace::Definite(available_space.y),
@@ -57,7 +68,7 @@ impl LayoutTree {
         );
     }
 
-    pub fn mark_dirty(&mut self, node: taffy::NodeId) {
+    pub fn mark_dirty(&mut self, node: u64) {
         fn mark_dirty_recursive(
             nodes: &mut slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
             parents: &slotmap::SlotMap<slotmap::DefaultKey, Option<taffy::NodeId>>,
@@ -70,7 +81,11 @@ impl LayoutTree {
             }
         }
 
-        mark_dirty_recursive(&mut self.nodes, &self.parents, node.into());
+        mark_dirty_recursive(
+            &mut self.nodes,
+            &self.parents,
+            slotmap::KeyData::from_ffi(node).into(),
+        );
     }
 }
 
@@ -82,13 +97,14 @@ impl LayoutTree {
 
 
 
+#[derive(Debug)]
 struct NodeInfo {
     style: taffy::Style,
     layout: taffy::Layout,
     cache: taffy::Cache,
 }
 
-impl LayoutTree {
+impl LayoutMap {
     fn node_info(&self, node_id: taffy::NodeId) -> &NodeInfo {
         &self.nodes[node_id.into()]
     }
@@ -102,12 +118,13 @@ pub struct LayoutNodeChildIter(std::ops::Range<usize>);
 
 impl Iterator for LayoutNodeChildIter {
     type Item = taffy::NodeId;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(taffy::NodeId::from)
     }
 }
 
-impl taffy::TraversePartialTree for LayoutTree {
+impl taffy::TraversePartialTree for LayoutMap {
     type ChildIter<'a> = LayoutNodeChildIter;
 
     fn child_ids(&self, _node_id: taffy::NodeId) -> Self::ChildIter<'_> {
@@ -123,11 +140,8 @@ impl taffy::TraversePartialTree for LayoutTree {
     }
 }
 
-impl taffy::LayoutPartialTree for LayoutTree {
-    type CoreContainerStyle<'a>
-        = &'a taffy::Style
-    where
-        Self: 'a;
+impl taffy::LayoutPartialTree for LayoutMap {
+    type CoreContainerStyle<'a> = &'a taffy::Style where Self: 'a;
 
     fn get_core_container_style(&self, node_id: taffy::NodeId) -> Self::CoreContainerStyle<'_> {
         &self.node_info(node_id).style
@@ -161,7 +175,7 @@ impl taffy::LayoutPartialTree for LayoutTree {
     }
 }
 
-impl taffy::CacheTree for LayoutTree {
+impl taffy::CacheTree for LayoutMap {
     fn cache_get(
         &self,
         node_id: taffy::NodeId,
@@ -188,7 +202,7 @@ impl taffy::CacheTree for LayoutTree {
     }
 }
 
-impl taffy::LayoutBlockContainer for LayoutTree {
+impl taffy::LayoutBlockContainer for LayoutMap {
     type BlockContainerStyle<'a> = &'a taffy::Style where Self: 'a;
     type BlockItemStyle<'a> = &'a taffy::Style where Self: 'a;
 
@@ -201,7 +215,7 @@ impl taffy::LayoutBlockContainer for LayoutTree {
     }
 }
 
-impl taffy::LayoutFlexboxContainer for LayoutTree {
+impl taffy::LayoutFlexboxContainer for LayoutMap {
     type FlexboxContainerStyle<'a> = &'a taffy::Style where Self: 'a;
     type FlexboxItemStyle<'a> = &'a taffy::Style where Self: 'a;
 
@@ -214,7 +228,7 @@ impl taffy::LayoutFlexboxContainer for LayoutTree {
     }
 }
 
-impl taffy::LayoutGridContainer for LayoutTree {
+impl taffy::LayoutGridContainer for LayoutMap {
     type GridContainerStyle<'a> = &'a taffy::Style where Self: 'a;
     type GridItemStyle<'a> = &'a taffy::Style where Self: 'a;
 
