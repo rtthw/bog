@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bog_math.workspace = true
+slotmap = "1"
 # Required for #![no_std].
 taffy = { version = "0.7", default-features = false, features = [
     "taffy_tree",

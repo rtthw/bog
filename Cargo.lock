@@ -227,6 +227,7 @@ name = "bog_layout"
 version = "0.1.0"
 dependencies = [
  "bog_math",
+ "slotmap",
  "taffy",
 ]
 
