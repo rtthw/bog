@@ -162,6 +162,56 @@ impl LayoutMap {
 
 
 
+pub struct Placement<'a> {
+    node: u64,
+    position: Vec2,
+    layout: &'a taffy::Layout,
+    map: &'a LayoutMap,
+}
+
+impl<'a> Placement<'a> {
+    pub fn new(node: u64, map: &'a LayoutMap, position: Vec2) -> Self {
+        Self {
+            node,
+            position,
+            layout: &map.node_info(node.into()).layout,
+            map,
+        }
+    }
+
+    pub fn children(&self) -> PlacementIter<'a> {
+        PlacementIter {
+            position: self.position,
+            children: self.map.children(self.node).iter(),
+            map: &self.map,
+        }
+    }
+}
+
+pub struct PlacementIter<'a> {
+    position: Vec2,
+    children: core::slice::Iter<'a, u64>,
+    map: &'a LayoutMap,
+}
+
+impl<'a> Iterator for PlacementIter<'a> {
+    type Item = Placement<'a> where Self: 'a;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.children.next().map(|id| {
+            let location = self.map.node_info((*id).into()).layout.location;
+            Placement {
+                node: *id,
+                position: self.position + Vec2::new(location.x, location.y),
+                layout: &self.map.node_info((*id).into()).layout,
+                map: self.map,
+            }
+        })
+    }
+}
+
+
+
 // --- Taffy Implementations
 // TODO: Maybe use something like this?
 //       https://github.com/DioxusLabs/taffy/blob/main/examples/custom_tree_owned_unsafe.rs
