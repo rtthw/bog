@@ -17,13 +17,13 @@ pub use tree::{LayoutMap, LayoutNode};
 
 pub type Node = u64;
 
-pub struct LayoutTree<T> {
-    tree: taffy::TaffyTree<T>,
+pub struct LayoutTree {
+    tree: taffy::TaffyTree<()>,
     root: Node,
     available_space: Vec2,
 }
 
-impl<T> LayoutTree<T> {
+impl LayoutTree {
     pub fn new(root_layout: Layout) -> Self {
         let mut tree = taffy::TaffyTree::new();
         let root = tree.new_with_children(root_layout.into(), &[])
@@ -61,16 +61,8 @@ impl<T> LayoutTree<T> {
         for_each_node(&self.tree, self.root, func);
     }
 
-    pub fn node_context(&self, node: Node) -> &T {
-        self.tree.get_node_context(node.into()).unwrap()
-    }
-
-    pub fn node_context_mut(&mut self, node: Node) -> &mut T {
-        self.tree.get_node_context_mut(node.into()).unwrap()
-    }
-
-    pub fn push(&mut self, layout: Layout, parent: Node, context: T) -> Node {
-        let id = self.tree.new_leaf_with_context(layout.into(), context)
+    pub fn push(&mut self, layout: Layout, parent: Node) -> Node {
+        let id = self.tree.new_leaf_with_context(layout.into(), ())
             .unwrap(); // Cannot fail.
         self.tree.add_child(parent.into(), id)
             .unwrap(); // Cannot fail.
@@ -78,8 +70,8 @@ impl<T> LayoutTree<T> {
         id.into()
     }
 
-    pub fn push_to_root(&mut self, layout: Layout, context: T) -> Node {
-        let id = self.tree.new_leaf_with_context(layout.into(), context)
+    pub fn push_to_root(&mut self, layout: Layout) -> Node {
+        let id = self.tree.new_leaf_with_context(layout.into(), ())
             .unwrap(); // Cannot fail.
         self.tree.add_child(self.root.into(), id)
             .unwrap(); // Cannot fail.
