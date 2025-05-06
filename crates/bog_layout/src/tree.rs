@@ -72,6 +72,15 @@ impl LayoutMap {
         self.parents[slotmap::KeyData::from_ffi(node).into()]
     }
 
+    pub fn placement(&self, node: u64, position: Vec2) -> Placement {
+        Placement {
+            node,
+            position,
+            layout: &self.node_info(node.into()).layout,
+            map: self,
+        }
+    }
+
     pub fn add_node(&mut self, layout: crate::Layout) -> u64 {
         let id = self.nodes.insert(NodeInfo {
             style: layout.into(),
@@ -181,7 +190,7 @@ impl<'a> Placement<'a> {
 
     pub fn children(&self) -> PlacementIter<'a> {
         PlacementIter {
-            position: self.position,
+            parent_position: self.position,
             children: self.map.children(self.node).iter(),
             map: &self.map,
         }
@@ -189,7 +198,7 @@ impl<'a> Placement<'a> {
 }
 
 pub struct PlacementIter<'a> {
-    position: Vec2,
+    parent_position: Vec2,
     children: core::slice::Iter<'a, u64>,
     map: &'a LayoutMap,
 }
@@ -202,7 +211,7 @@ impl<'a> Iterator for PlacementIter<'a> {
             let location = self.map.node_info((*id).into()).layout.location;
             Placement {
                 node: *id,
-                position: self.position + Vec2::new(location.x, location.y),
+                position: self.parent_position + Vec2::new(location.x, location.y),
                 layout: &self.map.node_info((*id).into()).layout,
                 map: self.map,
             }

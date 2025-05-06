@@ -3,6 +3,7 @@
 
 
 pub mod app;
+pub mod element;
 pub mod fonts;
 pub mod graphics;
 pub mod ui;
