@@ -126,6 +126,42 @@ impl<R: Element> ElementTree<R> {
 
 
 
+pub struct Container {
+    pub children: Vec<Box<dyn Element>>,
+    pub background: Quad,
+}
+
+impl Element for Container {
+    fn render(&self, renderer: &mut Renderer, placement: Placement) {
+        renderer.start_layer(placement.rect());
+        renderer.fill_quad(self.background);
+        for (element, placement) in self.children.iter().zip(placement.children()) {
+            element.render(renderer, placement);
+        }
+        renderer.end_layer();
+    }
+
+    fn update(&self, node: u64, state: &StateTree, map: &mut LayoutMap) {
+        // node.change_layout(map, self.layout.clone());
+        for ((element, node), state) in self.children.iter()
+            .zip(map.children_owned(node).into_iter())
+            .zip(state.children.iter())
+        {
+            element.update(node, state, map);
+        }
+    }
+
+    fn children(&self) -> Vec<StateTree> {
+        self.children.iter().map(StateTree::new).collect()
+    }
+
+    fn diff(&self, tree: &mut StateTree) {
+        tree.diff_children(&self.children);
+    }
+}
+
+
+
 impl Element for Box<dyn Element> {
     fn render(&self, renderer: &mut Renderer, placement: Placement) {
         self.as_ref().render(renderer, placement);
