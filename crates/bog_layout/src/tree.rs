@@ -1,7 +1,7 @@
 
 
 
-use bog_math::Vec2;
+use bog_math::{Rect, Vec2};
 use slotmap::Key as _;
 
 
@@ -194,6 +194,10 @@ impl<'a> Placement<'a> {
             children: self.map.children(self.node).iter(),
             map: &self.map,
         }
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(self.position, Vec2::new(self.layout.size.width, self.layout.size.height))
     }
 }
 
