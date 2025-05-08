@@ -24,11 +24,12 @@ use crate::{
 pub fn run_app(mut app: impl AppHandler) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
 
-    let mut ui = UserInterface::new(app.root_layout());
-    app.init(&mut ui);
+    let mut ui = UserInterface::new();
+    let view = app.view();
 
     let mut proxy = AppRunner {
         app: &mut app,
+        view,
         state: AppState::Suspended(None),
         ui,
     };
@@ -44,25 +45,13 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 #[allow(unused_variables)]
 pub trait AppHandler {
     fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
-    fn init(&mut self, ui: &mut UserInterface);
-
+    fn view(&mut self) -> View;
     fn window_desc(&self) -> WindowDescriptor;
-    fn root_layout(&self) -> Layout;
-
-    fn on_resize(&mut self, size: Vec2) {}
-    fn on_mousemove(&mut self, pos: Vec2) {}
-    fn on_mouseover(&mut self, node: Node, cx: AppContext) {}
-    fn on_mouseleave(&mut self, node: Node, cx: AppContext) {}
-    fn on_mousedown(&mut self, node: Node, cx: AppContext) {}
-    fn on_mouseup(&mut self, node: Node, cx: AppContext) {}
-    fn on_dragstart(&mut self, node: Node, cx: AppContext) {}
-    fn on_dragend(&mut self, node: Node, cx: AppContext, over: Option<Node>) {}
-    fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {}
-    fn on_layout(&mut self, node: Node, placement: &Placement) {}
 }
 
 struct AppRunner<'a> {
     app: &'a mut dyn AppHandler,
+    view: View,
     state: AppState,
     ui: UserInterface,
 }
@@ -148,14 +137,13 @@ impl<'a> WindowingClient for AppRunner<'a> {
 
 struct Proxy<'a> {
     app: &'a mut dyn AppHandler,
+    view: View,
     graphics: &'a mut WindowGraphics<'static>,
     renderer: &'a mut Renderer,
 }
 
 impl<'a> UserInterfaceHandler for Proxy<'a> {
-    fn on_mouse_move(&mut self, pos: Vec2) {
-        self.app.on_mousemove(pos);
-    }
+    fn on_mouse_move(&mut self, _pos: Vec2) {}
 
     fn on_mouse_enter(&mut self, node: Node, gui_cx: UserInterfaceContext) {
         self.app.on_mouseover(node, AppContext {

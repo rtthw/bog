@@ -2,7 +2,7 @@
 
 
 
-use app::{run_app, AppContext, AppHandler};
+use app::*;
 use bog::*;
 use collections::NoHashMap;
 use color::*;
@@ -82,25 +82,26 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn init(&mut self, ui: &mut UserInterface) {
-        let left_panel_layout = Layout::default()
-            .flex_initial()
-            .width(300.0)
-            .padding(7.0);
-        let spacer_layout = Layout::default()
-            .flex_initial()
-            .width(5.0);
-        let right_panel_layout = Layout::default()
-            .flex_auto()
-            .flex_wrap()
-            .gap_x(11.0)
-            .padding(7.0)
-            .align_items_center()
-            .justify_content_center();
-
-        let left_panel = ui.push_node_to_root(left_panel_layout);
-        let spacer = ui.push_node_to_root(spacer_layout);
-        let right_panel = ui.push_node_to_root(right_panel_layout);
+    fn view(&mut self) -> View {
+        View::new(Element::new()
+            .layout(Layout::default()
+                .width(1280.0)
+                .height(720.0)
+                .gap_x(11.0)
+                .padding(11.0))
+            .child(Element::new()
+                .layout(Layout::default()
+                    .flex_initial()
+                    .width(300.0)
+                    .padding(7.0)))
+            .child(Element::new()
+                .layout(Layout::default()
+                    .flex_auto()
+                    .flex_wrap()
+                    .gap_x(11.0)
+                    .padding(7.0)
+                    .align_items_center()
+                    .justify_content_center())))
 
         self.elements.insert(left_panel, Box::new(Button {
             quad: Quad {
@@ -175,271 +176,10 @@ impl AppHandler for Showcase {
             ..Default::default()
         }
     }
-
-    fn root_layout(&self) -> Layout {
-        Layout::default()
-            .display_flex()
-            .width(1280.0)
-            .height(720.0)
-            .gap_x(11.0)
-            .padding(11.0)
-    }
-
-    fn on_resize(&mut self, _size: Vec2) {}
-
-    fn on_mousemove(&mut self, _pos: Vec2) {}
-
-    fn on_mouseover(&mut self, node: Node, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        if !cx.gui_cx.state.is_dragging {
-            cx.graphics.window().set_cursor(CursorIcon::Pointer);
-        }
-        element.on_mouseover(cx.gui_cx.state.is_dragging);
-    }
-
-    fn on_mouseleave(&mut self, node: Node, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        if !cx.gui_cx.state.is_dragging {
-            cx.graphics.window().set_cursor(CursorIcon::Default);
-        }
-        element.on_mouseleave(cx.gui_cx.state.is_dragging);
-    }
-
-    fn on_mousedown(&mut self, node: Node, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        element.on_mousedown();
-    }
-
-    fn on_mouseup(&mut self, node: Node, cx: AppContext) {
-        cx.graphics.window().request_redraw();
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        element.on_mouseup();
-    }
-
-    fn on_dragmove(&mut self, node: Node, cx: AppContext, delta: Vec2, over: Option<Node>) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        element.on_dragmove(delta, &mut self.drag_indicator);
-        cx.graphics.window().request_redraw();
-        if let Some(button) = over.and_then(|e| self.elements.get_mut(&e)) {
-            if !button.draggable() { return; }
-            button.on_mouseover(true);
-        }
-    }
-
-    fn on_dragstart(&mut self, node: Node, cx: AppContext) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        element.on_dragstart();
-        cx.graphics.window().request_redraw();
-        cx.graphics.window().set_cursor(CursorIcon::Grab);
-    }
-
-    fn on_dragend(&mut self, node: Node, cx: AppContext, over: Option<Node>) {
-        self.drag_indicator = None;
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        if !element.draggable() { return; }
-        if element.on_dragend(node, over) {
-            cx.gui_cx.tree.try_swap_nodes(node, over.unwrap());
-            // See: `impl LayoutHandler for Showcase`.
-            cx.gui_cx.tree.do_layout(self);
-        }
-        cx.graphics.window().set_cursor(CursorIcon::Default);
-        cx.graphics.window().request_redraw();
-    }
-
-    fn on_layout(&mut self, node: Node, placement: &Placement) {
-        let Some(element) = self.elements.get_mut(&node) else { return; };
-        element.on_layout(placement);
-    }
 }
 
 impl LayoutHandler for Showcase {
     fn on_layout(&mut self, node: Node, placement: &Placement) {
         AppHandler::on_layout(self, node, placement);
     }
-}
-
-
-
-#[allow(unused)]
-trait Element {
-    fn render(&self, renderer: &mut Renderer, placement: &Placement, viewport_rect: Rect);
-    fn on_layout(&mut self, placement: &Placement);
-
-    fn draggable(&self) -> bool { false }
-
-    fn on_mouseover(&mut self, dragging: bool);
-    fn on_mouseleave(&mut self, dragging: bool);
-    fn on_mousedown(&mut self);
-    fn on_mouseup(&mut self);
-
-    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {}
-    fn on_dragstart(&mut self) {}
-    fn on_dragend(&mut self, this: Node, over: Option<Node>) -> bool { false }
-}
-
-
-
-struct Button {
-    quad: Quad,
-    text: Text,
-    draggable: bool,
-}
-
-impl Element for Button {
-    fn render(&self, renderer: &mut Renderer, _placement: &Placement, _viewport_rect: Rect) {
-        renderer.fill_quad(self.quad);
-        renderer.fill_text(self.text.clone());
-    }
-
-    fn on_layout(&mut self, placement: &Placement) {
-        self.quad.bounds = Rect::new(
-            placement.position(),
-            vec2(placement.layout.size.width, placement.layout.size.height),
-        );
-        self.text.pos = placement.content_position();
-        self.text.bounds = placement.content_size();
-    }
-
-    fn draggable(&self) -> bool {
-        self.draggable
-    }
-
-    fn on_mouseover(&mut self, dragging: bool) {
-        self.quad.bg_color = GRAY_7;
-        self.text.size = 30.0;
-        if dragging {
-            self.quad.border.color = GRAY_9;
-        }
-    }
-
-    fn on_mouseleave(&mut self, _dragging: bool) {
-        self.quad.bg_color = GRAY_6;
-        self.quad.border.color = GRAY_5;
-        self.text.size = 20.0;
-    }
-
-    fn on_mousedown(&mut self) {
-        self.quad.bg_color = GRAY_3;
-    }
-
-    fn on_mouseup(&mut self) {
-        self.quad.bg_color = GRAY_6;
-    }
-
-    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {
-        *drag_indicator = Some(Quad {
-            bounds: Rect::new(self.quad.bounds.position() + delta, self.quad.bounds.size()),
-            border: Border::NONE,
-            shadow: Shadow::NONE,
-            bg_color: GRAY_0.with_alpha(137),
-        });
-    }
-
-    fn on_dragend(&mut self, _this: Node, over: Option<Node>) -> bool {
-        over.is_some()
-    }
-}
-
-fn draggable_button(text: &str) -> Button {
-    Button {
-        quad: Quad {
-            // The bounds will be determined by the layout engine. You can put anything here.
-            bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
-            border: Border {
-                color: GRAY_5,
-                width: 2.0,
-                radius: [5.0, 5.0, 5.0, 5.0],
-            },
-            shadow: Shadow {
-                color: GRAY_3,
-                offset: vec2(2.0, 3.0),
-                blur_radius: 5.0,
-            },
-            bg_color: GRAY_6,
-        },
-        text: Text {
-            content: text.to_string(),
-            pos: Vec2::ZERO,
-            size: 20.0,
-            color: GRAY_1,
-            line_height: 20.0 * 1.2,
-            font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-            font_style: FontStyle::Normal,
-            bounds: Vec2::new(100.0, 100.0),
-        },
-        draggable: true,
-    }
-}
-
-
-
-struct Spacer {
-    quad: Quad,
-    left_panel: Node,
-}
-
-impl Element for Spacer {
-    fn render(&self, renderer: &mut Renderer, _placement: &Placement, _viewport_rect: Rect) {
-        renderer.fill_quad(self.quad);
-    }
-
-    fn on_layout(&mut self, placement: &Placement) {
-        self.quad.bounds = Rect::new(
-            placement.position(),
-            vec2(placement.layout.size.width, placement.layout.size.height),
-        );
-    }
-
-    fn draggable(&self) -> bool { true }
-
-    fn on_mouseover(&mut self, _dragging: bool) {
-        self.quad.bg_color = GRAY_7;
-    }
-
-    fn on_mouseleave(&mut self, _dragging: bool) {
-        self.quad.bg_color = GRAY_6;
-    }
-
-    fn on_mousedown(&mut self) {
-        self.quad.bg_color = GRAY_3;
-    }
-
-    fn on_mouseup(&mut self) {
-        self.quad.bg_color = GRAY_6;
-    }
-
-    fn on_dragmove(&mut self, delta: Vec2, drag_indicator: &mut Option<Quad>) {
-        let drag_pos_x = self.quad.bounds.position().x + delta.x;
-        *drag_indicator = Some(Quad {
-            bounds: Rect::new(
-                Vec2::new(drag_pos_x, self.quad.bounds.position().y),
-                self.quad.bounds.size(),
-            ),
-            border: Border::NONE,
-            shadow: Shadow::NONE,
-            bg_color: GRAY_0.with_alpha(137),
-        });
-    }
-
-    // fn on_dragend(&mut self, _this: Node, _over: Option<Node>) -> bool {
-    //     let left_panel_layout = cx.gui_cx.tree.get_node_layout(self.left_panel);
-    //     if let Some(_width_len) = left_panel_layout.get_width() {
-    //         cx.gui_cx.tree.set_node_layout(
-    //             self.left_panel,
-    //             left_panel_layout.width(cx.gui_cx.state.mouse_pos.x),
-    //         );
-    //         true
-    //     } else {
-    //         false
-    //     }
-    // }
 }
