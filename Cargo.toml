@@ -18,6 +18,7 @@ all = []
 
 [dependencies]
 bog_alloc.workspace = true
+bog_app.workspace = true
 bog_collections.workspace = true
 bog_color.workspace = true
 bog_env.workspace = true
@@ -41,6 +42,7 @@ wgpu.workspace = true
 
 [workspace.dependencies]
 bog_alloc = { path = "crates/bog_alloc" }
+bog_app = { path = "crates/bog_app" }
 bog_collections = { path = "crates/bog_collections" }
 bog_color = { path = "crates/bog_color" }
 bog_env = { path = "crates/bog_env" }
