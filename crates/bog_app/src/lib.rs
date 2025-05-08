@@ -9,12 +9,21 @@ use bog_layout::{Layout, LayoutMap};
 
 
 
+pub trait AppHandler {
+    fn view(&mut self) -> View;
+}
+
+
+
 pub struct Element {
     object: Option<Box<dyn Any>>,
     layout: Layout,
     children: Vec<Element>,
 
     mouse_down_listener: Option<MouseDownListener>,
+    mouse_up_listener: Option<MouseUpListener>,
+    mouse_enter_listener: Option<MouseEnterListener>,
+    mouse_leave_listener: Option<MouseLeaveListener>,
 }
 
 impl Element {
@@ -25,6 +34,9 @@ impl Element {
             children: Vec::new(),
 
             mouse_down_listener: None,
+            mouse_up_listener: None,
+            mouse_enter_listener: None,
+            mouse_leave_listener: None,
         }
     }
 
@@ -57,6 +69,36 @@ impl Element {
         }));
         self
     }
+
+    pub fn on_mouse_up(
+        mut self,
+        listener: impl Fn(&mut dyn Any, &MouseUpEvent, &mut AppContext) + 'static,
+    ) -> Self {
+        self.mouse_up_listener = Some(Box::new(move |obj, event, app| {
+            (listener)(obj, event, app)
+        }));
+        self
+    }
+
+    pub fn on_mouse_enter(
+        mut self,
+        listener: impl Fn(&mut dyn Any, &MouseEnterEvent, &mut AppContext) + 'static,
+    ) -> Self {
+        self.mouse_enter_listener = Some(Box::new(move |obj, event, app| {
+            (listener)(obj, event, app)
+        }));
+        self
+    }
+
+    pub fn on_mouse_leave(
+        mut self,
+        listener: impl Fn(&mut dyn Any, &MouseLeaveEvent, &mut AppContext) + 'static,
+    ) -> Self {
+        self.mouse_leave_listener = Some(Box::new(move |obj, event, app| {
+            (listener)(obj, event, app)
+        }));
+        self
+    }
 }
 
 
@@ -64,6 +106,9 @@ impl Element {
 struct ElementProxy {
     object: Option<Box<dyn Any>>,
     on_mouse_down: Option<MouseDownListener>,
+    on_mouse_up: Option<MouseUpListener>,
+    on_mouse_enter: Option<MouseEnterListener>,
+    on_mouse_leave: Option<MouseLeaveListener>,
 }
 
 pub struct View {
@@ -72,12 +117,12 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(root: Element, layout_map: &mut LayoutMap) -> Self {
+    pub fn new(root: Element) -> Self {
+        let mut layout_map = LayoutMap::new();
         let mut elements = NoHashMap::with_capacity(16);
-        layout_map.clear();
         let root_node = layout_map.add_node(root.layout);
 
-        push_elements_to_map(&mut elements, layout_map, root.children, root_node);
+        push_elements_to_map(&mut elements, &mut layout_map, root.children, root_node);
 
         Self {
             elements,
@@ -98,6 +143,9 @@ fn push_elements_to_map(
         element_map.insert(node, ElementProxy {
             object: element.object,
             on_mouse_down: element.mouse_down_listener,
+            on_mouse_up: element.mouse_up_listener,
+            on_mouse_enter: element.mouse_enter_listener,
+            on_mouse_leave: element.mouse_leave_listener,
         });
 
         push_elements_to_map(element_map, layout_map, element.children, node);
@@ -106,10 +154,6 @@ fn push_elements_to_map(
 
 
 
-pub trait AppHandler {
-    fn build(&mut self, layout_map: &mut LayoutMap) -> View;
-}
-
 pub struct AppContext {}
 
 impl AppContext {
@@ -117,8 +161,14 @@ impl AppContext {
 }
 
 pub struct MouseDownEvent {}
+pub struct MouseUpEvent {}
+pub struct MouseEnterEvent {}
+pub struct MouseLeaveEvent {}
 
 type MouseDownListener = Box<dyn Fn(&mut dyn Any, &MouseDownEvent, &mut AppContext) + 'static>;
+type MouseUpListener = Box<dyn Fn(&mut dyn Any, &MouseUpEvent, &mut AppContext) + 'static>;
+type MouseEnterListener = Box<dyn Fn(&mut dyn Any, &MouseEnterEvent, &mut AppContext) + 'static>;
+type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, &MouseLeaveEvent, &mut AppContext) + 'static>;
 
 
 
@@ -131,7 +181,7 @@ mod tests {
     struct CustomApp {}
 
     impl AppHandler for CustomApp {
-        fn build(&mut self, layout_map: &mut LayoutMap) -> View {
+        fn view(&mut self) -> View {
             let root = Element::new()
                 .object(CustomObject {})
                 .on_mouse_down(|_obj, _event, app| {
@@ -139,13 +189,12 @@ mod tests {
                 })
                 .child(Element::new());
 
-            View::new(root, layout_map)
+            View::new(root)
         }
     }
 
     #[test]
-    fn app_builder_works() {
-        let mut layout_map = LayoutMap::new();
-        let _root = CustomApp {}.build(&mut layout_map);
+    fn view_builder_works() {
+        let _view = CustomApp {}.view();
     }
 }
