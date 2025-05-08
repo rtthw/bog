@@ -207,7 +207,7 @@ version = "0.1.0"
 dependencies = [
  "bog_collections",
  "bog_layout",
- "smallvec",
+ "bog_math",
 ]
 
 [[package]]

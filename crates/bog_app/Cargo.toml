@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 bog_collections.workspace = true
 bog_layout.workspace = true
-smallvec = "1"
+bog_math.workspace = true

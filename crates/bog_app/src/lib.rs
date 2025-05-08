@@ -2,6 +2,8 @@
 
 
 
+pub mod ui;
+
 use std::any::Any;
 
 use bog_collections::NoHashMap;
