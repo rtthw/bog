@@ -204,6 +204,10 @@ version = "0.1.0"
 [[package]]
 name = "bog_app"
 version = "0.1.0"
+dependencies = [
+ "bog_layout",
+ "smallvec",
+]
 
 [[package]]
 name = "bog_collections"
