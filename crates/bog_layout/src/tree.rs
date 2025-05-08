@@ -60,6 +60,12 @@ impl LayoutMap {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.children.clear();
+        self.parents.clear();
+    }
+
     pub fn children(&self, node: u64) -> &[u64] {
         &self.children[slotmap::KeyData::from_ffi(node).into()]
     }
