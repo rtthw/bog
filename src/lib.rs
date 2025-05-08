@@ -9,7 +9,6 @@ pub mod graphics;
 pub mod ui;
 
 pub use bog_alloc as alloc;
-pub use bog_app as new_app;
 pub use bog_collections as collections;
 pub use bog_color as color;
 pub use bog_env as env;

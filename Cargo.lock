@@ -175,7 +175,6 @@ name = "bog"
 version = "0.1.0"
 dependencies = [
  "bog_alloc",
- "bog_app",
  "bog_collections",
  "bog_color",
  "bog_env",
@@ -200,15 +199,6 @@ dependencies = [
 [[package]]
 name = "bog_alloc"
 version = "0.1.0"
-
-[[package]]
-name = "bog_app"
-version = "0.1.0"
-dependencies = [
- "bog_collections",
- "bog_layout",
- "bog_math",
-]
 
 [[package]]
 name = "bog_collections"
