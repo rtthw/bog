@@ -123,12 +123,22 @@ impl<'a> WindowingClient for AppRunner<'a> {
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_down(&mut Proxy { app: self.app, view: &mut self.view, graphics, renderer });
+                    self.ui.handle_mouse_down(&mut Proxy {
+                        app: self.app,
+                        view: &mut self.view,
+                        graphics,
+                        renderer,
+                    });
                 }
             }
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_up(&mut Proxy { app: self.app, view: &mut self.view, graphics, renderer });
+                    self.ui.handle_mouse_up(&mut Proxy {
+                        app: self.app,
+                        view: &mut self.view,
+                        graphics,
+                        renderer,
+                    });
                 }
             }
             _ => {}
@@ -143,6 +153,7 @@ struct Proxy<'a> {
     renderer: &'a mut Renderer,
 }
 
+#[allow(unused)] // Temporary.
 impl<'a> UserInterfaceHandler for Proxy<'a> {
     fn on_mouse_move(&mut self, _pos: Vec2) {}
 
@@ -194,7 +205,13 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
         }
     }
 
-    fn on_drag_move(&mut self, node: u64, gui_cx: UserInterfaceContext, delta: Vec2, over: Option<u64>) {
+    fn on_drag_move(
+        &mut self,
+        node: u64,
+        gui_cx: UserInterfaceContext,
+        delta: Vec2,
+        over: Option<u64>,
+    ) {
     }
 
     fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
@@ -203,8 +220,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
     fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
     }
 
-    fn on_resize(&mut self, size: Vec2) {
-    }
+    fn on_resize(&mut self, _size: Vec2) {}
 
     fn on_node_layout(&mut self, node: u64, placement: &Placement) {
     }

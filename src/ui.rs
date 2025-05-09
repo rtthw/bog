@@ -176,13 +176,3 @@ pub struct UserInterfaceState {
 pub struct UserInterfaceContext<'a> {
     pub state: &'a UserInterfaceState,
 }
-
-struct Proxy<'a> {
-    handler: &'a mut dyn UserInterfaceHandler,
-}
-
-impl<'a> LayoutHandler for Proxy<'a> {
-    fn on_layout(&mut self, node: u64, placement: &Placement) {
-        self.handler.on_node_layout(node, placement);
-    }
-}
