@@ -8,37 +8,39 @@ use crate::{layout::*, math::{vec2, Vec2}};
 
 pub trait UserInterfaceHandler {
     fn on_mouse_move(&mut self, pos: Vec2);
-    fn on_mouse_enter(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_leave(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_down(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_mouse_up(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_drag_move(&mut self, node: Node, cx: UserInterfaceContext, delta: Vec2, over: Option<Node>);
-    fn on_drag_start(&mut self, node: Node, cx: UserInterfaceContext);
-    fn on_drag_end(&mut self, node: Node, cx: UserInterfaceContext, over: Option<Node>);
+    fn on_mouse_enter(&mut self, node: u64, cx: UserInterfaceContext);
+    fn on_mouse_leave(&mut self, node: u64, cx: UserInterfaceContext);
+    fn on_mouse_down(&mut self, node: u64, cx: UserInterfaceContext);
+    fn on_mouse_up(&mut self, node: u64, cx: UserInterfaceContext);
+    fn on_drag_move(&mut self, node: u64, cx: UserInterfaceContext, delta: Vec2, over: Option<u64>);
+    fn on_drag_start(&mut self, node: u64, cx: UserInterfaceContext);
+    fn on_drag_end(&mut self, node: u64, cx: UserInterfaceContext, over: Option<u64>);
     fn on_resize(&mut self, size: Vec2);
-    fn on_node_layout(&mut self, node: Node, placement: &Placement);
+    fn on_node_layout(&mut self, node: u64, placement: &Placement);
 }
 
 
 
 pub struct UserInterface {
     state: UserInterfaceState,
-    layout_tree: LayoutTree,
-    hovered_node: Option<Node>,
+    layout_map: LayoutMap,
+    root_node: u64,
+    hovered_node: Option<u64>,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
-    drag_start_node: Option<Node>,
+    drag_start_node: Option<u64>,
 }
 
 impl UserInterface {
-    pub fn new(root_layout: Layout) -> Self {
+    pub fn new(layout_map: LayoutMap, root_node: u64) -> Self {
         Self {
             state: UserInterfaceState {
                 size: vec2(0.0, 0.0),
                 mouse_pos: vec2(0.0, 0.0),
                 is_dragging: false,
             },
-            layout_tree: LayoutTree::new(root_layout),
+            layout_map,
+            root_node,
             hovered_node: None,
             drag_start_pos: None,
             drag_start_time: std::time::Instant::now(),
@@ -46,16 +48,8 @@ impl UserInterface {
         }
     }
 
-    pub fn tree(&mut self) -> &mut LayoutTree {
-        &mut self.layout_tree
-    }
-
-    pub fn push_node_to_root(&mut self, layout: Layout) -> Node {
-        self.layout_tree.push_to_root(layout)
-    }
-
-    pub fn push_node(&mut self, parent: Node, layout: Layout) -> Node {
-        self.layout_tree.push(layout, parent)
+    pub fn layout_map(&mut self) -> &mut LayoutMap {
+        &mut self.layout_map
     }
 
     pub fn handle_resize(&mut self, handler: &mut impl UserInterfaceHandler, size: Vec2) {
@@ -63,10 +57,7 @@ impl UserInterface {
             return;
         }
         self.state.size = size;
-        self.layout_tree.resize(size);
-        self.layout_tree.do_layout(&mut Proxy {
-            handler,
-        });
+        self.layout_map.compute_layout(self.root_node, size);
         handler.on_resize(size);
     }
 
@@ -79,23 +70,21 @@ impl UserInterface {
         handler.on_mouse_move(pos);
 
         let mut hovered = Vec::with_capacity(3);
-        self.layout_tree.iter_placements(&mut |node, placement| {
-            let place_pos = placement.position();
+        let root_placement = self.layout_map.placement(self.root_node, Vec2::ZERO);
 
-            if place_pos.x > pos.x
-                || place_pos.y > pos.y
-                || place_pos.x + placement.layout.size.width < pos.x
-                || place_pos.y + placement.layout.size.height < pos.y
-            {
-                return; // Breaks out of `iter_placements`.
+        fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
+            if !placement.rect().contains(pos) {
+                return;
             }
 
-            // if !self.layout_tree.is_interactable(node) {
-            //     return; // Breaks out of `iter_placements`.
-            // }
+            for child_placement in placement.children() {
+                find_hovered(child_placement, hovered, pos);
+            }
 
-            hovered.push(node.into());
-        });
+            hovered.push(placement.node());
+        }
+
+        find_hovered(root_placement, &mut hovered, pos);
 
         let topmost_hovered = hovered.last().copied();
 
@@ -109,7 +98,6 @@ impl UserInterface {
                         self.state.is_dragging = true;
                         handler.on_drag_start(drag_node, UserInterfaceContext {
                             state: &self.state,
-                            tree: &mut self.layout_tree,
                         });
                     }
                 }
@@ -119,7 +107,6 @@ impl UserInterface {
                         drag_node,
                         UserInterfaceContext {
                             state: &self.state,
-                            tree: &mut self.layout_tree,
                         },
                         delta,
                         topmost_hovered,
@@ -132,13 +119,11 @@ impl UserInterface {
             if let Some(left_node) = self.hovered_node.take() {
                 handler.on_mouse_leave(left_node, UserInterfaceContext {
                     state: &self.state,
-                    tree: &mut self.layout_tree,
                 });
             }
             if let Some(entered_node) = topmost_hovered {
                 handler.on_mouse_enter(entered_node, UserInterfaceContext {
                     state: &self.state,
-                    tree: &mut self.layout_tree,
                 });
                 self.hovered_node = Some(entered_node);
             }
@@ -149,7 +134,6 @@ impl UserInterface {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_down(node, UserInterfaceContext {
                 state: &self.state,
-                tree: &mut self.layout_tree,
             });
         }
         self.drag_start_time = std::time::Instant::now();
@@ -161,7 +145,6 @@ impl UserInterface {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_up(node, UserInterfaceContext {
                 state: &self.state,
-                tree: &mut self.layout_tree,
             });
         }
         self.drag_start_pos = None;
@@ -170,7 +153,6 @@ impl UserInterface {
                 self.state.is_dragging = false;
                 handler.on_drag_end(node, UserInterfaceContext {
                     state: &self.state,
-                    tree: &mut self.layout_tree,
                 }, self.hovered_node);
             }
         }
@@ -193,7 +175,6 @@ pub struct UserInterfaceState {
 
 pub struct UserInterfaceContext<'a> {
     pub state: &'a UserInterfaceState,
-    pub tree: &'a mut LayoutTree,
 }
 
 struct Proxy<'a> {
@@ -201,7 +182,7 @@ struct Proxy<'a> {
 }
 
 impl<'a> LayoutHandler for Proxy<'a> {
-    fn on_layout(&mut self, node: Node, placement: &Placement) {
+    fn on_layout(&mut self, node: u64, placement: &Placement) {
         self.handler.on_node_layout(node, placement);
     }
 }

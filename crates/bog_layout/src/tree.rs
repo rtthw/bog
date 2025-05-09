@@ -194,6 +194,10 @@ impl<'a> Placement<'a> {
         }
     }
 
+    pub fn node(&self) -> u64 {
+        self.node
+    }
+
     pub fn children(&self) -> PlacementIter<'a> {
         PlacementIter {
             parent_position: self.position,

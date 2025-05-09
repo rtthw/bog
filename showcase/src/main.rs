@@ -2,12 +2,12 @@
 
 
 
-use app::*;
 use bog::*;
-use collections::NoHashMap;
+
+use app::*;
 use color::*;
-use ui::*;
 use layout::*;
+use ui::*;
 use math::*;
 use render::*;
 use window::*;
@@ -29,7 +29,6 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 fn main() -> Result<()> {
     run_app(Showcase {
-        elements: NoHashMap::with_capacity(32),
         drag_indicator: None,
     })?;
 
@@ -39,7 +38,6 @@ fn main() -> Result<()> {
 
 
 struct Showcase {
-    elements: NoHashMap<Node, Box<dyn Element>>,
     drag_indicator: Option<Quad>,
 }
 
@@ -47,7 +45,7 @@ impl AppHandler for Showcase {
     fn render(
         &mut self,
         renderer: &mut Renderer,
-        tree: &mut LayoutTree,
+        layout_map: &mut LayoutMap,
         viewport_rect: Rect,
     ) {
         renderer.clear();
@@ -82,91 +80,29 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn view(&mut self) -> View {
-        View::new(Element::new()
-            .layout(Layout::default()
-                .width(1280.0)
-                .height(720.0)
-                .gap_x(11.0)
-                .padding(11.0))
-            .child(Element::new()
+    fn view(&mut self, layout_map: &mut LayoutMap) -> View {
+        View::new(
+            Element::new()
                 .layout(Layout::default()
-                    .flex_initial()
-                    .width(300.0)
-                    .padding(7.0)))
-            .child(Element::new()
-                .layout(Layout::default()
-                    .flex_auto()
-                    .flex_wrap()
+                    .width(1280.0)
+                    .height(720.0)
                     .gap_x(11.0)
-                    .padding(7.0)
-                    .align_items_center()
-                    .justify_content_center())))
-
-        self.elements.insert(left_panel, Box::new(Button {
-            quad: Quad {
-                bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
-                border: Border {
-                    color: GRAY_3,
-                    width: 1.0,
-                    radius: [3.0; 4],
-                },
-                shadow: Shadow::NONE,
-                bg_color: GRAY_2,
-            },
-            text: Text {
-                content: "LEFT".to_string(),
-                pos: Vec2::ZERO,
-                size: 50.0,
-                color: GRAY_7,
-                line_height: 50.0 * 1.2,
-                font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-                font_style: FontStyle::Normal,
-                bounds: Vec2::new(100.0, 100.0),
-            },
-            draggable: false,
-        }));
-        self.elements.insert(spacer, Box::new(Spacer {
-            quad: Quad::new_colored(Rect::NONE, GRAY_6),
-            left_panel,
-        }));
-        self.elements.insert(right_panel, Box::new(Button {
-            quad: Quad {
-                bounds: Rect::new(Vec2::ZERO, vec2(10.0, 10.0)),
-                border: Border {
-                    color: GRAY_3,
-                    width: 1.0,
-                    radius: [3.0; 4],
-                },
-                shadow: Shadow::NONE,
-                bg_color: GRAY_2,
-            },
-            text: Text {
-                content: "RIGHT".to_string(),
-                pos: Vec2::ZERO,
-                size: 50.0,
-                color: GRAY_7,
-                line_height: 50.0 * 1.2,
-                font_family: FontFamily::Name("JetBrainsMono Nerd Font"),
-                font_style: FontStyle::Normal,
-                bounds: Vec2::new(100.0, 100.0),
-            },
-            draggable: false,
-        }));
-        for (index, layout) in [
-            Layout::default().width(40.0).height(40.0).padding(7.0),
-            Layout::default().width(45.0).height(40.0).padding(7.0),
-            Layout::default().width(55.0).height(50.0).padding(7.0),
-            Layout::default().width(50.0).height(40.0).padding(7.0),
-            Layout::default().width(45.0).height(45.0).padding(7.0),
-            Layout::default().width(50.0).height(45.0).padding(7.0),
-            Layout::default().width(50.0).height(55.0).padding(7.0),
-        ]
-            .into_iter().enumerate()
-        {
-            let node = ui.push_node(right_panel, layout);
-            self.elements.insert(node, Box::new(draggable_button(&format!("{}", index + 1))));
-        }
+                    .padding(11.0))
+                .child(Element::new()
+                    .layout(Layout::default()
+                        .flex_initial()
+                        .width(300.0)
+                        .padding(7.0)))
+                .child(Element::new()
+                    .layout(Layout::default()
+                        .flex_auto()
+                        .flex_wrap()
+                        .gap_x(11.0)
+                        .padding(7.0)
+                        .align_items_center()
+                        .justify_content_center())),
+            layout_map,
+        )
     }
 
     fn window_desc(&self) -> WindowDescriptor {
@@ -175,11 +111,5 @@ impl AppHandler for Showcase {
             inner_size: Vec2::new(1280.0, 720.0),
             ..Default::default()
         }
-    }
-}
-
-impl LayoutHandler for Showcase {
-    fn on_layout(&mut self, node: Node, placement: &Placement) {
-        AppHandler::on_layout(self, node, placement);
     }
 }

@@ -6,7 +6,7 @@ use std::any::Any;
 
 use bog_collections::NoHashMap;
 use bog_event::WindowEvent;
-use bog_layout::{Layout, LayoutMap, LayoutTree, Node, Placement};
+use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
 use bog_render::{Renderer, Viewport};
 use bog_window::{
@@ -24,8 +24,9 @@ use crate::{
 pub fn run_app(mut app: impl AppHandler) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
 
-    let mut ui = UserInterface::new();
-    let view = app.view();
+    let mut layout_map = LayoutMap::new();
+    let view = app.view(&mut layout_map);
+    let ui = UserInterface::new(layout_map, view.root_node);
 
     let mut proxy = AppRunner {
         app: &mut app,
@@ -44,8 +45,8 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
-    fn render(&mut self, renderer: &mut Renderer, tree: &mut LayoutTree, viewport_rect: Rect);
-    fn view(&mut self) -> View;
+    fn render(&mut self, renderer: &mut Renderer, layout_map: &mut LayoutMap, viewport_rect: Rect);
+    fn view(&mut self, layout_map: &mut LayoutMap) -> View;
     fn window_desc(&self) -> WindowDescriptor;
 }
 
@@ -95,7 +96,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer, self.ui.tree(), viewport.rect());
+                self.app.render(renderer, self.ui.layout_map(), viewport.rect());
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
@@ -107,7 +108,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
                 self.ui.handle_resize(
-                    &mut Proxy { app: self.app, graphics, renderer },
+                    &mut Proxy { app: self.app, view: &mut self.view, graphics, renderer },
                     physical_size,
                 );
                 window.request_redraw();
@@ -116,18 +117,18 @@ impl<'a> WindowingClient for AppRunner<'a> {
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
                 self.ui.handle_mouse_move(
-                    &mut Proxy { app: self.app, graphics, renderer },
+                    &mut Proxy { app: self.app, view: &mut self.view, graphics, renderer },
                     vec2(x, y),
                 );
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_down(&mut Proxy { app: self.app, graphics, renderer });
+                    self.ui.handle_mouse_down(&mut Proxy { app: self.app, view: &mut self.view, graphics, renderer });
                 }
             }
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_up(&mut Proxy { app: self.app, graphics, renderer });
+                    self.ui.handle_mouse_up(&mut Proxy { app: self.app, view: &mut self.view, graphics, renderer });
                 }
             }
             _ => {}
@@ -137,7 +138,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
 
 struct Proxy<'a> {
     app: &'a mut dyn AppHandler,
-    view: View,
+    view: &'a mut View,
     graphics: &'a mut WindowGraphics<'static>,
     renderer: &'a mut Renderer,
 }
@@ -145,73 +146,67 @@ struct Proxy<'a> {
 impl<'a> UserInterfaceHandler for Proxy<'a> {
     fn on_mouse_move(&mut self, _pos: Vec2) {}
 
-    fn on_mouse_enter(&mut self, node: Node, gui_cx: UserInterfaceContext) {
-        self.app.on_mouseover(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        });
+    fn on_mouse_enter(&mut self, node: u64, gui_cx: UserInterfaceContext) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(callback) = &element.on_mouse_enter {
+                (callback)(&mut element.object, AppContext {
+                    graphics: self.graphics,
+                    renderer: self.renderer,
+                    gui_cx,
+                })
+            }
+        }
     }
 
-    fn on_mouse_leave(&mut self, node: Node, gui_cx: UserInterfaceContext) {
-        self.app.on_mouseleave(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        });
+    fn on_mouse_leave(&mut self, node: u64, gui_cx: UserInterfaceContext) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(callback) = &element.on_mouse_leave {
+                (callback)(&mut element.object, AppContext {
+                    graphics: self.graphics,
+                    renderer: self.renderer,
+                    gui_cx,
+                })
+            }
+        }
     }
 
-    fn on_mouse_down(&mut self, node: Node, gui_cx: UserInterfaceContext) {
-        self.app.on_mousedown(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        });
+    fn on_mouse_down(&mut self, node: u64, gui_cx: UserInterfaceContext) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(callback) = &element.on_mouse_down {
+                (callback)(&mut element.object, AppContext {
+                    graphics: self.graphics,
+                    renderer: self.renderer,
+                    gui_cx,
+                })
+            }
+        }
     }
 
-    fn on_mouse_up(&mut self, node: Node, gui_cx: UserInterfaceContext) {
-        self.app.on_mouseup(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        });
+    fn on_mouse_up(&mut self, node: u64, gui_cx: UserInterfaceContext) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(callback) = &element.on_mouse_up {
+                (callback)(&mut element.object, AppContext {
+                    graphics: self.graphics,
+                    renderer: self.renderer,
+                    gui_cx,
+                })
+            }
+        }
     }
 
-    fn on_drag_move(&mut self, node: Node, gui_cx: UserInterfaceContext, delta: Vec2, over: Option<Node>) {
-        self.app.on_dragmove(
-            node,
-            AppContext {
-                graphics: self.graphics,
-                renderer: self.renderer,
-                gui_cx,
-            },
-            delta,
-            over,
-        );
+    fn on_drag_move(&mut self, node: u64, gui_cx: UserInterfaceContext, delta: Vec2, over: Option<u64>) {
     }
 
-    fn on_drag_start(&mut self, node: Node, gui_cx: UserInterfaceContext) {
-        self.app.on_dragstart(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        });
+    fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
     }
 
-    fn on_drag_end(&mut self, node: Node, gui_cx: UserInterfaceContext, over: Option<Node>) {
-        self.app.on_dragend(node, AppContext {
-            graphics: self.graphics,
-            renderer: self.renderer,
-            gui_cx,
-        }, over);
+    fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
     }
 
     fn on_resize(&mut self, size: Vec2) {
-        self.app.on_resize(size);
     }
 
-    fn on_node_layout(&mut self, node: Node, placement: &Placement) {
-        self.app.on_layout(node, placement);
+    fn on_node_layout(&mut self, node: u64, placement: &Placement) {
     }
 }
 
@@ -284,40 +279,40 @@ impl Element {
 
     pub fn on_mouse_down(
         mut self,
-        listener: impl Fn(&mut dyn Any, &MouseDownEvent, &mut AppContext) + 'static,
+        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
     ) -> Self {
-        self.mouse_down_listener = Some(Box::new(move |obj, event, app| {
-            (listener)(obj, event, app)
+        self.mouse_down_listener = Some(Box::new(move |obj, app| {
+            (listener)(obj, app)
         }));
         self
     }
 
     pub fn on_mouse_up(
         mut self,
-        listener: impl Fn(&mut dyn Any, &MouseUpEvent, &mut AppContext) + 'static,
+        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
     ) -> Self {
-        self.mouse_up_listener = Some(Box::new(move |obj, event, app| {
-            (listener)(obj, event, app)
+        self.mouse_up_listener = Some(Box::new(move |obj, app| {
+            (listener)(obj, app)
         }));
         self
     }
 
     pub fn on_mouse_enter(
         mut self,
-        listener: impl Fn(&mut dyn Any, &MouseEnterEvent, &mut AppContext) + 'static,
+        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
     ) -> Self {
-        self.mouse_enter_listener = Some(Box::new(move |obj, event, app| {
-            (listener)(obj, event, app)
+        self.mouse_enter_listener = Some(Box::new(move |obj, app| {
+            (listener)(obj, app)
         }));
         self
     }
 
     pub fn on_mouse_leave(
         mut self,
-        listener: impl Fn(&mut dyn Any, &MouseLeaveEvent, &mut AppContext) + 'static,
+        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
     ) -> Self {
-        self.mouse_leave_listener = Some(Box::new(move |obj, event, app| {
-            (listener)(obj, event, app)
+        self.mouse_leave_listener = Some(Box::new(move |obj, app| {
+            (listener)(obj, app)
         }));
         self
     }
@@ -339,12 +334,12 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(root: Element) -> Self {
-        let mut layout_map = LayoutMap::new();
+    pub fn new(root: Element, layout_map: &mut LayoutMap) -> Self {
+        layout_map.clear();
         let mut elements = NoHashMap::with_capacity(16);
         let root_node = layout_map.add_node(root.layout);
 
-        push_elements_to_map(&mut elements, &mut layout_map, root.children, root_node);
+        push_elements_to_map(&mut elements, layout_map, root.children, root_node);
 
         Self {
             elements,
@@ -376,12 +371,7 @@ fn push_elements_to_map(
 
 
 
-pub struct MouseDownEvent {}
-pub struct MouseUpEvent {}
-pub struct MouseEnterEvent {}
-pub struct MouseLeaveEvent {}
-
-type MouseDownListener = Box<dyn Fn(&mut dyn Any, &MouseDownEvent, &mut AppContext) + 'static>;
-type MouseUpListener = Box<dyn Fn(&mut dyn Any, &MouseUpEvent, &mut AppContext) + 'static>;
-type MouseEnterListener = Box<dyn Fn(&mut dyn Any, &MouseEnterEvent, &mut AppContext) + 'static>;
-type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, &MouseLeaveEvent, &mut AppContext) + 'static>;
+type MouseDownListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+type MouseUpListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+type MouseEnterListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
