@@ -87,6 +87,12 @@ impl AppHandler for Showcase {
                 .gap_x(11.0)
                 .padding(11.0))
             .child(Element::new()
+                .on_mouse_enter(|_obj, _app| {
+                    println!("Mouse entered left panel!");
+                })
+                .on_mouse_leave(|_obj, _app| {
+                    println!("Mouse left left panel!");
+                })
                 .layout(Layout::default()
                     .flex_initial()
                     .width(300.0)

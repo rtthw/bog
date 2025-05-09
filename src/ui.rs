@@ -80,11 +80,11 @@ impl UserInterface {
                 return;
             }
 
+            hovered.push(placement.node());
+
             for child_placement in placement.children() {
                 find_hovered(child_placement, hovered, pos);
             }
-
-            hovered.push(placement.node());
         }
 
         find_hovered(self.root_placement(), &mut hovered, pos);
