@@ -250,37 +250,37 @@ struct NodeInfo {
 
 impl LayoutMap {
     fn node_info(&self, node_id: taffy::NodeId) -> &NodeInfo {
-        &self.nodes[node_id.into()]
+        &self.nodes[slotmap::KeyData::from_ffi(node_id.into()).into()]
     }
 
     fn node_info_mut(&mut self, node_id: taffy::NodeId) -> &mut NodeInfo {
-        &mut self.nodes[node_id.into()]
+        &mut self.nodes[slotmap::KeyData::from_ffi(node_id.into()).into()]
     }
 }
 
-pub struct LayoutNodeChildIter(std::ops::Range<usize>);
+pub struct LayoutNodeChildIter<'a>(core::slice::Iter<'a, u64>);
 
-impl Iterator for LayoutNodeChildIter {
+impl<'a> Iterator for LayoutNodeChildIter<'a> {
     type Item = taffy::NodeId;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(taffy::NodeId::from)
+        self.0.next().copied().map(taffy::NodeId::from)
     }
 }
 
 impl taffy::TraversePartialTree for LayoutMap {
-    type ChildIter<'a> = LayoutNodeChildIter;
+    type ChildIter<'a> = LayoutNodeChildIter<'a>;
 
-    fn child_ids(&self, _node_id: taffy::NodeId) -> Self::ChildIter<'_> {
-        LayoutNodeChildIter(0..self.children.len())
+    fn child_ids(&self, node_id: taffy::NodeId) -> Self::ChildIter<'_> {
+        LayoutNodeChildIter(self.children(node_id.into()).iter())
     }
 
-    fn child_count(&self, _node_id: taffy::NodeId) -> usize {
-        self.children.len()
+    fn child_count(&self, node_id: taffy::NodeId) -> usize {
+        self.children(node_id.into()).len()
     }
 
-    fn get_child_id(&self, _node_id: taffy::NodeId, index: usize) -> taffy::NodeId {
-        taffy::NodeId::from(index)
+    fn get_child_id(&self, node_id: taffy::NodeId, index: usize) -> taffy::NodeId {
+        self.children(node_id.into())[index].into()
     }
 }
 
