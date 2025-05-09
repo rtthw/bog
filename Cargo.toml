@@ -22,7 +22,6 @@ bog_collections.workspace = true
 bog_color.workspace = true
 bog_env.workspace = true
 bog_event.workspace = true
-bog_input.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
 bog_render.workspace = true
@@ -45,7 +44,6 @@ bog_collections = { path = "crates/bog_collections" }
 bog_color = { path = "crates/bog_color" }
 bog_env = { path = "crates/bog_env" }
 bog_event = { path = "crates/bog_event" }
-bog_input = { path = "crates/bog_input" }
 bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }

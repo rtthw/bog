@@ -179,7 +179,6 @@ dependencies = [
  "bog_color",
  "bog_env",
  "bog_event",
- "bog_input",
  "bog_layout",
  "bog_math",
  "bog_render",
@@ -221,10 +220,6 @@ dependencies = [
 
 [[package]]
 name = "bog_event"
-version = "0.1.0"
-
-[[package]]
-name = "bog_input"
 version = "0.1.0"
 
 [[package]]

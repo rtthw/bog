@@ -13,7 +13,6 @@ pub use bog_collections as collections;
 pub use bog_color as color;
 pub use bog_env as env;
 pub use bog_event as event;
-pub use bog_input as input;
 pub use bog_layout as layout;
 pub use bog_math as math;
 pub use bog_render as render;
