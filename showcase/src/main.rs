@@ -44,7 +44,7 @@ impl AppHandler for Showcase {
     fn render(
         &mut self,
         renderer: &mut Renderer,
-        layout_map: &mut LayoutMap,
+        root_placement: Placement<'_>,
         viewport_rect: Rect,
     ) {
         renderer.clear();
@@ -53,21 +53,21 @@ impl AppHandler for Showcase {
             renderer.start_layer(viewport_rect);
             renderer.fill_quad(Quad {
                 bounds: viewport_rect,
-                border: Border::NONE,
-                shadow: Shadow::NONE,
                 bg_color: GRAY_0,
+                ..Default::default()
             });
             renderer.end_layer();
         }
 
         { // Main layer.
             renderer.start_layer(viewport_rect);
-            // The `iter_placements` call will iterate bottom-up, so rendering each element through
-            // this method is ideal.
-            // tree.iter_placements(&mut |node, placement| {
-            //     let Some(element) = self.elements.get(&node) else { return; };
-            //     element.render(renderer, placement, viewport_rect);
-            // });
+            for placement in root_placement.children() {
+                renderer.fill_quad(Quad {
+                    bounds: placement.rect(),
+                    bg_color: GRAY_3,
+                    ..Default::default()
+                });
+            }
             renderer.end_layer();
         }
 
@@ -79,29 +79,26 @@ impl AppHandler for Showcase {
         }
     }
 
-    fn view(&mut self, layout_map: &mut LayoutMap) -> View {
-        View::new(
-            Element::new()
+    fn view(&mut self) -> Element {
+        Element::new()
+            .layout(Layout::default()
+                .width(1280.0)
+                .height(720.0)
+                .gap_x(11.0)
+                .padding(11.0))
+            .child(Element::new()
                 .layout(Layout::default()
-                    .width(1280.0)
-                    .height(720.0)
+                    .flex_initial()
+                    .width(300.0)
+                    .padding(7.0)))
+            .child(Element::new()
+                .layout(Layout::default()
+                    .flex_auto()
+                    .flex_wrap()
                     .gap_x(11.0)
-                    .padding(11.0))
-                .child(Element::new()
-                    .layout(Layout::default()
-                        .flex_initial()
-                        .width(300.0)
-                        .padding(7.0)))
-                .child(Element::new()
-                    .layout(Layout::default()
-                        .flex_auto()
-                        .flex_wrap()
-                        .gap_x(11.0)
-                        .padding(7.0)
-                        .align_items_center()
-                        .justify_content_center())),
-            layout_map,
-        )
+                    .padding(7.0)
+                    .align_items_center()
+                    .justify_content_center()))
     }
 
     fn window_desc(&self) -> WindowDescriptor {

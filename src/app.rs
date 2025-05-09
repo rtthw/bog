@@ -25,17 +25,17 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
 
     let mut layout_map = LayoutMap::new();
-    let view = app.view(&mut layout_map);
+    let view = View::new(app.view(), &mut layout_map);
     let ui = UserInterface::new(layout_map, view.root_node);
 
-    let mut proxy = AppRunner {
+    let mut runner = AppRunner {
         app: &mut app,
         view,
         state: AppState::Suspended(None),
         ui,
     };
 
-    windowing_system.run_client(&mut proxy)?;
+    windowing_system.run_client(&mut runner)?;
 
     Ok(())
 }
@@ -45,8 +45,13 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
-    fn render(&mut self, renderer: &mut Renderer, layout_map: &mut LayoutMap, viewport_rect: Rect);
-    fn view(&mut self, layout_map: &mut LayoutMap) -> View;
+    fn render(
+        &mut self,
+        renderer: &mut Renderer,
+        root_placement: Placement<'_>,
+        viewport_rect: Rect,
+    );
+    fn view(&mut self) -> Element;
     fn window_desc(&self) -> WindowDescriptor;
 }
 
@@ -96,7 +101,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer, self.ui.layout_map(), viewport.rect());
+                self.app.render(renderer, self.ui.root_placement(), viewport.rect());
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);

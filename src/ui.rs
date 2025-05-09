@@ -52,6 +52,10 @@ impl UserInterface {
         &mut self.layout_map
     }
 
+    pub fn root_placement(&self) -> Placement {
+        self.layout_map.placement(self.root_node, Vec2::ZERO)
+    }
+
     pub fn handle_resize(&mut self, handler: &mut impl UserInterfaceHandler, size: Vec2) {
         if size == self.state.size {
             return;
@@ -70,7 +74,6 @@ impl UserInterface {
         handler.on_mouse_move(pos);
 
         let mut hovered = Vec::with_capacity(3);
-        let root_placement = self.layout_map.placement(self.root_node, Vec2::ZERO);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
             if !placement.rect().contains(pos) {
@@ -84,7 +87,7 @@ impl UserInterface {
             hovered.push(placement.node());
         }
 
-        find_hovered(root_placement, &mut hovered, pos);
+        find_hovered(self.root_placement(), &mut hovered, pos);
 
         let topmost_hovered = hovered.last().copied();
 
