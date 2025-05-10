@@ -177,6 +177,7 @@ impl LayoutMap {
 
 
 
+#[derive(Clone, Copy, Debug)]
 pub struct Placement<'a> {
     node: u64,
     position: Vec2,

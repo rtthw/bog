@@ -43,6 +43,7 @@ struct Showcase {
 impl AppHandler for Showcase {
     fn render(
         &mut self,
+        view: &mut View,
         renderer: &mut Renderer,
         root_placement: Placement<'_>,
         viewport_rect: Rect,
@@ -87,6 +88,13 @@ impl AppHandler for Showcase {
                 .gap_x(11.0)
                 .padding(11.0))
             .child(Element::new()
+                .on_render(|renderer, placement| {
+                    renderer.fill_quad(Quad {
+                        bounds: placement.rect(),
+                        bg_color: GRAY_2,
+                        ..Default::default()
+                    });
+                })
                 .on_mouse_enter(|_obj, _app| {
                     println!("Mouse entered left panel!");
                 })
@@ -98,6 +106,13 @@ impl AppHandler for Showcase {
                     .width(300.0)
                     .padding(7.0)))
             .child(Element::new()
+                .on_render(|renderer, placement| {
+                    renderer.fill_quad(Quad {
+                        bounds: placement.rect(),
+                        bg_color: GRAY_3,
+                        ..Default::default()
+                    });
+                })
                 .layout(Layout::default()
                     .flex_auto()
                     .flex_wrap()

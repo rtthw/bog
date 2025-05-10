@@ -8,7 +8,7 @@ use bog_collections::NoHashMap;
 use bog_event::WindowEvent;
 use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{glam::vec2, Rect, Vec2};
-use bog_render::{Renderer, Viewport};
+use bog_render::{Render, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
 };
@@ -47,6 +47,7 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 pub trait AppHandler {
     fn render(
         &mut self,
+        view: &mut View,
         renderer: &mut Renderer,
         root_placement: Placement<'_>,
         viewport_rect: Rect,
@@ -101,7 +102,13 @@ impl<'a> WindowingClient for AppRunner<'a> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer, self.ui.root_placement(), viewport.rect());
+                render_app(
+                    self.app,
+                    &mut self.view,
+                    renderer,
+                    self.ui.root_placement(),
+                    viewport.rect(),
+                );
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
@@ -158,7 +165,7 @@ struct Proxy<'a> {
     renderer: &'a mut Renderer,
 }
 
-#[allow(unused)] // Temporary.
+#[allow(unused)] // FIXME: Temporary.
 impl<'a> UserInterfaceHandler for Proxy<'a> {
     fn on_mouse_move(&mut self, _pos: Vec2) {}
 
@@ -258,6 +265,10 @@ pub struct Element {
     layout: Layout,
     children: Vec<Element>,
 
+    render_callback: Option<RenderCallback>,
+    render_begin_callback: Option<RenderBeginCallback>,
+    render_end_callback: Option<RenderEndCallback>,
+
     mouse_down_listener: Option<MouseDownListener>,
     mouse_up_listener: Option<MouseUpListener>,
     mouse_enter_listener: Option<MouseEnterListener>,
@@ -271,6 +282,9 @@ impl Element {
             layout: Layout::default(),
             children: Vec::new(),
 
+            render_callback: None,
+            render_begin_callback: None,
+            render_end_callback: None,
             mouse_down_listener: None,
             mouse_up_listener: None,
             mouse_enter_listener: None,
@@ -295,6 +309,36 @@ impl Element {
 
     pub fn child(mut self, child: Element) -> Self {
         self.children.push(child);
+        self
+    }
+
+    pub fn on_render(
+        mut self,
+        callback: impl Fn(&mut Renderer, Placement) + 'static,
+    ) -> Self {
+        self.render_callback = Some(Box::new(move |renderer, placement| {
+            (callback)(renderer, placement)
+        }));
+        self
+    }
+
+    pub fn on_render_begin(
+        mut self,
+        callback: impl Fn(&mut Renderer, Placement) + 'static,
+    ) -> Self {
+        self.render_begin_callback = Some(Box::new(move |renderer, placement| {
+            (callback)(renderer, placement)
+        }));
+        self
+    }
+
+    pub fn on_render_end(
+        mut self,
+        callback: impl Fn(&mut Renderer, Placement) + 'static,
+    ) -> Self {
+        self.render_end_callback = Some(Box::new(move |renderer, placement| {
+            (callback)(renderer, placement)
+        }));
         self
     }
 
@@ -343,6 +387,9 @@ impl Element {
 
 struct ElementProxy {
     object: Option<Box<dyn Any>>,
+    on_render: Option<RenderCallback>,
+    on_render_begin: Option<RenderBeginCallback>,
+    on_render_end: Option<RenderEndCallback>,
     on_mouse_down: Option<MouseDownListener>,
     on_mouse_up: Option<MouseUpListener>,
     on_mouse_enter: Option<MouseEnterListener>,
@@ -380,6 +427,9 @@ fn push_elements_to_map(
         layout_map.add_child_to_node(parent_node, node);
         element_map.insert(node, ElementProxy {
             object: element.object,
+            on_render: element.render_callback,
+            on_render_begin: element.render_begin_callback,
+            on_render_end: element.render_end_callback,
             on_mouse_down: element.mouse_down_listener,
             on_mouse_up: element.mouse_up_listener,
             on_mouse_enter: element.mouse_enter_listener,
@@ -392,7 +442,54 @@ fn push_elements_to_map(
 
 
 
+type RenderCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+type RenderBeginCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+type RenderEndCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+
 type MouseDownListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
 type MouseUpListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
 type MouseEnterListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
 type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+
+
+
+fn render_app(
+    app: &mut dyn AppHandler,
+    view: &mut View,
+    renderer: &mut Renderer,
+    root_placement: Placement,
+    viewport_rect: Rect,
+) {
+    renderer.start_layer(viewport_rect);
+    render_placement(root_placement, app, view, renderer);
+    renderer.end_layer();
+}
+
+fn render_placement(
+    placement: Placement,
+    app: &mut dyn AppHandler,
+    view: &mut View,
+    renderer: &mut Renderer,
+) {
+    for child_placement in placement.children() {
+        let mut try_end_callback = false;
+        if let Some(proxy) = view.elements.get_mut(&child_placement.node()) {
+            try_end_callback = proxy.on_render_end.is_some();
+            if let Some(cb) = &proxy.on_render_begin {
+                (cb)(renderer, child_placement)
+            }
+            if let Some(cb) = &proxy.on_render {
+                (cb)(renderer, child_placement)
+            }
+        }
+
+        render_placement(child_placement, app, view, renderer);
+
+        if try_end_callback {
+            if let Some(proxy) = view.elements.get_mut(&child_placement.node()) {
+                let Some(cb) = &proxy.on_render_end else { continue; };
+                (cb)(renderer, child_placement)
+            }
+        }
+    }
+}
