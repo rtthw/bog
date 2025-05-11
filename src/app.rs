@@ -1,6 +1,15 @@
 //! Application
 
 
+/* TODO
+
+- Event propagation. This will probably involve an `Event` type that can be used by the event
+  targets with just a simple flag that can tell the app proxy whether to "bubble up" events.
+  Accessing ancestors should be as simple as calling `LayoutMap::parent` on the node.
+- Figure out how to best dispatch events that involve multiple targets (like drags).
+
+*/
+
 
 use bog_collections::NoHashMap;
 use bog_event::WindowEvent;
@@ -225,6 +234,15 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
     }
 
     fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(obj) = &mut element.object {
+                obj.on_drag_start(self.app, AppContext {
+                    graphics: self.graphics,
+                    renderer: self.renderer,
+                    gui_cx,
+                });
+            }
+        }
     }
 
     fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
@@ -324,6 +342,8 @@ pub trait Object {
     fn on_mouse_up(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
     fn on_mouse_enter(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
     fn on_mouse_leave(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+
+    fn on_drag_start(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
 }
 
 impl Object for () {}
@@ -332,13 +352,6 @@ impl Object for () {}
 
 struct ElementProxy {
     object: Option<Box<dyn Object>>,
-    // on_render: Option<RenderCallback>,
-    // on_render_begin: Option<RenderBeginCallback>,
-    // on_render_end: Option<RenderEndCallback>,
-    // on_mouse_down: Option<MouseDownListener>,
-    // on_mouse_up: Option<MouseUpListener>,
-    // on_mouse_enter: Option<MouseEnterListener>,
-    // on_mouse_leave: Option<MouseLeaveListener>,
 }
 
 pub struct View {
@@ -372,29 +385,11 @@ fn push_elements_to_map(
         layout_map.add_child_to_node(parent_node, node);
         element_map.insert(node, ElementProxy {
             object: element.object,
-            // on_render: element.render_callback,
-            // on_render_begin: element.render_begin_callback,
-            // on_render_end: element.render_end_callback,
-            // on_mouse_down: element.mouse_down_listener,
-            // on_mouse_up: element.mouse_up_listener,
-            // on_mouse_enter: element.mouse_enter_listener,
-            // on_mouse_leave: element.mouse_leave_listener,
         });
 
         push_elements_to_map(element_map, layout_map, element.children, node);
     }
 }
-
-
-
-// type RenderCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
-// type RenderBeginCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
-// type RenderEndCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
-
-// type MouseDownListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-// type MouseUpListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-// type MouseEnterListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-// type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
 
 
 
