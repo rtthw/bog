@@ -42,6 +42,17 @@ struct Showcase {
 
 impl AppHandler for Showcase {
     fn view(&mut self) -> Element {
+        let draggable_buttons = (0..=7).map(|_n| {
+            Element::new()
+                .object(DraggableButton {
+                    bg_color: GRAY_4,
+                    border_color: GRAY_6,
+                })
+                .layout(Layout::default()
+                    .width(50.0)
+                    .height(50.0))
+        });
+
         Element::new()
             .layout(Layout::default()
                 .width(1280.0)
@@ -66,7 +77,8 @@ impl AppHandler for Showcase {
                     .gap_x(11.0)
                     .padding(7.0)
                     .align_items_center()
-                    .justify_content_center()))
+                    .justify_content_center())
+                .children(draggable_buttons))
     }
 
     fn window_desc(&self) -> WindowDescriptor {
@@ -118,14 +130,36 @@ impl Object for RightPanel {
             ..Default::default()
         });
     }
+}
+
+
+
+struct DraggableButton {
+    bg_color: Color,
+    border_color: Color,
+}
+
+impl Object for DraggableButton {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+        renderer.fill_quad(Quad {
+            bounds: placement.rect(),
+            border: Border {
+                color: self.border_color,
+                width: 1.0,
+                radius: [3.0; 4],
+            },
+            bg_color: self.bg_color,
+            shadow: Shadow::new(GRAY_0, vec2(2.0, 3.0), 2.0),
+        });
+    }
 
     fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
-        self.color = GRAY_3;
+        self.bg_color = GRAY_5;
         cx.graphics.window().request_redraw();
     }
 
     fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
-        self.color = GRAY_2;
+        self.bg_color = GRAY_4;
         cx.graphics.window().request_redraw();
     }
 }
