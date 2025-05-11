@@ -88,30 +88,16 @@ impl AppHandler for Showcase {
                 .gap_x(11.0)
                 .padding(11.0))
             .child(Element::new()
-                .on_render(|renderer, placement| {
-                    renderer.fill_quad(Quad {
-                        bounds: placement.rect(),
-                        bg_color: GRAY_2,
-                        ..Default::default()
-                    });
-                })
-                .on_mouse_enter(|_obj, _app| {
-                    println!("Mouse entered left panel!");
-                })
-                .on_mouse_leave(|_obj, _app| {
-                    println!("Mouse left left panel!");
+                .object(LeftPanel {
+                    color: GRAY_2,
                 })
                 .layout(Layout::default()
                     .flex_initial()
                     .width(300.0)
                     .padding(7.0)))
             .child(Element::new()
-                .on_render(|renderer, placement| {
-                    renderer.fill_quad(Quad {
-                        bounds: placement.rect(),
-                        bg_color: GRAY_3,
-                        ..Default::default()
-                    });
+                .object(RightPanel {
+                    color: GRAY_3,
                 })
                 .layout(Layout::default()
                     .flex_auto()
@@ -128,5 +114,57 @@ impl AppHandler for Showcase {
             inner_size: Vec2::new(1280.0, 720.0),
             ..Default::default()
         }
+    }
+}
+
+
+
+struct LeftPanel {
+    color: Color,
+}
+
+impl Object for LeftPanel {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+        renderer.fill_quad(Quad {
+            bounds: placement.rect(),
+            bg_color: self.color,
+            ..Default::default()
+        });
+    }
+
+    fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+        self.color = GRAY_4;
+        cx.graphics.window().request_redraw();
+    }
+
+    fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+        self.color = GRAY_3;
+        cx.graphics.window().request_redraw();
+    }
+}
+
+
+
+struct RightPanel {
+    color: Color,
+}
+
+impl Object for RightPanel {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+        renderer.fill_quad(Quad {
+            bounds: placement.rect(),
+            bg_color: self.color,
+            ..Default::default()
+        });
+    }
+
+    fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+        self.color = GRAY_3;
+        cx.graphics.window().request_redraw();
+    }
+
+    fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+        self.color = GRAY_2;
+        cx.graphics.window().request_redraw();
     }
 }

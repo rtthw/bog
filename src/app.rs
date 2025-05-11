@@ -2,8 +2,6 @@
 
 
 
-use std::any::Any;
-
 use bog_collections::NoHashMap;
 use bog_event::WindowEvent;
 use bog_layout::{Layout, LayoutMap, Placement};
@@ -171,48 +169,48 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
 
     fn on_mouse_enter(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
-            if let Some(callback) = &element.on_mouse_enter {
-                (callback)(&mut element.object, AppContext {
+            if let Some(obj) = &mut element.object {
+                obj.on_mouse_enter(self.app, AppContext {
                     graphics: self.graphics,
                     renderer: self.renderer,
                     gui_cx,
-                })
+                });
             }
         }
     }
 
     fn on_mouse_leave(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
-            if let Some(callback) = &element.on_mouse_leave {
-                (callback)(&mut element.object, AppContext {
+            if let Some(obj) = &mut element.object {
+                obj.on_mouse_leave(self.app, AppContext {
                     graphics: self.graphics,
                     renderer: self.renderer,
                     gui_cx,
-                })
+                });
             }
         }
     }
 
     fn on_mouse_down(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
-            if let Some(callback) = &element.on_mouse_down {
-                (callback)(&mut element.object, AppContext {
+            if let Some(obj) = &mut element.object {
+                obj.on_mouse_down(self.app, AppContext {
                     graphics: self.graphics,
                     renderer: self.renderer,
                     gui_cx,
-                })
+                });
             }
         }
     }
 
     fn on_mouse_up(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
-            if let Some(callback) = &element.on_mouse_up {
-                (callback)(&mut element.object, AppContext {
+            if let Some(obj) = &mut element.object {
+                obj.on_mouse_up(self.app, AppContext {
                     graphics: self.graphics,
                     renderer: self.renderer,
                     gui_cx,
-                })
+                });
             }
         }
     }
@@ -261,18 +259,18 @@ enum AppState {
 
 
 pub struct Element {
-    object: Option<Box<dyn Any>>,
+    object: Option<Box<dyn Object>>,
     layout: Layout,
     children: Vec<Element>,
 
-    render_callback: Option<RenderCallback>,
-    render_begin_callback: Option<RenderBeginCallback>,
-    render_end_callback: Option<RenderEndCallback>,
+    // render_callback: Option<RenderCallback>,
+    // render_begin_callback: Option<RenderBeginCallback>,
+    // render_end_callback: Option<RenderEndCallback>,
 
-    mouse_down_listener: Option<MouseDownListener>,
-    mouse_up_listener: Option<MouseUpListener>,
-    mouse_enter_listener: Option<MouseEnterListener>,
-    mouse_leave_listener: Option<MouseLeaveListener>,
+    // mouse_down_listener: Option<MouseDownListener>,
+    // mouse_up_listener: Option<MouseUpListener>,
+    // mouse_enter_listener: Option<MouseEnterListener>,
+    // mouse_leave_listener: Option<MouseLeaveListener>,
 }
 
 impl Element {
@@ -282,17 +280,17 @@ impl Element {
             layout: Layout::default(),
             children: Vec::new(),
 
-            render_callback: None,
-            render_begin_callback: None,
-            render_end_callback: None,
-            mouse_down_listener: None,
-            mouse_up_listener: None,
-            mouse_enter_listener: None,
-            mouse_leave_listener: None,
+            // render_callback: None,
+            // render_begin_callback: None,
+            // render_end_callback: None,
+            // mouse_down_listener: None,
+            // mouse_up_listener: None,
+            // mouse_enter_listener: None,
+            // mouse_leave_listener: None,
         }
     }
 
-    pub fn object(mut self, object: impl Any) -> Self {
+    pub fn object(mut self, object: impl Object + 'static) -> Self {
         self.object = Some(Box::new(object));
         self
     }
@@ -311,89 +309,36 @@ impl Element {
         self.children.push(child);
         self
     }
-
-    pub fn on_render(
-        mut self,
-        callback: impl Fn(&mut Renderer, Placement) + 'static,
-    ) -> Self {
-        self.render_callback = Some(Box::new(move |renderer, placement| {
-            (callback)(renderer, placement)
-        }));
-        self
-    }
-
-    pub fn on_render_begin(
-        mut self,
-        callback: impl Fn(&mut Renderer, Placement) + 'static,
-    ) -> Self {
-        self.render_begin_callback = Some(Box::new(move |renderer, placement| {
-            (callback)(renderer, placement)
-        }));
-        self
-    }
-
-    pub fn on_render_end(
-        mut self,
-        callback: impl Fn(&mut Renderer, Placement) + 'static,
-    ) -> Self {
-        self.render_end_callback = Some(Box::new(move |renderer, placement| {
-            (callback)(renderer, placement)
-        }));
-        self
-    }
-
-    pub fn on_mouse_down(
-        mut self,
-        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
-    ) -> Self {
-        self.mouse_down_listener = Some(Box::new(move |obj, app| {
-            (listener)(obj, app)
-        }));
-        self
-    }
-
-    pub fn on_mouse_up(
-        mut self,
-        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
-    ) -> Self {
-        self.mouse_up_listener = Some(Box::new(move |obj, app| {
-            (listener)(obj, app)
-        }));
-        self
-    }
-
-    pub fn on_mouse_enter(
-        mut self,
-        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
-    ) -> Self {
-        self.mouse_enter_listener = Some(Box::new(move |obj, app| {
-            (listener)(obj, app)
-        }));
-        self
-    }
-
-    pub fn on_mouse_leave(
-        mut self,
-        listener: impl Fn(&mut dyn Any, AppContext) + 'static,
-    ) -> Self {
-        self.mouse_leave_listener = Some(Box::new(move |obj, app| {
-            (listener)(obj, app)
-        }));
-        self
-    }
 }
 
 
 
+#[allow(unused)]
+pub trait Object {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {}
+    fn pre_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
+    fn post_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
+
+    // TODO: Should there be an associated type for the user's app here?
+    fn on_mouse_down(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+    fn on_mouse_up(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+    fn on_mouse_enter(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+    fn on_mouse_leave(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+}
+
+impl Object for () {}
+
+
+
 struct ElementProxy {
-    object: Option<Box<dyn Any>>,
-    on_render: Option<RenderCallback>,
-    on_render_begin: Option<RenderBeginCallback>,
-    on_render_end: Option<RenderEndCallback>,
-    on_mouse_down: Option<MouseDownListener>,
-    on_mouse_up: Option<MouseUpListener>,
-    on_mouse_enter: Option<MouseEnterListener>,
-    on_mouse_leave: Option<MouseLeaveListener>,
+    object: Option<Box<dyn Object>>,
+    // on_render: Option<RenderCallback>,
+    // on_render_begin: Option<RenderBeginCallback>,
+    // on_render_end: Option<RenderEndCallback>,
+    // on_mouse_down: Option<MouseDownListener>,
+    // on_mouse_up: Option<MouseUpListener>,
+    // on_mouse_enter: Option<MouseEnterListener>,
+    // on_mouse_leave: Option<MouseLeaveListener>,
 }
 
 pub struct View {
@@ -427,13 +372,13 @@ fn push_elements_to_map(
         layout_map.add_child_to_node(parent_node, node);
         element_map.insert(node, ElementProxy {
             object: element.object,
-            on_render: element.render_callback,
-            on_render_begin: element.render_begin_callback,
-            on_render_end: element.render_end_callback,
-            on_mouse_down: element.mouse_down_listener,
-            on_mouse_up: element.mouse_up_listener,
-            on_mouse_enter: element.mouse_enter_listener,
-            on_mouse_leave: element.mouse_leave_listener,
+            // on_render: element.render_callback,
+            // on_render_begin: element.render_begin_callback,
+            // on_render_end: element.render_end_callback,
+            // on_mouse_down: element.mouse_down_listener,
+            // on_mouse_up: element.mouse_up_listener,
+            // on_mouse_enter: element.mouse_enter_listener,
+            // on_mouse_leave: element.mouse_leave_listener,
         });
 
         push_elements_to_map(element_map, layout_map, element.children, node);
@@ -442,14 +387,14 @@ fn push_elements_to_map(
 
 
 
-type RenderCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
-type RenderBeginCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
-type RenderEndCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+// type RenderCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+// type RenderBeginCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
+// type RenderEndCallback = Box<dyn Fn(&mut Renderer, Placement) + 'static>;
 
-type MouseDownListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-type MouseUpListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-type MouseEnterListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
-type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+// type MouseDownListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+// type MouseUpListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+// type MouseEnterListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
+// type MouseLeaveListener = Box<dyn Fn(&mut dyn Any, AppContext) + 'static>;
 
 
 
@@ -472,24 +417,19 @@ fn render_placement(
     renderer: &mut Renderer,
 ) {
     for child_placement in placement.children() {
-        let mut try_end_callback = false;
-        if let Some(proxy) = view.elements.get_mut(&child_placement.node()) {
-            try_end_callback = proxy.on_render_end.is_some();
-            if let Some(cb) = &proxy.on_render_begin {
-                (cb)(renderer, child_placement)
-            }
-            if let Some(cb) = &proxy.on_render {
-                (cb)(renderer, child_placement)
-            }
+        if let Some(obj) = view.elements.get_mut(&child_placement.node())
+            .and_then(|e| e.object.as_mut())
+        {
+            obj.pre_render(renderer, child_placement);
+            obj.render(renderer, child_placement);
         }
 
         render_placement(child_placement, app, view, renderer);
 
-        if try_end_callback {
-            if let Some(proxy) = view.elements.get_mut(&child_placement.node()) {
-                let Some(cb) = &proxy.on_render_end else { continue; };
-                (cb)(renderer, child_placement)
-            }
+        if let Some(obj) = view.elements.get_mut(&child_placement.node())
+            .and_then(|e| e.object.as_mut())
+        {
+            obj.post_render(renderer, child_placement);
         }
     }
 }
