@@ -5,7 +5,8 @@
 
 - Event propagation. This will probably involve an `Event` type that can be used by the event
   targets with just a simple flag that can tell the app proxy whether to "bubble up" events.
-  Accessing ancestors should be as simple as calling `LayoutMap::parent` on the node.
+  Accessing ancestors should be as simple as calling `LayoutMap::parent` on the node. Should the UI
+  handle event propagation, or is that best handled by the app?
 - Figure out how to best dispatch events that involve multiple targets (like drags).
 
 */
@@ -52,13 +53,6 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
-    fn render(
-        &mut self,
-        view: &mut View,
-        renderer: &mut Renderer,
-        root_placement: Placement<'_>,
-        viewport_rect: Rect,
-    );
     fn view(&mut self) -> Element;
     fn window_desc(&self) -> WindowDescriptor;
 }

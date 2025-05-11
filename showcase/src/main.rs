@@ -41,45 +41,6 @@ struct Showcase {
 }
 
 impl AppHandler for Showcase {
-    fn render(
-        &mut self,
-        view: &mut View,
-        renderer: &mut Renderer,
-        root_placement: Placement<'_>,
-        viewport_rect: Rect,
-    ) {
-        renderer.clear();
-
-        { // Background layer.
-            renderer.start_layer(viewport_rect);
-            renderer.fill_quad(Quad {
-                bounds: viewport_rect,
-                bg_color: GRAY_0,
-                ..Default::default()
-            });
-            renderer.end_layer();
-        }
-
-        { // Main layer.
-            renderer.start_layer(viewport_rect);
-            for placement in root_placement.children() {
-                renderer.fill_quad(Quad {
-                    bounds: placement.rect(),
-                    bg_color: GRAY_3,
-                    ..Default::default()
-                });
-            }
-            renderer.end_layer();
-        }
-
-        // Overlay layer.
-        if let Some(drag_indicator) = &self.drag_indicator {
-            renderer.start_layer(viewport_rect);
-            renderer.fill_quad(*drag_indicator);
-            renderer.end_layer();
-        }
-    }
-
     fn view(&mut self) -> Element {
         Element::new()
             .layout(Layout::default()
