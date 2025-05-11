@@ -101,6 +101,7 @@ impl UserInterface {
                         self.state.is_dragging = true;
                         handler.on_drag_start(drag_node, UserInterfaceContext {
                             state: &self.state,
+                            layout_map: &mut self.layout_map,
                         });
                     }
                 }
@@ -110,6 +111,7 @@ impl UserInterface {
                         drag_node,
                         UserInterfaceContext {
                             state: &self.state,
+                            layout_map: &mut self.layout_map,
                         },
                         delta,
                         topmost_hovered,
@@ -122,11 +124,13 @@ impl UserInterface {
             if let Some(left_node) = self.hovered_node.take() {
                 handler.on_mouse_leave(left_node, UserInterfaceContext {
                     state: &self.state,
+                    layout_map: &mut self.layout_map,
                 });
             }
             if let Some(entered_node) = topmost_hovered {
                 handler.on_mouse_enter(entered_node, UserInterfaceContext {
                     state: &self.state,
+                    layout_map: &mut self.layout_map,
                 });
                 self.hovered_node = Some(entered_node);
             }
@@ -137,6 +141,7 @@ impl UserInterface {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_down(node, UserInterfaceContext {
                 state: &self.state,
+                layout_map: &mut self.layout_map,
             });
         }
         self.drag_start_time = std::time::Instant::now();
@@ -148,6 +153,7 @@ impl UserInterface {
         if let Some(node) = self.hovered_node {
             handler.on_mouse_up(node, UserInterfaceContext {
                 state: &self.state,
+                layout_map: &mut self.layout_map,
             });
         }
         self.drag_start_pos = None;
@@ -156,17 +162,10 @@ impl UserInterface {
                 self.state.is_dragging = false;
                 handler.on_drag_end(node, UserInterfaceContext {
                     state: &self.state,
+                    layout_map: &mut self.layout_map,
                 }, self.hovered_node);
             }
         }
-    }
-
-    pub fn handle_wheel_down(&mut self, handler: &mut impl UserInterfaceHandler) {
-
-    }
-
-    pub fn handle_wheel_up(&mut self, handler: &mut impl UserInterfaceHandler) {
-
     }
 }
 
@@ -178,4 +177,5 @@ pub struct UserInterfaceState {
 
 pub struct UserInterfaceContext<'a> {
     pub state: &'a UserInterfaceState,
+    pub layout_map: &'a mut LayoutMap,
 }
