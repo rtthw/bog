@@ -405,6 +405,7 @@ fn render_app(
     root_placement: Placement,
     viewport_rect: Rect,
 ) {
+    renderer.clear();
     renderer.start_layer(viewport_rect);
     render_placement(root_placement, app, view, renderer);
     renderer.end_layer();
