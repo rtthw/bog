@@ -207,8 +207,28 @@ impl<'a> Placement<'a> {
         }
     }
 
+    pub fn position(&self) -> Vec2 {
+        self.position
+    }
+
+    pub fn content_position(&self) -> Vec2 {
+        self.position + Vec2::new(self.layout.padding.left, self.layout.padding.top)
+    }
+
+    pub fn size(&self) -> Vec2 {
+        Vec2::new(self.layout.size.width, self.layout.size.height)
+    }
+
+    pub fn content_size(&self) -> Vec2 {
+        Vec2::new(self.layout.content_box_width(), self.layout.content_box_height())
+    }
+
     pub fn rect(&self) -> Rect {
-        Rect::new(self.position, Vec2::new(self.layout.size.width, self.layout.size.height))
+        Rect::new(self.position, self.size())
+    }
+
+    pub fn content_rect(&self) -> Rect {
+        Rect::new(self.content_position(), self.content_size())
     }
 }
 
