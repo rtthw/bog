@@ -121,7 +121,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
                 self.ui.handle_resize(
-                    &mut Proxy { app: self.app, view: &mut self.view, graphics, renderer },
+                    &mut Proxy { app: self.app, view: &mut self.view, graphics, window, renderer },
                     physical_size,
                 );
                 window.request_redraw();
@@ -130,7 +130,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
                 self.ui.handle_mouse_move(
-                    &mut Proxy { app: self.app, view: &mut self.view, graphics, renderer },
+                    &mut Proxy { app: self.app, view: &mut self.view, graphics, window, renderer },
                     vec2(x, y),
                 );
             }
@@ -140,6 +140,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                         app: self.app,
                         view: &mut self.view,
                         graphics,
+                        window,
                         renderer,
                     });
                 }
@@ -150,6 +151,7 @@ impl<'a> WindowingClient for AppRunner<'a> {
                         app: self.app,
                         view: &mut self.view,
                         graphics,
+                        window,
                         renderer,
                     });
                 }
@@ -163,6 +165,7 @@ struct Proxy<'a> {
     app: &'a mut dyn AppHandler,
     view: &'a mut View,
     graphics: &'a mut WindowGraphics<'static>,
+    window: &'a mut Window,
     renderer: &'a mut Renderer,
 }
 
@@ -175,6 +178,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
             if let Some(obj) = &mut element.object {
                 obj.on_mouse_enter(self.app, AppContext {
                     graphics: self.graphics,
+                    window: self.window,
                     renderer: self.renderer,
                     gui_cx,
                 });
@@ -187,6 +191,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
             if let Some(obj) = &mut element.object {
                 obj.on_mouse_leave(self.app, AppContext {
                     graphics: self.graphics,
+                    window: self.window,
                     renderer: self.renderer,
                     gui_cx,
                 });
@@ -199,6 +204,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
             if let Some(obj) = &mut element.object {
                 obj.on_mouse_down(self.app, AppContext {
                     graphics: self.graphics,
+                    window: self.window,
                     renderer: self.renderer,
                     gui_cx,
                 });
@@ -211,6 +217,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
             if let Some(obj) = &mut element.object {
                 obj.on_mouse_up(self.app, AppContext {
                     graphics: self.graphics,
+                    window: self.window,
                     renderer: self.renderer,
                     gui_cx,
                 });
@@ -232,6 +239,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
             if let Some(obj) = &mut element.object {
                 obj.on_drag_start(self.app, AppContext {
                     graphics: self.graphics,
+                    window: self.window,
                     renderer: self.renderer,
                     gui_cx,
                 });
@@ -250,6 +258,7 @@ impl<'a> UserInterfaceHandler for Proxy<'a> {
 
 pub struct AppContext<'a> {
     pub graphics: &'a mut WindowGraphics<'static>,
+    pub window: &'a mut Window,
     pub renderer: &'a mut Renderer,
     pub gui_cx: UserInterfaceContext<'a>,
 }
@@ -257,8 +266,8 @@ pub struct AppContext<'a> {
 enum AppState {
     Suspended(Option<Window>),
     Active {
-        window: Window,
         graphics: WindowGraphics<'static>,
+        window: Window,
         viewport: Viewport,
         renderer: Renderer,
     },

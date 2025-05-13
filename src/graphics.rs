@@ -27,15 +27,13 @@ pub enum GraphicsError {
 
 
 
+// NOTE: Window must be dropped after the other surface fields.
 pub struct WindowGraphics<'w> {
     surface: wgpu::Surface<'w>,
     config: wgpu::SurfaceConfiguration,
 
     depth_texture_view: Option<wgpu::TextureView>,
     multisampled_render_target: Option<wgpu::TextureView>,
-
-    // NOTE: Window must be dropped after the other surface fields.
-    window: Window,
 }
 
 // Constructors.
@@ -104,7 +102,6 @@ impl<'w> WindowGraphics<'w> {
                 config,
                 depth_texture_view: None,
                 multisampled_render_target: None,
-                window,
             },
             device,
             queue,
@@ -125,10 +122,6 @@ impl<'w> WindowGraphics<'w> {
 
     pub fn surface_config_mut(&mut self) -> &mut wgpu::SurfaceConfiguration {
         &mut self.config
-    }
-
-    pub fn window(&self) -> &Window {
-        &self.window
     }
 
     pub fn screen_size(&self) -> Vec2 {

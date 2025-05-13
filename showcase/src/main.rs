@@ -107,12 +107,12 @@ impl Object for LeftPanel {
 
     fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
         self.color = GRAY_4;
-        cx.graphics.window().request_redraw();
+        cx.window.request_redraw();
     }
 
     fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
         self.color = GRAY_3;
-        cx.graphics.window().request_redraw();
+        cx.window.request_redraw();
     }
 }
 
@@ -155,11 +155,11 @@ impl Object for DraggableButton {
 
     fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
         self.bg_color = GRAY_5;
-        cx.graphics.window().request_redraw();
+        cx.window.request_redraw();
     }
 
     fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
         self.bg_color = GRAY_4;
-        cx.graphics.window().request_redraw();
+        cx.window.request_redraw();
     }
 }
