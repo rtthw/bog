@@ -4,7 +4,7 @@
 
 use std::ops::Range;
 
-use crate::{math::Vec2, window::Window};
+use crate::{math::Vec2, window::rwh};
 
 pub use bytemuck;
 pub use wgpu;
@@ -38,11 +38,11 @@ pub struct WindowGraphics<'w> {
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
-    pub async fn from_window(
-        window: Window,
-    ) -> Result<(Self, wgpu::Device, wgpu::Queue, wgpu::TextureFormat)> {
-        let size: [u32; 2] = window.inner_size().into();
-
+    pub async fn from_window<W>(
+        window: W,
+    ) -> Result<(Self, wgpu::Device, wgpu::Queue, wgpu::TextureFormat)>
+    where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
+    {
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
             backends: wgpu::Backends::PRIMARY,
@@ -51,7 +51,7 @@ impl<'w> WindowGraphics<'w> {
             ..Default::default()
         });
 
-        let surface = instance.create_surface((*window).clone())?;
+        let surface = instance.create_surface(window)?;
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -88,8 +88,8 @@ impl<'w> WindowGraphics<'w> {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: size[0],
-            height: size[1],
+            width: 0,
+            height: 0,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             desired_maximum_frame_latency: 2,

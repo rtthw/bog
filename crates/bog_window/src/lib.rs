@@ -4,11 +4,15 @@
 
 
 
+#[cfg(feature = "x11")]
+pub mod x11;
+
 use std::sync::Arc;
 
 use bog_event::{KeyCode, WindowEvent};
 use bog_math::{vec2, Vec2};
 
+pub use winit::raw_window_handle as rwh;
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent},
@@ -29,6 +33,18 @@ impl std::ops::Deref for Window {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl rwh::HasWindowHandle for Window {
+    fn window_handle(&self) -> Result<rwh::WindowHandle<'_>, rwh::HandleError> {
+        self.0.window_handle()
+    }
+}
+
+impl rwh::HasDisplayHandle for Window {
+    fn display_handle(&self) -> Result<rwh::DisplayHandle<'_>, rwh::HandleError> {
+        self.0.display_handle()
     }
 }
 

@@ -258,6 +258,7 @@ dependencies = [
  "bog_event",
  "bog_math",
  "winit",
+ "x11rb",
 ]
 
 [[package]]

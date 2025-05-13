@@ -3,7 +3,12 @@ name = "bog_window"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["x11"]
+x11 = ["dep:x11rb"]
+
 [dependencies]
 bog_event.workspace = true
 bog_math.workspace = true
 winit = "0.30"
+x11rb = { version = "0.13", optional = true }
