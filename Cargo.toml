@@ -29,13 +29,9 @@ bog_window.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
 glutin = "0.30"
-lyon = "1"
 pollster = "0.4"
-ration = "*"
 raw-window-handle = "0.5"
-swash = "0.2"
 thiserror = "2"
-ttf-parser = "0.25"
 wgpu.workspace = true
 
 [workspace.dependencies]
