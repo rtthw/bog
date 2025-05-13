@@ -2,15 +2,18 @@
 
 
 
-use std::{ffi::{c_int, c_void}, num::NonZeroU32, ptr::NonNull};
+use std::{num::NonZeroU32, ptr::NonNull, sync::Arc};
 
 use winit::raw_window_handle::*;
+use x11rb::xcb_ffi::XCBConnection;
 
 
 
+#[derive(Clone, Debug)]
 pub struct X11Window {
     window: XcbWindowHandle,
-    display: XcbDisplayHandle,
+    conn: Arc<XCBConnection>,
+    screen: i32,
 }
 
 impl X11Window {
@@ -20,16 +23,16 @@ impl X11Window {
     pub fn new(
         xproto_window: u32,
         xproto_visual: Option<u32>,
-        conn_ptr: Option<NonNull<c_void>>,
-        screen: c_int,
+        conn: Arc<XCBConnection>,
+        screen: i32,
     ) -> Self {
         let mut window = XcbWindowHandle::new(NonZeroU32::new(xproto_window).unwrap());
         window.visual_id = xproto_visual.and_then(|n| NonZeroU32::new(n));
-        let display = XcbDisplayHandle::new(conn_ptr, screen);
 
         Self {
             window,
-            display,
+            conn,
+            screen,
         }
     }
 }
@@ -45,7 +48,10 @@ impl HasWindowHandle for X11Window {
 impl HasDisplayHandle for X11Window {
     fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
         Ok(unsafe {
-            DisplayHandle::borrow_raw(RawDisplayHandle::Xcb(self.display))
+            DisplayHandle::borrow_raw(RawDisplayHandle::Xcb(XcbDisplayHandle::new(
+                NonNull::new(self.conn.get_raw_xcb_connection()),
+                self.screen,
+            )))
         })
     }
 }

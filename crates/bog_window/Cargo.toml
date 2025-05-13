@@ -11,4 +11,4 @@ x11 = ["dep:x11rb"]
 bog_event.workspace = true
 bog_math.workspace = true
 winit = "0.30"
-x11rb = { version = "0.13", optional = true }
+x11rb = { version = "0.13", features = ["allow-unsafe-code"], optional = true }
