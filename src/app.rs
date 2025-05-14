@@ -243,12 +243,17 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     ) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_drag_move(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
-                }, delta, over);
+                obj.on_drag_move(self.app, DragMoveEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
+                    over,
+                    delta,
+                });
             }
         }
     }
@@ -256,11 +261,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_drag_start(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
+                obj.on_drag_start(self.app, DragStartEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
                 });
             }
         }
@@ -269,12 +277,16 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_drag_end(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
-                }, over);
+                obj.on_drag_end(self.app, DragEndEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
+                    over,
+                });
             }
         }
     }
@@ -359,13 +371,33 @@ pub trait Object {
     fn on_mouse_enter(&mut self, app: &mut Self::App, cx: AppContext) {}
     fn on_mouse_leave(&mut self, app: &mut Self::App, cx: AppContext) {}
 
-    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2, over: Option<u64>) {}
-    fn on_drag_start(&mut self, app: &mut Self::App, cx: AppContext) {}
-    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext, over: Option<u64>) {}
+    fn on_drag_move(&mut self, app: &mut Self::App, event: DragMoveEvent) {}
+    fn on_drag_start(&mut self, app: &mut Self::App, event: DragStartEvent) {}
+    fn on_drag_end(&mut self, app: &mut Self::App, event: DragEndEvent) {}
 }
 
 impl Object for () {
     type App = ();
+}
+
+
+
+pub struct DragMoveEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+    pub over: Option<u64>,
+    pub delta: Vec2,
+}
+
+pub struct DragStartEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+}
+
+pub struct DragEndEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+    pub over: Option<u64>,
 }
 
 

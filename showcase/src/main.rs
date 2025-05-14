@@ -178,9 +178,9 @@ impl Object for DraggableButton {
         cx.window.request_redraw();
     }
 
-    fn on_drag_move(&mut self, app: &mut App, cx: AppContext, delta: Vec2, _over: Option<u64>) {
+    fn on_drag_move(&mut self, app: &mut App, event: DragMoveEvent) {
         app.drag_indicator = Some(Quad {
-            bounds: self.known_rect + delta,
+            bounds: self.known_rect + event.delta,
             border: Border {
                 width: 3.0,
                 color: GRAY_8,
@@ -189,10 +189,10 @@ impl Object for DraggableButton {
             bg_color: GRAY_5.with_alpha(155),
             ..Default::default()
         });
-        cx.window.request_redraw();
+        event.app_cx.window.request_redraw();
     }
 
-    fn on_drag_start(&mut self, app: &mut App, cx: AppContext) {
+    fn on_drag_start(&mut self, app: &mut App, event: DragStartEvent) {
         app.drag_indicator = Some(Quad {
             bounds: self.known_rect,
             border: Border {
@@ -203,13 +203,13 @@ impl Object for DraggableButton {
             bg_color: GRAY_5.with_alpha(155),
             ..Default::default()
         });
-        cx.window.set_cursor(CursorIcon::Grab);
-        cx.window.request_redraw();
+        event.app_cx.window.set_cursor(CursorIcon::Grab);
+        event.app_cx.window.request_redraw();
     }
 
-    fn on_drag_end(&mut self, app: &mut App, cx: AppContext, _over: Option<u64>) {
+    fn on_drag_end(&mut self, app: &mut App, event: DragEndEvent) {
         app.drag_indicator = None;
-        cx.window.set_cursor(CursorIcon::Pointer);
-        cx.window.request_redraw();
+        event.app_cx.window.set_cursor(CursorIcon::Pointer);
+        event.app_cx.window.request_redraw();
     }
 }
