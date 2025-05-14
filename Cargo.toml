@@ -25,6 +25,7 @@ bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
 bog_render.workspace = true
+bog_view.workspace = true
 bog_window.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
@@ -43,6 +44,7 @@ bog_event = { path = "crates/bog_event" }
 bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
+bog_view = { path = "crates/bog_view" }
 bog_window = { path = "crates/bog_window" }
 
 wgpu = "25"

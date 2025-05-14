@@ -14,6 +14,7 @@ pub use bog_event as event;
 pub use bog_layout as layout;
 pub use bog_math as math;
 pub use bog_render as render;
+pub use bog_view as view;
 pub use bog_window as window;
 
 

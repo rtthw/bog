@@ -1,0 +1,9 @@
+[package]
+name = "bog_view"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bog_collections.workspace = true
+bog_layout.workspace = true
+bog_math.workspace = true
