@@ -7,3 +7,4 @@ edition = "2024"
 bog_collections.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
+bog_render.workspace = true

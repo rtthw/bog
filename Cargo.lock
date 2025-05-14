@@ -255,6 +255,7 @@ dependencies = [
  "bog_collections",
  "bog_layout",
  "bog_math",
+ "bog_render",
 ]
 
 [[package]]
