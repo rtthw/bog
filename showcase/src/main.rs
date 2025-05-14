@@ -108,14 +108,14 @@ impl Object for LeftPanel {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut App, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut App, event: MouseEnterEvent) {
         self.color = GRAY_4;
-        cx.window.request_redraw();
+        event.app_cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut App, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut App, event: MouseLeaveEvent) {
         self.color = GRAY_3;
-        cx.window.request_redraw();
+        event.app_cx.window.request_redraw();
     }
 }
 
@@ -168,14 +168,14 @@ impl Object for DraggableButton {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut App, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut App, event: MouseEnterEvent) {
         self.bg_color = GRAY_5;
-        cx.window.request_redraw();
+        event.app_cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut App, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut App, event: MouseLeaveEvent) {
         self.bg_color = GRAY_4;
-        cx.window.request_redraw();
+        event.app_cx.window.request_redraw();
     }
 
     fn on_drag_move(&mut self, app: &mut App, event: DragMoveEvent) {

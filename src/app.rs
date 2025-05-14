@@ -185,11 +185,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_enter(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_mouse_enter(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
+                obj.on_mouse_enter(self.app, MouseEnterEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
                 });
             }
         }
@@ -198,11 +201,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_leave(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_mouse_leave(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
+                obj.on_mouse_leave(self.app, MouseLeaveEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
                 });
             }
         }
@@ -211,11 +217,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_down(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_mouse_down(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
+                obj.on_mouse_down(self.app, MouseDownEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
                 });
             }
         }
@@ -224,11 +233,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_up(&mut self, node: u64, gui_cx: UserInterfaceContext) {
         if let Some(element) = self.view.elements.get_mut(&node) {
             if let Some(obj) = &mut element.object {
-                obj.on_mouse_up(self.app, AppContext {
-                    graphics: self.graphics,
-                    window: self.window,
-                    renderer: self.renderer,
-                    gui_cx,
+                obj.on_mouse_up(self.app, MouseUpEvent {
+                    app_cx: AppContext {
+                        graphics: self.graphics,
+                        window: self.window,
+                        renderer: self.renderer,
+                        gui_cx,
+                    },
+                    node,
                 });
             }
         }
@@ -365,11 +377,10 @@ pub trait Object {
     fn pre_render(&mut self, renderer: &mut Renderer, placement: Placement, app: &mut Self::App) {}
     fn post_render(&mut self, renderer: &mut Renderer, placement: Placement, app: &mut Self::App) {}
 
-    // TODO: Should there be an associated type for the user's app here?
-    fn on_mouse_down(&mut self, app: &mut Self::App, cx: AppContext) {}
-    fn on_mouse_up(&mut self, app: &mut Self::App, cx: AppContext) {}
-    fn on_mouse_enter(&mut self, app: &mut Self::App, cx: AppContext) {}
-    fn on_mouse_leave(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_mouse_down(&mut self, app: &mut Self::App, event: MouseDownEvent) {}
+    fn on_mouse_up(&mut self, app: &mut Self::App, event: MouseUpEvent) {}
+    fn on_mouse_enter(&mut self, app: &mut Self::App, event: MouseEnterEvent) {}
+    fn on_mouse_leave(&mut self, app: &mut Self::App, event: MouseLeaveEvent) {}
 
     fn on_drag_move(&mut self, app: &mut Self::App, event: DragMoveEvent) {}
     fn on_drag_start(&mut self, app: &mut Self::App, event: DragStartEvent) {}
@@ -381,6 +392,26 @@ impl Object for () {
 }
 
 
+
+pub struct MouseDownEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+}
+
+pub struct MouseUpEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+}
+
+pub struct MouseEnterEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+}
+
+pub struct MouseLeaveEvent<'a> {
+    pub app_cx: AppContext<'a>,
+    pub node: u64,
+}
 
 pub struct DragMoveEvent<'a> {
     pub app_cx: AppContext<'a>,
