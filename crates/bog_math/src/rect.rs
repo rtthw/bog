@@ -90,6 +90,19 @@ impl Rect<f32> {
     }
 }
 
+impl core::ops::Add<Vec2> for Rect<f32> {
+    type Output = Self;
+
+    fn add(self, rhs: Vec2) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            w: self.w,
+            h: self.h,
+        }
+    }
+}
+
 impl core::ops::Mul<f32> for Rect<f32> {
     type Output = Self;
 

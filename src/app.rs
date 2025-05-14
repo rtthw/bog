@@ -179,7 +179,6 @@ struct Proxy<'a, A: AppHandler> {
     renderer: &'a mut Renderer,
 }
 
-#[allow(unused)] // FIXME: Temporary.
 impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_move(&mut self, _pos: Vec2) {}
 
@@ -242,6 +241,16 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
         delta: Vec2,
         over: Option<u64>,
     ) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(obj) = &mut element.object {
+                obj.on_drag_move(self.app, AppContext {
+                    graphics: self.graphics,
+                    window: self.window,
+                    renderer: self.renderer,
+                    gui_cx,
+                }, delta);
+            }
+        }
     }
 
     fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
@@ -258,12 +267,21 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     }
 
     fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
+        if let Some(element) = self.view.elements.get_mut(&node) {
+            if let Some(obj) = &mut element.object {
+                obj.on_drag_end(self.app, AppContext {
+                    graphics: self.graphics,
+                    window: self.window,
+                    renderer: self.renderer,
+                    gui_cx,
+                });
+            }
+        }
     }
 
     fn on_resize(&mut self, _size: Vec2) {}
 
-    fn on_node_layout(&mut self, node: u64, placement: &Placement) {
-    }
+    fn on_node_layout(&mut self, node: u64, placement: &Placement) {}
 }
 
 pub struct AppContext<'a> {
@@ -331,17 +349,19 @@ impl<A: AppHandler> Element<A> {
 pub trait Object {
     type App: AppHandler;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {}
-    fn pre_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
-    fn post_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, app: &mut Self::App) {}
+    fn pre_render(&mut self, renderer: &mut Renderer, placement: Placement, app: &mut Self::App) {}
+    fn post_render(&mut self, renderer: &mut Renderer, placement: Placement, app: &mut Self::App) {}
 
     // TODO: Should there be an associated type for the user's app here?
-    fn on_mouse_down(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
-    fn on_mouse_up(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
-    fn on_mouse_enter(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
-    fn on_mouse_leave(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+    fn on_mouse_down(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_mouse_up(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_mouse_enter(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_mouse_leave(&mut self, app: &mut Self::App, cx: AppContext) {}
 
-    fn on_drag_start(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
+    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2) {}
+    fn on_drag_start(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext) {}
 }
 
 impl Object for () {
@@ -416,8 +436,8 @@ fn render_placement<A: AppHandler>(
         if let Some(obj) = view.elements.get_mut(&child_placement.node())
             .and_then(|e| e.object.as_mut())
         {
-            obj.pre_render(renderer, child_placement);
-            obj.render(renderer, child_placement);
+            obj.pre_render(renderer, child_placement, app);
+            obj.render(renderer, child_placement, app);
         }
 
         render_placement(child_placement, app, view, renderer);
@@ -425,7 +445,7 @@ fn render_placement<A: AppHandler>(
         if let Some(obj) = view.elements.get_mut(&child_placement.node())
             .and_then(|e| e.object.as_mut())
         {
-            obj.post_render(renderer, child_placement);
+            obj.post_render(renderer, child_placement, app);
         }
     }
 }

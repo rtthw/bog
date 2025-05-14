@@ -47,6 +47,7 @@ impl AppHandler for Showcase {
                 .object(DraggableButton {
                     bg_color: GRAY_4,
                     border_color: GRAY_6,
+                    known_rect: Rect::NONE,
                 })
                 .layout(Layout::default()
                     .width(50.0)
@@ -99,7 +100,7 @@ struct LeftPanel {
 impl Object for LeftPanel {
     type App = Showcase;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
             bg_color: self.color,
@@ -107,12 +108,12 @@ impl Object for LeftPanel {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut Showcase, cx: AppContext) {
         self.color = GRAY_4;
         cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut Showcase, cx: AppContext) {
         self.color = GRAY_3;
         cx.window.request_redraw();
     }
@@ -127,12 +128,18 @@ struct RightPanel {
 impl Object for RightPanel {
     type App = Showcase;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
             bg_color: self.color,
             ..Default::default()
         });
+    }
+
+    fn post_render(&mut self, renderer: &mut Renderer, _placement: Placement, app: &mut Showcase) {
+        if let Some(quad) = &app.drag_indicator {
+            renderer.fill_quad(*quad);
+        }
     }
 }
 
@@ -141,14 +148,16 @@ impl Object for RightPanel {
 struct DraggableButton {
     bg_color: Color,
     border_color: Color,
+    known_rect: Rect,
 }
 
 impl Object for DraggableButton {
     type App = Showcase;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
+        self.known_rect = placement.rect();
         renderer.fill_quad(Quad {
-            bounds: placement.rect(),
+            bounds: self.known_rect,
             border: Border {
                 color: self.border_color,
                 width: 1.0,
@@ -159,13 +168,48 @@ impl Object for DraggableButton {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut Showcase, cx: AppContext) {
         self.bg_color = GRAY_5;
         cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut dyn AppHandler, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut Showcase, cx: AppContext) {
         self.bg_color = GRAY_4;
+        cx.window.request_redraw();
+    }
+
+    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2) {
+        app.drag_indicator = Some(Quad {
+            bounds: self.known_rect + delta,
+            border: Border {
+                width: 3.0,
+                color: GRAY_8,
+                radius: [3.0; 4],
+            },
+            bg_color: GRAY_5.with_alpha(155),
+            ..Default::default()
+        });
+        cx.window.request_redraw();
+    }
+
+    fn on_drag_start(&mut self, app: &mut Showcase, cx: AppContext) {
+        app.drag_indicator = Some(Quad {
+            bounds: self.known_rect,
+            border: Border {
+                width: 3.0,
+                color: GRAY_8,
+                radius: [3.0; 4],
+            },
+            bg_color: GRAY_5.with_alpha(155),
+            ..Default::default()
+        });
+        cx.window.set_cursor(CursorIcon::Grab);
+        cx.window.request_redraw();
+    }
+
+    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext) {
+        app.drag_indicator = None;
+        cx.window.set_cursor(CursorIcon::Pointer);
         cx.window.request_redraw();
     }
 }
