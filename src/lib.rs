@@ -31,3 +31,72 @@ pub enum Error {
     #[error("window manager error")]
     WindowManagerError(#[from] window::WindowManagerError),
 }
+
+
+
+pub mod prelude {
+    pub use crate::{
+        app::{
+            AppContext,
+            AppHandler,
+            Element,
+            run_app,
+            DragEndEvent,
+            DragMoveEvent,
+            DragStartEvent,
+            MouseDownEvent,
+            MouseEnterEvent,
+            MouseLeaveEvent,
+            MouseUpEvent,
+            Object,
+        },
+        Error,
+        graphics::{
+            GraphicsError,
+            wgpu,
+            WindowGraphics,
+        },
+        Result,
+    };
+
+    pub use bog_color::Color;
+    pub use bog_layout::{
+        Layout,
+        LayoutMap,
+        Placement,
+    };
+    pub use bog_math::{
+        Mat3,
+        Mat4,
+        Rect,
+        vec2,
+        Vec2,
+        vec3,
+        Vec3,
+    };
+    pub use bog_render::{
+        Border,
+        FontFamily,
+        FontStyle,
+        FontWeight,
+        FontWidth,
+        Quad,
+        Render as _,
+        Renderer,
+        Shadow,
+        Text,
+        Viewport,
+    };
+    pub use bog_window::{
+        CursorIcon,
+        Window,
+        WindowDescriptor,
+        WindowError,
+        WindowId,
+        WindowingClient,
+        WindowingSystem,
+        WindowManager,
+        WindowManagerError,
+        WindowManagerEvent,
+    };
+}

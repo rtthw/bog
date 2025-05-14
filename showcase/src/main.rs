@@ -2,14 +2,7 @@
 
 
 
-use bog::*;
-
-use app::*;
-use color::*;
-use layout::*;
-use math::*;
-use render::*;
-use window::*;
+use bog::prelude::*;
 
 
 
