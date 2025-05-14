@@ -41,7 +41,7 @@ struct Showcase {
 }
 
 impl AppHandler for Showcase {
-    fn view(&mut self) -> Element {
+    fn view(&mut self) -> Element<Showcase> {
         let draggable_buttons = (0..=7).map(|_n| {
             Element::new()
                 .object(DraggableButton {
@@ -97,6 +97,8 @@ struct LeftPanel {
 }
 
 impl Object for LeftPanel {
+    type App = Showcase;
+
     fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
@@ -123,6 +125,8 @@ struct RightPanel {
 }
 
 impl Object for RightPanel {
+    type App = Showcase;
+
     fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
@@ -140,6 +144,8 @@ struct DraggableButton {
 }
 
 impl Object for DraggableButton {
+    type App = Showcase;
+
     fn render(&mut self, renderer: &mut Renderer, placement: Placement) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),

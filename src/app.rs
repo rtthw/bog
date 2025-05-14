@@ -29,7 +29,7 @@ use crate::{
 
 
 
-pub fn run_app(mut app: impl AppHandler) -> Result<()> {
+pub fn run_app<A: AppHandler>(mut app: A) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
 
     let mut layout_map = LayoutMap::new();
@@ -53,18 +53,28 @@ pub fn run_app(mut app: impl AppHandler) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
-    fn view(&mut self) -> Element;
+    fn view(&mut self) -> Element<Self> where Self: Sized;
     fn window_desc(&self) -> WindowDescriptor;
 }
 
-struct AppRunner<'a> {
-    app: &'a mut dyn AppHandler,
-    view: View,
+impl AppHandler for () {
+    fn view(&mut self) -> Element<()> {
+        Element::new()
+    }
+
+    fn window_desc(&self) -> WindowDescriptor {
+        WindowDescriptor::default()
+    }
+}
+
+struct AppRunner<'a, A: AppHandler> {
+    app: &'a mut A,
+    view: View<A>,
     state: AppState,
     ui: UserInterface,
 }
 
-impl<'a> WindowingClient for AppRunner<'a> {
+impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
     fn on_startup(&mut self, _wm: WindowManager) {}
 
     fn on_resume(&mut self, wm: WindowManager) {
@@ -161,16 +171,16 @@ impl<'a> WindowingClient for AppRunner<'a> {
     }
 }
 
-struct Proxy<'a> {
-    app: &'a mut dyn AppHandler,
-    view: &'a mut View,
+struct Proxy<'a, A: AppHandler> {
+    app: &'a mut A,
+    view: &'a mut View<A>,
     graphics: &'a mut WindowGraphics<'static>,
     window: &'a mut Window,
     renderer: &'a mut Renderer,
 }
 
 #[allow(unused)] // FIXME: Temporary.
-impl<'a> UserInterfaceHandler for Proxy<'a> {
+impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
     fn on_mouse_move(&mut self, _pos: Vec2) {}
 
     fn on_mouse_enter(&mut self, node: u64, gui_cx: UserInterfaceContext) {
@@ -279,39 +289,22 @@ enum AppState {
 
 
 
-pub struct Element {
-    object: Option<Box<dyn Object>>,
+pub struct Element<A: AppHandler> {
+    object: Option<Box<dyn Object<App = A>>>,
     layout: Layout,
-    children: Vec<Element>,
-
-    // render_callback: Option<RenderCallback>,
-    // render_begin_callback: Option<RenderBeginCallback>,
-    // render_end_callback: Option<RenderEndCallback>,
-
-    // mouse_down_listener: Option<MouseDownListener>,
-    // mouse_up_listener: Option<MouseUpListener>,
-    // mouse_enter_listener: Option<MouseEnterListener>,
-    // mouse_leave_listener: Option<MouseLeaveListener>,
+    children: Vec<Element<A>>,
 }
 
-impl Element {
+impl<A: AppHandler> Element<A> {
     pub fn new() -> Self {
         Self {
             object: None,
             layout: Layout::default(),
             children: Vec::new(),
-
-            // render_callback: None,
-            // render_begin_callback: None,
-            // render_end_callback: None,
-            // mouse_down_listener: None,
-            // mouse_up_listener: None,
-            // mouse_enter_listener: None,
-            // mouse_leave_listener: None,
         }
     }
 
-    pub fn object(mut self, object: impl Object + 'static) -> Self {
+    pub fn object(mut self, object: impl Object<App = A> + 'static) -> Self {
         self.object = Some(Box::new(object));
         self
     }
@@ -321,12 +314,12 @@ impl Element {
         self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = Element>) -> Self {
+    pub fn children(mut self, children: impl IntoIterator<Item = Element<A>>) -> Self {
         self.children.extend(children.into_iter());
         self
     }
 
-    pub fn child(mut self, child: Element) -> Self {
+    pub fn child(mut self, child: Element<A>) -> Self {
         self.children.push(child);
         self
     }
@@ -336,6 +329,8 @@ impl Element {
 
 #[allow(unused)]
 pub trait Object {
+    type App: AppHandler;
+
     fn render(&mut self, renderer: &mut Renderer, placement: Placement) {}
     fn pre_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
     fn post_render(&mut self, renderer: &mut Renderer, placement: Placement) {}
@@ -349,21 +344,23 @@ pub trait Object {
     fn on_drag_start(&mut self, app: &mut dyn AppHandler, cx: AppContext) {}
 }
 
-impl Object for () {}
-
-
-
-struct ElementProxy {
-    object: Option<Box<dyn Object>>,
+impl Object for () {
+    type App = ();
 }
 
-pub struct View {
-    elements: NoHashMap<u64, ElementProxy>,
+
+
+struct ElementProxy<A: AppHandler> {
+    object: Option<Box<dyn Object<App = A>>>,
+}
+
+pub struct View<A: AppHandler> {
+    elements: NoHashMap<u64, ElementProxy<A>>,
     root_node: u64,
 }
 
-impl View {
-    pub fn new(root: Element, layout_map: &mut LayoutMap) -> Self {
+impl<A: AppHandler> View<A> {
+    pub fn new(root: Element<A>, layout_map: &mut LayoutMap) -> Self {
         layout_map.clear();
         let mut elements = NoHashMap::with_capacity(16);
         let root_node = layout_map.add_node(root.layout);
@@ -377,10 +374,10 @@ impl View {
     }
 }
 
-fn push_elements_to_map(
-    element_map: &mut NoHashMap<u64, ElementProxy>,
+fn push_elements_to_map<A: AppHandler>(
+    element_map: &mut NoHashMap<u64, ElementProxy<A>>,
     layout_map: &mut LayoutMap,
-    elements: Vec<Element>,
+    elements: Vec<Element<A>>,
     parent_node: u64,
 ) {
     for element in elements {
@@ -396,9 +393,9 @@ fn push_elements_to_map(
 
 
 
-fn render_app(
-    app: &mut dyn AppHandler,
-    view: &mut View,
+fn render_app<A: AppHandler>(
+    app: &mut A,
+    view: &mut View<A>,
     renderer: &mut Renderer,
     root_placement: Placement,
     viewport_rect: Rect,
@@ -409,10 +406,10 @@ fn render_app(
     renderer.end_layer();
 }
 
-fn render_placement(
+fn render_placement<A: AppHandler>(
     placement: Placement,
-    app: &mut dyn AppHandler,
-    view: &mut View,
+    app: &mut A,
+    view: &mut View<A>,
     renderer: &mut Renderer,
 ) {
     for child_placement in placement.children() {
