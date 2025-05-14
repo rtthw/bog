@@ -29,8 +29,7 @@ impl<V: View> Model<V> {
 
 
 
-/// An element is essentially just a way of attaching an [`Object`] to a [`Model`], which is just a
-/// tree of objects.
+/// An element is essentially just a way of attaching an [`Object`] to a [`Model`].
 pub struct Element<V: View> {
     object: Option<Box<dyn Object<View = V>>>,
     layout: Layout,
@@ -43,23 +42,20 @@ pub struct Element<V: View> {
 pub trait Object {
     type View: View;
 
-    fn render(&mut self, render: Render<Self::View>) {}
-    fn pre_render(&mut self, render: Render<Self::View>) {}
-    fn post_render(&mut self, render: Render<Self::View>) {}
+    fn render(&mut self, cx: RenderContext<Self::View>) {}
+    fn pre_render(&mut self, cx: RenderContext<Self::View>) {}
+    fn post_render(&mut self, cx: RenderContext<Self::View>) {}
+
+    fn on_mouse_down(&mut self, cx: MouseDownContext<Self::View>) {}
 }
 
 
 
-pub struct Context<'a, V: View> {
+pub struct RenderContext<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
-}
-
-
-
-pub struct Render<'a, V: View> {
-    pub cx: Context<'a, V>,
     pub renderer: &'a mut Renderer,
+    pub placement: Placement<'a>,
 }
 
 pub fn render_view<V: View>(
@@ -83,19 +79,17 @@ fn render_placement<V: View>(
 ) {
     for child_placement in placement.children() {
         if let Some(mut obj) = model.grab(child_placement.node()) {
-            obj.pre_render(Render {
-                cx: Context {
-                    model,
-                    view,
-                },
+            obj.pre_render(RenderContext {
+                view,
+                model,
                 renderer,
+                placement: child_placement,
             });
-            obj.render(Render {
-                cx: Context {
-                    model,
-                    view,
-                },
+            obj.render(RenderContext {
+                view,
+                model,
                 renderer,
+                placement: child_placement,
             });
             model.elements.insert(child_placement.node(), Some(obj));
         }
@@ -103,14 +97,21 @@ fn render_placement<V: View>(
         render_placement(child_placement, model, view, renderer);
 
         if let Some(mut obj) = model.grab(child_placement.node()) {
-            obj.post_render(Render {
-                cx: Context {
-                    model,
-                    view,
-                },
+            obj.post_render(RenderContext {
+                view,
+                model,
                 renderer,
+                placement: child_placement,
             });
             model.elements.insert(child_placement.node(), Some(obj));
         }
     }
+}
+
+
+
+pub struct MouseDownContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
 }
