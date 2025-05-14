@@ -27,7 +27,7 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 fn main() -> Result<()> {
-    run_app(Showcase {
+    run_app(App {
         drag_indicator: None,
     })?;
 
@@ -36,12 +36,12 @@ fn main() -> Result<()> {
 
 
 
-struct Showcase {
+struct App {
     drag_indicator: Option<Quad>,
 }
 
-impl AppHandler for Showcase {
-    fn view(&mut self) -> Element<Showcase> {
+impl AppHandler for App {
+    fn view(&mut self) -> Element<App> {
         let draggable_buttons = (0..=7).map(|_n| {
             Element::new()
                 .object(DraggableButton {
@@ -98,9 +98,9 @@ struct LeftPanel {
 }
 
 impl Object for LeftPanel {
-    type App = Showcase;
+    type App = App;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
             bg_color: self.color,
@@ -108,12 +108,12 @@ impl Object for LeftPanel {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut Showcase, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut App, cx: AppContext) {
         self.color = GRAY_4;
         cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut Showcase, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut App, cx: AppContext) {
         self.color = GRAY_3;
         cx.window.request_redraw();
     }
@@ -126,9 +126,9 @@ struct RightPanel {
 }
 
 impl Object for RightPanel {
-    type App = Showcase;
+    type App = App;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
         renderer.fill_quad(Quad {
             bounds: placement.rect(),
             bg_color: self.color,
@@ -136,7 +136,7 @@ impl Object for RightPanel {
         });
     }
 
-    fn post_render(&mut self, renderer: &mut Renderer, _placement: Placement, app: &mut Showcase) {
+    fn post_render(&mut self, renderer: &mut Renderer, _placement: Placement, app: &mut App) {
         if let Some(quad) = &app.drag_indicator {
             renderer.fill_quad(*quad);
         }
@@ -152,9 +152,9 @@ struct DraggableButton {
 }
 
 impl Object for DraggableButton {
-    type App = Showcase;
+    type App = App;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut Showcase) {
+    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
         self.known_rect = placement.rect();
         renderer.fill_quad(Quad {
             bounds: self.known_rect,
@@ -168,17 +168,17 @@ impl Object for DraggableButton {
         });
     }
 
-    fn on_mouse_enter(&mut self, _app: &mut Showcase, cx: AppContext) {
+    fn on_mouse_enter(&mut self, _app: &mut App, cx: AppContext) {
         self.bg_color = GRAY_5;
         cx.window.request_redraw();
     }
 
-    fn on_mouse_leave(&mut self, _app: &mut Showcase, cx: AppContext) {
+    fn on_mouse_leave(&mut self, _app: &mut App, cx: AppContext) {
         self.bg_color = GRAY_4;
         cx.window.request_redraw();
     }
 
-    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2) {
+    fn on_drag_move(&mut self, app: &mut App, cx: AppContext, delta: Vec2, _over: Option<u64>) {
         app.drag_indicator = Some(Quad {
             bounds: self.known_rect + delta,
             border: Border {
@@ -192,7 +192,7 @@ impl Object for DraggableButton {
         cx.window.request_redraw();
     }
 
-    fn on_drag_start(&mut self, app: &mut Showcase, cx: AppContext) {
+    fn on_drag_start(&mut self, app: &mut App, cx: AppContext) {
         app.drag_indicator = Some(Quad {
             bounds: self.known_rect,
             border: Border {
@@ -207,7 +207,7 @@ impl Object for DraggableButton {
         cx.window.request_redraw();
     }
 
-    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext) {
+    fn on_drag_end(&mut self, app: &mut App, cx: AppContext, _over: Option<u64>) {
         app.drag_indicator = None;
         cx.window.set_cursor(CursorIcon::Pointer);
         cx.window.request_redraw();

@@ -248,7 +248,7 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
                     window: self.window,
                     renderer: self.renderer,
                     gui_cx,
-                }, delta);
+                }, delta, over);
             }
         }
     }
@@ -274,14 +274,14 @@ impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
                     window: self.window,
                     renderer: self.renderer,
                     gui_cx,
-                });
+                }, over);
             }
         }
     }
 
     fn on_resize(&mut self, _size: Vec2) {}
 
-    fn on_node_layout(&mut self, node: u64, placement: &Placement) {}
+    fn on_node_layout(&mut self, _node: u64, _placement: &Placement) {}
 }
 
 pub struct AppContext<'a> {
@@ -359,9 +359,9 @@ pub trait Object {
     fn on_mouse_enter(&mut self, app: &mut Self::App, cx: AppContext) {}
     fn on_mouse_leave(&mut self, app: &mut Self::App, cx: AppContext) {}
 
-    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2) {}
+    fn on_drag_move(&mut self, app: &mut Self::App, cx: AppContext, delta: Vec2, over: Option<u64>) {}
     fn on_drag_start(&mut self, app: &mut Self::App, cx: AppContext) {}
-    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext) {}
+    fn on_drag_end(&mut self, app: &mut Self::App, cx: AppContext, over: Option<u64>) {}
 }
 
 impl Object for () {
