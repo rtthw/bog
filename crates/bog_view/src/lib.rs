@@ -3,7 +3,7 @@
 
 
 use bog_collections::NoHashMap;
-use bog_layout::{Layout, Placement};
+use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
 
@@ -22,8 +22,46 @@ pub struct Model<V: View> {
 }
 
 impl<V: View> Model<V> {
+    pub fn new(root: Element<V>, layout_map: &mut LayoutMap) -> Self {
+        fn digest_elements<V: View>(
+            element_map: &mut NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
+            layout_map: &mut LayoutMap,
+            elements: Vec<Element<V>>,
+            parent_node: u64,
+        ) {
+            for element in elements {
+                let node = layout_map.add_node(element.layout);
+                layout_map.add_child_to_node(parent_node, node);
+                if let Some(obj) = element.object { // Try to avoid allocating if possible.
+                    let _ = element_map.insert(node, Some(obj));
+                }
+
+                digest_elements(element_map, layout_map, element.children, node);
+            }
+        }
+
+        layout_map.clear();
+        let mut elements = NoHashMap::with_capacity(16);
+        let root_node = layout_map.add_node(root.layout);
+
+        digest_elements(&mut elements, layout_map, root.children, root_node);
+
+        Self {
+            elements,
+            root_node,
+        }
+    }
+
+    pub fn root_node(&self) -> u64 {
+        self.root_node
+    }
+
     pub fn grab(&mut self, node: u64) -> Option<Box<dyn Object<View = V>>> {
         self.elements.insert(node, None).and_then(|mut o| o.take())
+    }
+
+    pub fn place(&mut self, node: u64, obj: Box<dyn Object<View = V>>) {
+        let _ = self.elements.insert(node, Some(obj));
     }
 }
 
@@ -98,7 +136,7 @@ fn render_placement<V: View>(
                 renderer,
                 placement: child_placement,
             });
-            model.elements.insert(child_placement.node(), Some(obj));
+            model.place(child_placement.node(), obj);
         }
 
         render_placement(child_placement, model, view, renderer);
@@ -110,7 +148,7 @@ fn render_placement<V: View>(
                 renderer,
                 placement: child_placement,
             });
-            model.elements.insert(child_placement.node(), Some(obj));
+            model.place(child_placement.node(), obj);
         }
     }
 }
