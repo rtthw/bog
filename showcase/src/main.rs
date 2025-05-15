@@ -1,8 +1,7 @@
 
 
 
-
-use bog::prelude::*;
+use bog::{prelude::*, view::{Element, Model, Object, View}};
 
 
 
@@ -33,8 +32,8 @@ struct App {
     drag_indicator: Option<Quad>,
 }
 
-impl AppHandler for App {
-    fn view(&mut self) -> Element<App> {
+impl View for App {
+    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<App> {
         let draggable_buttons = (0..=7).map(|_n| {
             Element::new()
                 .object(DraggableButton {
@@ -47,24 +46,20 @@ impl AppHandler for App {
                     .height(50.0))
         });
 
-        Element::new()
+        let root = Element::new()
             .layout(Layout::default()
                 .width(1280.0)
                 .height(720.0)
                 .gap_x(11.0)
                 .padding(11.0))
             .child(Element::new()
-                .object(LeftPanel {
-                    color: GRAY_2,
-                })
+                .object(Panel { color: GRAY_2 })
                 .layout(Layout::default()
                     .flex_initial()
                     .width(300.0)
                     .padding(7.0)))
             .child(Element::new()
-                .object(RightPanel {
-                    color: GRAY_3,
-                })
+                .object(Panel { color: GRAY_3 })
                 .layout(Layout::default()
                     .flex_auto()
                     .flex_wrap()
@@ -72,9 +67,13 @@ impl AppHandler for App {
                     .padding(7.0)
                     .align_items_center()
                     .justify_content_center())
-                .children(draggable_buttons))
-    }
+                .children(draggable_buttons));
 
+        Model::new(root, layout_map)
+    }
+}
+
+impl AppHandler for App {
     fn window_desc(&self) -> WindowDescriptor {
         WindowDescriptor {
             title: "Bog Showcase",
@@ -86,53 +85,19 @@ impl AppHandler for App {
 
 
 
-struct LeftPanel {
+struct Panel {
     color: Color,
 }
 
-impl Object for LeftPanel {
-    type App = App;
+impl Object for Panel {
+    type View = App;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
-        renderer.fill_quad(Quad {
-            bounds: placement.rect(),
+    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
+        cx.renderer.fill_quad(Quad {
+            bounds: cx.placement.rect(),
             bg_color: self.color,
             ..Default::default()
         });
-    }
-
-    fn on_mouse_enter(&mut self, _app: &mut App, event: MouseEnterEvent) {
-        self.color = GRAY_4;
-        event.app_cx.window.request_redraw();
-    }
-
-    fn on_mouse_leave(&mut self, _app: &mut App, event: MouseLeaveEvent) {
-        self.color = GRAY_3;
-        event.app_cx.window.request_redraw();
-    }
-}
-
-
-
-struct RightPanel {
-    color: Color,
-}
-
-impl Object for RightPanel {
-    type App = App;
-
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
-        renderer.fill_quad(Quad {
-            bounds: placement.rect(),
-            bg_color: self.color,
-            ..Default::default()
-        });
-    }
-
-    fn post_render(&mut self, renderer: &mut Renderer, _placement: Placement, app: &mut App) {
-        if let Some(quad) = &app.drag_indicator {
-            renderer.fill_quad(*quad);
-        }
     }
 }
 
@@ -145,11 +110,11 @@ struct DraggableButton {
 }
 
 impl Object for DraggableButton {
-    type App = App;
+    type View = App;
 
-    fn render(&mut self, renderer: &mut Renderer, placement: Placement, _app: &mut App) {
-        self.known_rect = placement.rect();
-        renderer.fill_quad(Quad {
+    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
+        self.known_rect = cx.placement.rect();
+        cx.renderer.fill_quad(Quad {
             bounds: self.known_rect,
             border: Border {
                 color: self.border_color,
@@ -159,50 +124,5 @@ impl Object for DraggableButton {
             bg_color: self.bg_color,
             shadow: Shadow::new(GRAY_0, vec2(2.0, 3.0), 2.0),
         });
-    }
-
-    fn on_mouse_enter(&mut self, _app: &mut App, event: MouseEnterEvent) {
-        self.bg_color = GRAY_5;
-        event.app_cx.window.request_redraw();
-    }
-
-    fn on_mouse_leave(&mut self, _app: &mut App, event: MouseLeaveEvent) {
-        self.bg_color = GRAY_4;
-        event.app_cx.window.request_redraw();
-    }
-
-    fn on_drag_move(&mut self, app: &mut App, event: DragMoveEvent) {
-        app.drag_indicator = Some(Quad {
-            bounds: self.known_rect + event.delta,
-            border: Border {
-                width: 3.0,
-                color: GRAY_8,
-                radius: [3.0; 4],
-            },
-            bg_color: GRAY_5.with_alpha(155),
-            ..Default::default()
-        });
-        event.app_cx.window.request_redraw();
-    }
-
-    fn on_drag_start(&mut self, app: &mut App, event: DragStartEvent) {
-        app.drag_indicator = Some(Quad {
-            bounds: self.known_rect,
-            border: Border {
-                width: 3.0,
-                color: GRAY_8,
-                radius: [3.0; 4],
-            },
-            bg_color: GRAY_5.with_alpha(155),
-            ..Default::default()
-        });
-        event.app_cx.window.set_cursor(CursorIcon::Grab);
-        event.app_cx.window.request_redraw();
-    }
-
-    fn on_drag_end(&mut self, app: &mut App, event: DragEndEvent) {
-        app.drag_indicator = None;
-        event.app_cx.window.set_cursor(CursorIcon::Pointer);
-        event.app_cx.window.request_redraw();
     }
 }

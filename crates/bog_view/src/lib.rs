@@ -6,6 +6,7 @@ use bog_collections::NoHashMap;
 use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
+use bog_window::Window;
 
 
 
@@ -13,7 +14,7 @@ use bog_render::{Render as _, Renderer};
 /// [`Model`].
 pub trait View {
     /// Build this view's associated [`Model`].
-    fn build(&mut self) -> Model<Self> where Self: Sized;
+    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<Self> where Self: Sized;
 }
 
 
@@ -236,6 +237,26 @@ fn render_placement<V: View>(
             model.place(child_placement.node(), obj);
         }
     }
+}
+
+
+
+pub struct ViewState {
+    pub viewport_rect: Rect,
+
+    pub pointer_pos: Vec2,
+
+    pub root_node: u64,
+    pub hovered_node: Option<u64>,
+    pub dragged_node: Option<u64>,
+}
+
+pub struct EventContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub window: &'a Window,
+    pub renderer: &'a mut Renderer,
+    pub state: &'a ViewState,
 }
 
 
