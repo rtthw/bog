@@ -14,14 +14,13 @@ use bog_render::{Render as _, Renderer};
 /// [`Model`].
 pub trait View {
     /// Build this view's associated [`Model`].
-    fn build(&mut self) -> Model<Self> where Self: Sized;
+    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<Self> where Self: Sized;
 }
 
 
 
 /// A view model really just a tree of [`Element`]s that have been attached to the [`View`].
 pub struct Model<V: View> {
-    layout_map: LayoutMap,
     elements: NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
     root_node: u64,
     mouse_pos: Vec2,
@@ -36,7 +35,7 @@ pub struct Model<V: View> {
 impl<V: View> Model<V> {
     /// Create a new view model with it's element tree as defined by the given root [`Element`].
     /// The provided [`LayoutMap`] will also be updated to match this model.
-    pub fn new(root: Element<V>) -> Self {
+    pub fn new(root: Element<V>, layout_map: &mut LayoutMap) -> Self {
         fn digest_elements<V: View>(
             element_map: &mut NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
             layout_map: &mut LayoutMap,
@@ -54,14 +53,13 @@ impl<V: View> Model<V> {
             }
         }
 
-        let mut layout_map = LayoutMap::new();
+        layout_map.clear();
         let mut elements = NoHashMap::with_capacity(16);
         let root_node = layout_map.add_node(root.layout);
 
-        digest_elements(&mut elements, &mut layout_map, root.children, root_node);
+        digest_elements(&mut elements, layout_map, root.children, root_node);
 
         Self {
-            layout_map,
             elements,
             root_node,
             mouse_pos: Vec2::ZERO,
@@ -80,8 +78,8 @@ impl<V: View> Model<V> {
     }
 
     /// The [`Placement`] of the root [`Element`] of this model.
-    pub fn root_placement(&self) -> Placement {
-        self.layout_map.placement(self.root_node, Vec2::ZERO)
+    pub fn root_placement<'a>(&'a self, layout_map: &'a LayoutMap) -> Placement<'a> {
+        layout_map.placement(self.root_node, Vec2::ZERO)
     }
 
     /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
@@ -100,6 +98,7 @@ impl<V: View> Model<V> {
 pub struct ModelProxy<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
+    pub layout_map: &'a mut LayoutMap,
     // pub window: &'a Window,
     pub renderer: &'a mut Renderer,
 }
@@ -110,7 +109,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
             return;
         }
         self.model.viewport_size = new_size;
-        self.model.layout_map.compute_layout(self.model.root_node, new_size);
+        self.layout_map.compute_layout(self.model.root_node, new_size);
     }
 
     pub fn handle_mouse_move(&mut self, new_pos: Vec2) {
@@ -128,7 +127,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
             }
         }
 
-        find_hovered(self.model.root_placement(), &mut hovered, new_pos);
+        find_hovered(self.model.root_placement(self.layout_map), &mut hovered, new_pos);
 
         let topmost_hovered = hovered.last().copied();
 

@@ -33,7 +33,7 @@ struct App {
 }
 
 impl View for App {
-    fn build(&mut self) -> Model<App> {
+    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<App> {
         let draggable_buttons = (0..=7).map(|_n| {
             Element::new()
                 .object(DraggableButton {
@@ -69,7 +69,7 @@ impl View for App {
                     .justify_content_center())
                 .children(draggable_buttons));
 
-        Model::new(root)
+        Model::new(root, layout_map)
     }
 }
 
@@ -124,5 +124,13 @@ impl Object for DraggableButton {
             bg_color: self.bg_color,
             shadow: Shadow::new(GRAY_0, vec2(2.0, 3.0), 2.0),
         });
+    }
+
+    fn on_mouse_enter(&mut self, _cx: bog::view::EventContext<Self::View>) {
+        self.bg_color = GRAY_5;
+    }
+
+    fn on_mouse_leave(&mut self, _cx: bog::view::EventContext<Self::View>) {
+        self.bg_color = GRAY_4;
     }
 }

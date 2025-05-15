@@ -13,7 +13,8 @@
 
 
 use bog_event::WindowEvent;
-use bog_math::vec2;
+use bog_layout::LayoutMap;
+use bog_math::{vec2, Vec2};
 use bog_render::{Renderer, Viewport};
 use bog_view::*;
 use bog_window::{
@@ -29,11 +30,13 @@ use crate::{
 
 pub fn run_app<A: AppHandler>(mut app: A) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
-    let model = app.build();
+    let mut layout_map = LayoutMap::new();
+    let model = app.build(&mut layout_map);
 
     let mut runner = AppRunner {
-        app: &mut app,
+        app,
         model,
+        layout_map,
         state: AppState::Suspended(None),
     };
 
@@ -50,13 +53,14 @@ pub trait AppHandler: View {
     fn window_desc(&self) -> WindowDescriptor;
 }
 
-struct AppRunner<'a, A: AppHandler> {
-    app: &'a mut A,
+struct AppRunner<A: AppHandler> {
+    app: A,
     model: Model<A>,
+    layout_map: LayoutMap,
     state: AppState,
 }
 
-impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
+impl<A: AppHandler> WindowingClient for AppRunner<A> {
     fn on_startup(&mut self, _wm: WindowManager) {}
 
     fn on_resume(&mut self, wm: WindowManager) {
@@ -95,13 +99,14 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                // render_view(
-                //     &mut self.model,
-                //     self.app,
-                //     renderer,
-                //     self.model.root_placement(),
-                //     viewport.rect(),
-                // );
+                let root_placement = self.layout_map.placement(self.model.root_node(), Vec2::ZERO);
+                render_view(
+                    &mut self.model,
+                    &mut self.app,
+                    renderer,
+                    root_placement,
+                    viewport.rect(),
+                );
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
@@ -113,8 +118,9 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
                 ModelProxy {
-                    view: self.app,
+                    view: &mut self.app,
                     model: &mut self.model,
+                    layout_map: &mut self.layout_map,
                     renderer,
                 }.handle_resize(physical_size);
                 window.request_redraw();
@@ -123,16 +129,19 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
                 ModelProxy {
-                    view: self.app,
+                    view: &mut self.app,
                     model: &mut self.model,
+                    layout_map: &mut self.layout_map,
                     renderer,
                 }.handle_mouse_move(vec2(x, y));
+                window.request_redraw();
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
                     ModelProxy {
-                        view: self.app,
+                        view: &mut self.app,
                         model: &mut self.model,
+                        layout_map: &mut self.layout_map,
                         renderer,
                     }.handle_mouse_down();
                 }
@@ -140,8 +149,9 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
                     ModelProxy {
-                        view: self.app,
+                        view: &mut self.app,
                         model: &mut self.model,
+                        layout_map: &mut self.layout_map,
                         renderer,
                     }.handle_mouse_up();
                 }
