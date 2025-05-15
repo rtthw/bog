@@ -4,7 +4,7 @@
 
 use bog_collections::NoHashMap;
 use bog_layout::{Layout, Placement};
-use bog_math::Rect;
+use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
 
 
@@ -47,6 +47,13 @@ pub trait Object {
     fn post_render(&mut self, cx: RenderContext<Self::View>) {}
 
     fn on_mouse_down(&mut self, cx: MouseDownContext<Self::View>) {}
+    fn on_mouse_up(&mut self, cx: MouseUpContext<Self::View>) {}
+    fn on_mouse_enter(&mut self, cx: MouseEnterContext<Self::View>) {}
+    fn on_mouse_leave(&mut self, cx: MouseLeaveContext<Self::View>) {}
+
+    fn on_drag_move(&mut self, cx: DragMoveContext<Self::View>) {}
+    fn on_drag_start(&mut self, cx: DragStartContext<Self::View>) {}
+    fn on_drag_end(&mut self, cx: DragEndContext<Self::View>) {}
 }
 
 
@@ -114,4 +121,43 @@ pub struct MouseDownContext<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
     pub node: u64,
+}
+
+pub struct MouseUpContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+}
+
+pub struct MouseEnterContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+}
+
+pub struct MouseLeaveContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+}
+
+pub struct DragMoveContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+    pub over: Option<u64>,
+    pub delta: Vec2,
+}
+
+pub struct DragStartContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+}
+
+pub struct DragEndContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    pub node: u64,
+    pub over: Option<u64>,
 }
