@@ -87,6 +87,48 @@ impl<V: View> Model<V> {
         self.mouse_pos
     }
 
+    /// The viewport's current [`Rect`].
+    pub fn viewport_rect(&self) -> Rect {
+        Rect::new(Vec2::ZERO, self.viewport_size)
+    }
+
+    /// The node currently being hovered, if any.
+    pub fn hovered_node(&self) -> Option<u64> {
+        self.hovered_node
+    }
+
+    /// The node currently being dragged, if any.
+    pub fn dragged_node(&self) -> Option<u64> {
+        self.drag_start_node
+    }
+
+    /// Returns `true` if the user is currently dragging a node.
+    pub fn is_dragging(&self) -> bool {
+        self.is_dragging
+    }
+
+    /// The starting position of the user's drag, if any.
+    pub fn drag_origin(&self) -> Option<Vec2> {
+        self.drag_start_pos
+    }
+
+    /// The difference between the user's mouse position and drag origin.
+    ///
+    /// If the user is not dragging, this is `Vec2::ZERO`.
+    pub fn drag_delta(&self) -> Vec2 {
+        self.drag_start_pos.map(|pos| self.mouse_pos - pos)
+            .unwrap_or(Vec2::ZERO)
+    }
+
+    /// The duration that the user has been dragging, if the user has been dragging.
+    pub fn drag_duration(&self) -> Option<std::time::Duration> {
+        if self.is_dragging {
+            Some(std::time::Instant::now().duration_since(self.drag_start_time))
+        } else {
+            None
+        }
+    }
+
     /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
     /// using the object, then the object will be dropped, and therefore inaccessible until
     /// replaced.

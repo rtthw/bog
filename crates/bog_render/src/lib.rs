@@ -16,7 +16,7 @@ use text::*;
 pub use types::*;
 pub use viewport::*;
 
-use bog_math::{Mat4, Rect, Vec2};
+use bog_math::{vec2, Mat4, Rect, Vec2};
 
 
 
@@ -179,6 +179,14 @@ impl Renderer {
             width: viewport_size.x as u32,
             height: viewport_size.y as u32,
         });
+    }
+
+    /// The viewport's current [`Rect`].
+    pub fn viewport_rect(&self) -> Rect {
+        Rect::new(Vec2::ZERO, vec2(
+            self.text_pipeline.viewport.resolution().width as f32,
+            self.text_pipeline.viewport.resolution().height as f32,
+        ))
     }
 
     pub fn load_font(&mut self, bytes: impl Into<Vec<u8>>) {

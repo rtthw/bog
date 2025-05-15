@@ -158,7 +158,7 @@ impl Object for DraggableButton {
 
     fn on_drag_move(&mut self, cx: EventContext<Self::View>) {
         cx.view.drag_indicator = Some(Quad {
-            bounds: self.known_rect + (cx.model.mouse_position() - self.known_rect.position()),
+            bounds: self.known_rect + cx.model.drag_delta(),
             border: Border {
                 width: 3.0,
                 color: GRAY_8,
