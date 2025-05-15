@@ -78,6 +78,16 @@ pub mod prelude {
         Text,
         Viewport,
     };
+    pub use bog_view::{
+        Element,
+        EventContext,
+        Model,
+        ModelProxy,
+        Object,
+        render_view,
+        RenderContext,
+        View,
+    };
     pub use bog_window::{
         CursorIcon,
         Window,
