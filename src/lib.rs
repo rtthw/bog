@@ -4,7 +4,6 @@
 
 pub mod app;
 pub mod graphics;
-pub mod ui;
 
 pub use bog_alloc as alloc;
 pub use bog_collections as collections;
