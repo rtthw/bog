@@ -53,13 +53,13 @@ impl View for App {
                 .gap_x(11.0)
                 .padding(11.0))
             .child(Element::new()
-                .object(Panel { color: GRAY_2 })
+                .object(LeftPanel { color: GRAY_2 })
                 .layout(Layout::default()
                     .flex_initial()
                     .width(300.0)
                     .padding(7.0)))
             .child(Element::new()
-                .object(Panel { color: GRAY_3 })
+                .object(RightPanel { color: GRAY_3 })
                 .layout(Layout::default()
                     .flex_auto()
                     .flex_wrap()
@@ -85,11 +85,11 @@ impl AppHandler for App {
 
 
 
-struct Panel {
+struct LeftPanel {
     color: Color,
 }
 
-impl Object for Panel {
+impl Object for LeftPanel {
     type View = App;
 
     fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
@@ -98,6 +98,28 @@ impl Object for Panel {
             bg_color: self.color,
             ..Default::default()
         });
+    }
+}
+
+struct RightPanel {
+    color: Color,
+}
+
+impl Object for RightPanel {
+    type View = App;
+
+    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
+        cx.renderer.fill_quad(Quad {
+            bounds: cx.placement.rect(),
+            bg_color: self.color,
+            ..Default::default()
+        });
+    }
+
+    fn post_render(&mut self, cx: RenderContext<Self::View>) {
+        if let Some(drag_indicator) = &cx.view.drag_indicator {
+            cx.renderer.fill_quad(*drag_indicator);
+        }
     }
 }
 
@@ -132,5 +154,35 @@ impl Object for DraggableButton {
 
     fn on_mouse_leave(&mut self, _cx: bog::view::EventContext<Self::View>) {
         self.bg_color = GRAY_4;
+    }
+
+    fn on_drag_move(&mut self, cx: EventContext<Self::View>) {
+        cx.view.drag_indicator = Some(Quad {
+            bounds: self.known_rect + (cx.model.mouse_position() - self.known_rect.position()),
+            border: Border {
+                width: 3.0,
+                color: GRAY_8,
+                radius: [3.0; 4],
+            },
+            bg_color: GRAY_5.with_alpha(155),
+            ..Default::default()
+        });
+    }
+
+    fn on_drag_start(&mut self, cx: EventContext<Self::View>) {
+        cx.view.drag_indicator = Some(Quad {
+            bounds: self.known_rect,
+            border: Border {
+                width: 3.0,
+                color: GRAY_8,
+                radius: [3.0; 4],
+            },
+            bg_color: GRAY_5.with_alpha(155),
+            ..Default::default()
+        })
+    }
+
+    fn on_drag_end(&mut self, cx: EventContext<Self::View>) {
+        cx.view.drag_indicator = None;
     }
 }

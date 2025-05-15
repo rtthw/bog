@@ -82,6 +82,11 @@ impl<V: View> Model<V> {
         layout_map.placement(self.root_node, Vec2::ZERO)
     }
 
+    /// The current position of the user's mouse.
+    pub fn mouse_position(&self) -> Vec2 {
+        self.mouse_pos
+    }
+
     /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
     /// using the object, then the object will be dropped, and therefore inaccessible until
     /// replaced.
@@ -109,10 +114,20 @@ impl<'a, V: View> ModelProxy<'a, V> {
             return;
         }
         self.model.viewport_size = new_size;
+        let root_layout = self.layout_map.get_layout(self.model.root_node);
+        self.layout_map.update_layout(
+            self.model.root_node,
+            root_layout.width(new_size.x).height(new_size.y),
+        );
         self.layout_map.compute_layout(self.model.root_node, new_size);
     }
 
     pub fn handle_mouse_move(&mut self, new_pos: Vec2) {
+        if new_pos == self.model.mouse_pos {
+            return;
+        }
+        self.model.mouse_pos = new_pos;
+
         let mut hovered = Vec::with_capacity(3);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {

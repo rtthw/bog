@@ -107,6 +107,10 @@ impl LayoutMap {
         self.mark_dirty(parent.into());
     }
 
+    pub fn get_layout(&mut self, node: u64) -> crate::Layout {
+        self.nodes[slotmap::KeyData::from_ffi(node).into()].style.clone().into()
+    }
+
     pub fn update_layout(&mut self, node: u64, layout: crate::Layout) {
         self.nodes[slotmap::KeyData::from_ffi(node).into()].style = layout.into();
         self.mark_dirty(node);
