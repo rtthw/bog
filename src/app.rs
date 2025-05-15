@@ -12,11 +12,9 @@
 */
 
 
-use bog_collections::NoHashMap;
 use bog_event::WindowEvent;
-use bog_layout::{Layout, LayoutMap, Placement};
-use bog_math::{glam::vec2, Rect, Vec2};
-use bog_render::{Render, Renderer, Viewport};
+use bog_math::vec2;
+use bog_render::{Renderer, Viewport};
 use bog_view::*;
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
@@ -24,7 +22,6 @@ use bog_window::{
 
 use crate::{
     graphics::WindowGraphics,
-    ui::{UserInterface, UserInterfaceContext, UserInterfaceHandler},
     Result,
 };
 
@@ -32,16 +29,12 @@ use crate::{
 
 pub fn run_app<A: AppHandler>(mut app: A) -> Result<()> {
     let windowing_system = WindowingSystem::new()?;
-
-    let mut layout_map = LayoutMap::new();
-    let model = app.build(&mut layout_map);
-    let ui = UserInterface::new(layout_map, model.root_node());
+    let model = app.build();
 
     let mut runner = AppRunner {
         app: &mut app,
         model,
         state: AppState::Suspended(None),
-        ui,
     };
 
     windowing_system.run_client(&mut runner)?;
@@ -61,7 +54,6 @@ struct AppRunner<'a, A: AppHandler> {
     app: &'a mut A,
     model: Model<A>,
     state: AppState,
-    ui: UserInterface,
 }
 
 impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
@@ -103,13 +95,13 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                render_view(
-                    &mut self.model,
-                    self.app,
-                    renderer,
-                    self.ui.root_placement(),
-                    viewport.rect(),
-                );
+                // render_view(
+                //     &mut self.model,
+                //     self.app,
+                //     renderer,
+                //     self.model.root_placement(),
+                //     viewport.rect(),
+                // );
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&target, &viewport);
@@ -120,123 +112,43 @@ impl<'a, A: AppHandler> WindowingClient for AppRunner<'a, A> {
                 graphics.resize(renderer.device(), physical_size);
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
-                self.ui.handle_resize(
-                    &mut Proxy { app: self.app, model: &mut self.model, graphics, window, renderer },
-                    physical_size,
-                );
+                ModelProxy {
+                    view: self.app,
+                    model: &mut self.model,
+                    renderer,
+                }.handle_resize(physical_size);
                 window.request_redraw();
             }
             // WindowEvent::KeyDown { code, repeat } => {}
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
-                self.ui.handle_mouse_move(
-                    &mut Proxy { app: self.app, model: &mut self.model, graphics, window, renderer },
-                    vec2(x, y),
-                );
+                ModelProxy {
+                    view: self.app,
+                    model: &mut self.model,
+                    renderer,
+                }.handle_mouse_move(vec2(x, y));
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_down(&mut Proxy {
-                        app: self.app,
+                    ModelProxy {
+                        view: self.app,
                         model: &mut self.model,
-                        graphics,
-                        window,
                         renderer,
-                    });
+                    }.handle_mouse_down();
                 }
             }
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
-                    self.ui.handle_mouse_up(&mut Proxy {
-                        app: self.app,
+                    ModelProxy {
+                        view: self.app,
                         model: &mut self.model,
-                        graphics,
-                        window,
                         renderer,
-                    });
+                    }.handle_mouse_up();
                 }
             }
             _ => {}
         }
     }
-}
-
-struct Proxy<'a, A: AppHandler> {
-    app: &'a mut A,
-    model: &'a mut Model<A>,
-    graphics: &'a mut WindowGraphics<'static>,
-    window: &'a mut Window,
-    renderer: &'a mut Renderer,
-}
-
-impl<'a, A: AppHandler> UserInterfaceHandler for Proxy<'a, A> {
-    fn on_mouse_move(&mut self, _pos: Vec2) {}
-
-    fn on_mouse_enter(&mut self, node: u64, gui_cx: UserInterfaceContext) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_mouse_enter();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_mouse_leave(&mut self, node: u64, gui_cx: UserInterfaceContext) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_mouse_leave();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_mouse_down(&mut self, node: u64, gui_cx: UserInterfaceContext) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_mouse_down();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_mouse_up(&mut self, node: u64, gui_cx: UserInterfaceContext) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_mouse_up();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_drag_move(
-        &mut self,
-        node: u64,
-        gui_cx: UserInterfaceContext,
-        delta: Vec2,
-        over: Option<u64>,
-    ) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_drag_move();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_drag_start(&mut self, node: u64, gui_cx: UserInterfaceContext) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_drag_start();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_drag_end(&mut self, node: u64, gui_cx: UserInterfaceContext, over: Option<u64>) {
-        if let Some(mut obj) = self.model.grab(node) {
-            // obj.on_drag_end();
-            self.model.place(node, obj);
-        }
-    }
-
-    fn on_resize(&mut self, _size: Vec2) {}
-
-    fn on_node_layout(&mut self, _node: u64, _placement: &Placement) {}
-}
-
-pub struct AppContext<'a> {
-    pub graphics: &'a mut WindowGraphics<'static>,
-    pub window: &'a mut Window,
-    pub renderer: &'a mut Renderer,
-    pub gui_cx: UserInterfaceContext<'a>,
 }
 
 enum AppState {
@@ -247,19 +159,4 @@ enum AppState {
         viewport: Viewport,
         renderer: Renderer,
     },
-}
-
-
-
-pub struct Context<'a, A: AppHandler> {
-    app: &'a mut A,
-    window: &'a mut Window,
-    model: &'a mut Model<A>,
-
-    viewport_size: Vec2,
-    pointer_pos: Vec2,
-
-    root_node: u64,
-    hovered_node: Option<u64>,
-    dragged_node: Option<u64>,
 }

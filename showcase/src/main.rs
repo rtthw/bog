@@ -33,7 +33,7 @@ struct App {
 }
 
 impl View for App {
-    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<App> {
+    fn build(&mut self) -> Model<App> {
         let draggable_buttons = (0..=7).map(|_n| {
             Element::new()
                 .object(DraggableButton {
@@ -69,7 +69,7 @@ impl View for App {
                     .justify_content_center())
                 .children(draggable_buttons));
 
-        Model::new(root, layout_map)
+        Model::new(root)
     }
 }
 

@@ -6,7 +6,7 @@ use bog_collections::NoHashMap;
 use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
-use bog_window::Window;
+// use bog_window::Window;
 
 
 
@@ -14,21 +14,29 @@ use bog_window::Window;
 /// [`Model`].
 pub trait View {
     /// Build this view's associated [`Model`].
-    fn build(&mut self, layout_map: &mut LayoutMap) -> Model<Self> where Self: Sized;
+    fn build(&mut self) -> Model<Self> where Self: Sized;
 }
 
 
 
 /// A view model really just a tree of [`Element`]s that have been attached to the [`View`].
 pub struct Model<V: View> {
+    layout_map: LayoutMap,
     elements: NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
     root_node: u64,
+    mouse_pos: Vec2,
+    viewport_size: Vec2,
+    hovered_node: Option<u64>,
+    is_dragging: bool,
+    drag_start_pos: Option<Vec2>,
+    drag_start_time: std::time::Instant,
+    drag_start_node: Option<u64>,
 }
 
 impl<V: View> Model<V> {
     /// Create a new view model with it's element tree as defined by the given root [`Element`].
     /// The provided [`LayoutMap`] will also be updated to match this model.
-    pub fn new(root: Element<V>, layout_map: &mut LayoutMap) -> Self {
+    pub fn new(root: Element<V>) -> Self {
         fn digest_elements<V: View>(
             element_map: &mut NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
             layout_map: &mut LayoutMap,
@@ -46,21 +54,34 @@ impl<V: View> Model<V> {
             }
         }
 
-        layout_map.clear();
+        let mut layout_map = LayoutMap::new();
         let mut elements = NoHashMap::with_capacity(16);
         let root_node = layout_map.add_node(root.layout);
 
-        digest_elements(&mut elements, layout_map, root.children, root_node);
+        digest_elements(&mut elements, &mut layout_map, root.children, root_node);
 
         Self {
+            layout_map,
             elements,
             root_node,
+            mouse_pos: Vec2::ZERO,
+            viewport_size: Vec2::ZERO,
+            hovered_node: None,
+            is_dragging: false,
+            drag_start_pos: None,
+            drag_start_time: std::time::Instant::now(),
+            drag_start_node: None,
         }
     }
 
-    /// The the node identifier for the root [`Element`] of this model.
+    /// The node identifier for the root [`Element`] of this model.
     pub fn root_node(&self) -> u64 {
         self.root_node
+    }
+
+    /// The [`Placement`] of the root [`Element`] of this model.
+    pub fn root_placement(&self) -> Placement {
+        self.layout_map.placement(self.root_node, Vec2::ZERO)
     }
 
     /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
@@ -73,6 +94,149 @@ impl<V: View> Model<V> {
     /// Place an element into this model.
     pub fn place(&mut self, node: u64, obj: Box<dyn Object<View = V>>) {
         let _ = self.elements.insert(node, Some(obj));
+    }
+}
+
+pub struct ModelProxy<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    // pub window: &'a Window,
+    pub renderer: &'a mut Renderer,
+}
+
+impl<'a, V: View> ModelProxy<'a, V> {
+    pub fn handle_resize(&mut self, new_size: Vec2) {
+        if new_size == self.model.viewport_size {
+            return;
+        }
+        self.model.viewport_size = new_size;
+        self.model.layout_map.compute_layout(self.model.root_node, new_size);
+    }
+
+    pub fn handle_mouse_move(&mut self, new_pos: Vec2) {
+        let mut hovered = Vec::with_capacity(3);
+
+        fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
+            if !placement.rect().contains(pos) {
+                return;
+            }
+
+            hovered.push(placement.node());
+
+            for child_placement in placement.children() {
+                find_hovered(child_placement, hovered, pos);
+            }
+        }
+
+        find_hovered(self.model.root_placement(), &mut hovered, new_pos);
+
+        let topmost_hovered = hovered.last().copied();
+
+        if let Some(_drag_origin_pos) = self.model.drag_start_pos {
+            if let Some(drag_node) = self.model.drag_start_node {
+                if !self.model.is_dragging {
+                    let dur_since = std::time::Instant::now()
+                        .duration_since(self.model.drag_start_time);
+                    if dur_since.as_secs_f64() > 0.1 {
+                        // User is likely dragging.
+                        self.model.is_dragging = true;
+                        if let Some(mut obj) = self.model.grab(drag_node) {
+                            obj.on_drag_start(EventContext {
+                                view: self.view,
+                                model: self.model,
+                                // window: self.window,
+                                renderer: self.renderer,
+                            });
+                            self.model.place(drag_node, obj);
+                        }
+                    }
+                }
+                if self.model.is_dragging {
+                    // TODO: let delta = new_pos - drag_origin_pos;
+                    if let Some(mut obj) = self.model.grab(drag_node) {
+                        obj.on_drag_move(EventContext {
+                            view: self.view,
+                            model: self.model,
+                            // window: self.window,
+                            renderer: self.renderer,
+                        });
+                        self.model.place(drag_node, obj);
+                    }
+                }
+            }
+        }
+
+        if self.model.hovered_node != topmost_hovered {
+            if let Some(left_node) = self.model.hovered_node.take() {
+                if let Some(mut obj) = self.model.grab(left_node) {
+                    obj.on_mouse_leave(EventContext {
+                        view: self.view,
+                        model: self.model,
+                        // window: self.window,
+                        renderer: self.renderer,
+                    });
+                    self.model.place(left_node, obj);
+                }
+            }
+            if let Some(entered_node) = topmost_hovered {
+                if let Some(mut obj) = self.model.grab(entered_node) {
+                    obj.on_mouse_enter(EventContext {
+                        view: self.view,
+                        model: self.model,
+                        // window: self.window,
+                        renderer: self.renderer,
+                    });
+                    self.model.place(entered_node, obj);
+                }
+                self.model.hovered_node = Some(entered_node);
+            }
+        }
+    }
+
+    pub fn handle_mouse_down(&mut self) {
+        if let Some(node) = self.model.hovered_node {
+            if let Some(mut obj) = self.model.grab(node) {
+                obj.on_mouse_down(EventContext {
+                    view: self.view,
+                    model: self.model,
+                    // window: self.window,
+                    renderer: self.renderer,
+                });
+                self.model.place(node, obj);
+            }
+        }
+        self.model.drag_start_time = std::time::Instant::now();
+        self.model.drag_start_pos = Some(self.model.mouse_pos);
+        self.model.drag_start_node = self.model.hovered_node.clone();
+    }
+
+    pub fn handle_mouse_up(&mut self) {
+        if let Some(node) = self.model.hovered_node {
+            if let Some(mut obj) = self.model.grab(node) {
+                obj.on_mouse_up(EventContext {
+                    view: self.view,
+                    model: self.model,
+                    // window: self.window,
+                    renderer: self.renderer,
+                });
+                self.model.place(node, obj);
+            }
+        }
+        self.model.drag_start_pos = None;
+        if let Some(node) = self.model.drag_start_node.take() {
+            if self.model.is_dragging {
+                self.model.is_dragging = false;
+                if let Some(mut obj) = self.model.grab(node) {
+                    obj.on_drag_end(EventContext {
+                        view: self.view,
+                        model: self.model,
+                        // window: self.window,
+                        renderer: self.renderer,
+                    });
+                    self.model.place(node, obj);
+                }
+            }
+        }
     }
 }
 
@@ -144,16 +308,16 @@ pub trait Object {
 
     /// This function is called when the user clicks down with the primary mouse button on this
     /// object.
-    fn on_mouse_down(&mut self, cx: MouseDownContext<Self::View>) {}
+    fn on_mouse_down(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called when the user releases a click with the primary mouse button on
     /// this object.
-    fn on_mouse_up(&mut self, cx: MouseUpContext<Self::View>) {}
+    fn on_mouse_up(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called immediately after the user's mouse pointer enters this object's
     /// [`Placement`] area.
-    fn on_mouse_enter(&mut self, cx: MouseEnterContext<Self::View>) {}
+    fn on_mouse_enter(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called immediately after the user's mouse pointer leaves this object's
     /// [`Placement`] area.
-    fn on_mouse_leave(&mut self, cx: MouseLeaveContext<Self::View>) {}
+    fn on_mouse_leave(&mut self, cx: EventContext<Self::View>) {}
 
     /* TODO
     - Maybe remove the `on_drag_over` callback and just call `on_mouse_enter` with `dragged_node`
@@ -164,27 +328,27 @@ pub trait Object {
 
     /// This function is called when the user's mouse pointer moves while this object is being
     /// dragged.
-    fn on_drag_move(&mut self, cx: DragMoveContext<Self::View>) {}
+    fn on_drag_move(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called when the user begins dragging this object with the mouse pointer
     /// (when a mouse down event occurs followed by a definitive drag action).
-    fn on_drag_start(&mut self, cx: DragStartContext<Self::View>) {}
+    fn on_drag_start(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called when the user finishes dragging this object with the mouse pointer
     /// (a mouse up event occurs while dragging this object).
-    fn on_drag_end(&mut self, cx: DragEndContext<Self::View>) {}
+    fn on_drag_end(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called when the user's mouse pointer enters the [`Placement`] area of this
     /// object. This is similar to [`Object::on_mouse_enter`] with the added context of the
     /// currently dragged node.
-    fn on_drag_over(&mut self, cx: DragOverContext<Self::View>) {}
+    fn on_drag_over(&mut self, cx: EventContext<Self::View>) {}
     /// This function is called when the user finishes dragging an object while hovering this
     /// object.
-    fn on_drag_drop(&mut self, cx: DragDropContext<Self::View>) {}
+    fn on_drag_drop(&mut self, cx: EventContext<Self::View>) {}
 }
 
 
 
 pub struct RenderContext<'a, V: View> {
     pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
+    // pub model: &'a mut Model<V>,
     pub renderer: &'a mut Renderer,
     pub placement: Placement<'a>,
 }
@@ -212,13 +376,13 @@ fn render_placement<V: View>(
         if let Some(mut obj) = model.grab(child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,
-                model,
+                // model,
                 renderer,
                 placement: child_placement,
             });
             obj.render(RenderContext {
                 view,
-                model,
+                // model,
                 renderer,
                 placement: child_placement,
             });
@@ -230,7 +394,7 @@ fn render_placement<V: View>(
         if let Some(mut obj) = model.grab(child_placement.node()) {
             obj.post_render(RenderContext {
                 view,
-                model,
+                // model,
                 renderer,
                 placement: child_placement,
             });
@@ -241,103 +405,9 @@ fn render_placement<V: View>(
 
 
 
-pub struct ViewState {
-    pub viewport_rect: Rect,
-
-    pub pointer_pos: Vec2,
-
-    pub root_node: u64,
-    pub hovered_node: Option<u64>,
-    pub dragged_node: Option<u64>,
-}
-
 pub struct EventContext<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
-    pub window: &'a Window,
+    // pub window: &'a Window,
     pub renderer: &'a mut Renderer,
-    pub state: &'a ViewState,
-}
-
-
-
-pub struct MouseDownContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-}
-
-pub struct MouseUpContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-}
-
-pub struct MouseEnterContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-}
-
-pub struct MouseLeaveContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-}
-
-
-
-pub struct DragMoveContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-    pub over: Option<u64>,
-    pub delta: Vec2,
-}
-
-pub struct DragStartContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-}
-
-pub struct DragEndContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    pub node: u64,
-    pub over: Option<u64>,
-}
-
-pub struct DragOverContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    /// This [`Object`]'s node.
-    pub node: u64,
-    /// The node that is being dragged over this one. You can get the [`Object`] for it with
-    /// something like:
-    /// ```no_run
-    /// // In `Object::on_drag_over`:
-    /// if let Some(obj) = cx.model.grab(cx.dragged_node) {
-    ///     // **IMPORTANT** Don't forget to put it back!
-    ///     cx.model.put(cx.dragged_node, obj);
-    /// }
-    /// ```
-    pub dragged_node: u64,
-}
-
-pub struct DragDropContext<'a, V: View> {
-    pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
-    /// This [`Object`]'s node.
-    pub node: u64,
-    /// The node that was dropped onto this one. You can get the [`Object`] for it with something
-    /// like:
-    /// ```no_run
-    /// // In `Object::on_drag_drop`:
-    /// if let Some(obj) = cx.model.grab(cx.dropped_node) {
-    ///     // **IMPORTANT** Don't forget to put it back!
-    ///     cx.model.put(cx.dropped_node, obj);
-    /// }
-    /// ```
-    pub dropped_node: u64,
 }
