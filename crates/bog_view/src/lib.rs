@@ -154,15 +154,29 @@ pub trait Object {
     /// [`Placement`] area.
     fn on_mouse_leave(&mut self, cx: MouseLeaveContext<Self::View>) {}
 
+    /* TODO
+    - Maybe remove the `on_drag_over` callback and just call `on_mouse_enter` with `dragged_node`
+      as an option?
+    - Maybe remove the `on_drag_drop` callback and indicate whether the caller is the receiver in
+      `on_drag_end`?
+    */
+
     /// This function is called when the user's mouse pointer moves while this object is being
     /// dragged.
     fn on_drag_move(&mut self, cx: DragMoveContext<Self::View>) {}
     /// This function is called when the user begins dragging this object with the mouse pointer
     /// (when a mouse down event occurs followed by a definitive drag action).
     fn on_drag_start(&mut self, cx: DragStartContext<Self::View>) {}
-    /// This function is called when the user finished dragging this object with the mouse pointer
+    /// This function is called when the user finishes dragging this object with the mouse pointer
     /// (a mouse up event occurs while dragging this object).
     fn on_drag_end(&mut self, cx: DragEndContext<Self::View>) {}
+    /// This function is called when the user's mouse pointer enters the [`Placement`] area of this
+    /// object. This is similar to [`Object::on_mouse_enter`] with the added context of the
+    /// currently dragged node.
+    fn on_drag_over(&mut self, cx: DragOverContext<Self::View>) {}
+    /// This function is called when the user finishes dragging an object while hovering this
+    /// object.
+    fn on_drag_drop(&mut self, cx: DragDropContext<Self::View>) {}
 }
 
 
@@ -250,6 +264,8 @@ pub struct MouseLeaveContext<'a, V: View> {
     pub node: u64,
 }
 
+
+
 pub struct DragMoveContext<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
@@ -269,4 +285,38 @@ pub struct DragEndContext<'a, V: View> {
     pub model: &'a mut Model<V>,
     pub node: u64,
     pub over: Option<u64>,
+}
+
+pub struct DragOverContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    /// This [`Object`]'s node.
+    pub node: u64,
+    /// The node that is being dragged over this one. You can get the [`Object`] for it with
+    /// something like:
+    /// ```no_run
+    /// // In `Object::on_drag_over`:
+    /// if let Some(obj) = cx.model.grab(cx.dragged_node) {
+    ///     // **IMPORTANT** Don't forget to put it back!
+    ///     cx.model.put(cx.dragged_node, obj);
+    /// }
+    /// ```
+    pub dragged_node: u64,
+}
+
+pub struct DragDropContext<'a, V: View> {
+    pub view: &'a mut V,
+    pub model: &'a mut Model<V>,
+    /// This [`Object`]'s node.
+    pub node: u64,
+    /// The node that was dropped onto this one. You can get the [`Object`] for it with something
+    /// like:
+    /// ```no_run
+    /// // In `Object::on_drag_drop`:
+    /// if let Some(obj) = cx.model.grab(cx.dropped_node) {
+    ///     // **IMPORTANT** Don't forget to put it back!
+    ///     cx.model.put(cx.dropped_node, obj);
+    /// }
+    /// ```
+    pub dropped_node: u64,
 }
