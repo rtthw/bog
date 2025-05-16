@@ -6,7 +6,7 @@ use core::marker::PhantomData;
 
 use bog_collections::NoHashMap;
 use bog_color::Color;
-use bog_layout::{Layout, LayoutMap, Placement};
+use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Border, Quad, Render as _, Renderer, Text};
 // use bog_window::Window;
@@ -164,7 +164,15 @@ impl<'a, V: View> ModelProxy<'a, V> {
             self.model.root_node,
             root_layout.width(new_size.x).height(new_size.y),
         );
-        self.layout_map.compute_layout(self.model.root_node, new_size);
+        self.layout_map.compute_contextual_layout(
+            self.model.root_node,
+            new_size,
+            ModelProxyContext {
+                // view: self.view,
+                model: self.model,
+                renderer: self.renderer,
+            },
+        );
 
         // Call `Object::on_placement` for all elements.
         // fn update_placements<'a, V: View>(
@@ -338,6 +346,24 @@ impl<'a, V: View> ModelProxy<'a, V> {
     }
 }
 
+struct ModelProxyContext<'a, V: View> {
+    // view: &'a mut V,
+    model: &'a mut Model<V>,
+    renderer: &'a mut Renderer,
+}
+
+impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
+    fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2 {
+        let mut size = Vec2::ZERO;
+        if let Some(obj) = self.model.grab(node) {
+            size = obj.measure(available_space, self.renderer);
+            self.model.place(node, obj);
+        }
+
+        size
+    }
+}
+
 
 
 /// An element is essentially just a way of attaching an [`Object`] to a [`Model`].
@@ -393,6 +419,8 @@ impl<V: View> Element<V> {
 #[allow(unused)]
 pub trait Object {
     type View: View;
+
+    fn measure(&self, available_space: Vec2, renderer: &mut Renderer) -> Vec2 { Vec2::ZERO }
 
     /// This function is called during the object's render pass. Use it to render primitives with
     /// the [`Renderer`].
@@ -542,6 +570,13 @@ struct StaticParagraph<V: View> {
 
 impl<V: View> Object for StaticParagraph<V> {
     type View = V;
+
+    fn measure(&self, available_space: Vec2, renderer: &mut Renderer) -> Vec2 {
+        renderer.measure_text(&Text {
+            bounds: available_space,
+            ..self.text.clone()
+        })
+    }
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.fill_text(Text {

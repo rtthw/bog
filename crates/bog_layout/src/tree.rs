@@ -1,6 +1,8 @@
 
 
 
+use std::f32;
+
 use bog_math::{vec2, Rect, Vec2};
 use slotmap::Key as _;
 
@@ -34,7 +36,7 @@ impl LayoutNode for u64 {
 
 
 
-// #[derive(Debug)]
+#[derive(Debug)]
 pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
     children: slotmap::SlotMap<slotmap::DefaultKey, Vec<u64>>,
@@ -92,7 +94,6 @@ impl LayoutMap {
             style: layout.into(),
             layout: taffy::Layout::with_order(0),
             cache: taffy::Cache::new(),
-            measure: Box::new(move |_available_space| Vec2::ZERO),
         });
         let _ = self.children.insert(Vec::with_capacity(0));
         let _ = self.parents.insert(None);
@@ -131,7 +132,12 @@ impl LayoutMap {
         );
     }
 
-    pub fn compute_contextual_layout<T>(&mut self, node: u64, available_space: Vec2, context: T) {
+    pub fn compute_contextual_layout<T: LayoutContext>(
+        &mut self,
+        node: u64,
+        available_space: Vec2,
+        context: T,
+    ) {
         taffy::compute_root_layout(
             &mut LayoutMapProxy {
                 map: self,
@@ -199,7 +205,7 @@ impl LayoutMap {
 
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Placement<'a> {
     node: u64,
     position: Vec2,
@@ -278,18 +284,33 @@ impl<'a> Iterator for PlacementIter<'a> {
 
 
 
+pub type LayoutMeasureFunction<T> = dyn Fn(T, Vec2) -> Vec2; // (context, space) -> size
+
+
+
+pub trait LayoutContext {
+    fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2;
+}
+
+impl LayoutContext for () {
+    fn measure_node(&mut self, _node: u64, _available_space: Vec2) -> Vec2 {
+        Vec2::ZERO
+    }
+}
+
+
+
 // --- Taffy Implementations
 // TODO: Maybe use something like this?
 //       https://github.com/DioxusLabs/taffy/blob/main/examples/custom_tree_owned_unsafe.rs
 
 
 
-// #[derive(Debug)]
+#[derive(Debug)]
 struct NodeInfo {
     style: taffy::Style,
     layout: taffy::Layout,
     cache: taffy::Cache,
-    measure: Box<dyn Fn(Vec2) -> Vec2>,
 }
 
 impl LayoutMap {
@@ -312,12 +333,12 @@ impl<'a> Iterator for LayoutNodeChildIter<'a> {
     }
 }
 
-struct LayoutMapProxy<'a, T> {
+struct LayoutMapProxy<'a, T: LayoutContext> {
     map: &'a mut LayoutMap,
     context: T,
 }
 
-impl<'a, T> taffy::TraversePartialTree for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::TraversePartialTree for LayoutMapProxy<'a, T> {
     type ChildIter<'b> = LayoutNodeChildIter<'b> where Self: 'b;
 
     fn child_ids(&self, node_id: taffy::NodeId) -> Self::ChildIter<'_> {
@@ -333,7 +354,7 @@ impl<'a, T> taffy::TraversePartialTree for LayoutMapProxy<'a, T> {
     }
 }
 
-impl<'a, T> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
     type CoreContainerStyle<'b> = &'b taffy::Style where Self: 'b;
 
     fn get_core_container_style(&self, node_id: taffy::NodeId) -> Self::CoreContainerStyle<'_> {
@@ -360,11 +381,13 @@ impl<'a, T> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
                 (taffy::Display::Grid, true) => taffy::compute_grid_layout(tree, id, inputs),
                 (_, false) => {
                     let style = &tree.map.nodes[id.into()].style;
-                    let measure = &tree.map.nodes[id.into()].measure;
                     taffy::compute_leaf_layout(inputs, style, |_dimensions, available_space| {
-                        let size = (measure)(vec2(
-                            available_space.width.unwrap(),
-                            available_space.height.unwrap(),
+                        let size = tree.context.measure_node(id.into(), vec2(
+                            // FIXME: This should be different based on whether avaible space is
+                            //        min content or max content (probably zero for min and
+                            //        infinity for max).
+                            available_space.width.unwrap_or(f32::INFINITY),
+                            available_space.height.unwrap_or(f32::INFINITY),
                         ));
                         taffy::Size {
                             width: size.x,
@@ -377,7 +400,7 @@ impl<'a, T> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
     }
 }
 
-impl<'a, T> taffy::CacheTree for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::CacheTree for LayoutMapProxy<'a, T> {
     fn cache_get(
         &self,
         node_id: taffy::NodeId,
@@ -404,7 +427,7 @@ impl<'a, T> taffy::CacheTree for LayoutMapProxy<'a, T> {
     }
 }
 
-impl<'a, T> taffy::LayoutBlockContainer for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::LayoutBlockContainer for LayoutMapProxy<'a, T> {
     type BlockContainerStyle<'b> = &'b taffy::Style where Self: 'b;
     type BlockItemStyle<'b> = &'b taffy::Style where Self: 'b;
 
@@ -417,7 +440,7 @@ impl<'a, T> taffy::LayoutBlockContainer for LayoutMapProxy<'a, T> {
     }
 }
 
-impl<'a, T> taffy::LayoutFlexboxContainer for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::LayoutFlexboxContainer for LayoutMapProxy<'a, T> {
     type FlexboxContainerStyle<'b> = &'b taffy::Style where Self: 'b;
     type FlexboxItemStyle<'b> = &'b taffy::Style where Self: 'b;
 
@@ -430,7 +453,7 @@ impl<'a, T> taffy::LayoutFlexboxContainer for LayoutMapProxy<'a, T> {
     }
 }
 
-impl<'a, T> taffy::LayoutGridContainer for LayoutMapProxy<'a, T> {
+impl<'a, T: LayoutContext> taffy::LayoutGridContainer for LayoutMapProxy<'a, T> {
     type GridContainerStyle<'b> = &'b taffy::Style where Self: 'b;
     type GridItemStyle<'b> = &'b taffy::Style where Self: 'b;
 

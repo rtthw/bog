@@ -69,7 +69,7 @@ impl View for App {
                         font_style: FontStyle::Normal,
                         ..Default::default()
                     },
-                    Layout::default().fill_width().height(37.0),
+                    Layout::default().fill_width(),
                 ))
                 .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)).into()))
             .child(Element::new()

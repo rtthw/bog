@@ -213,7 +213,7 @@ impl Renderer {
         self.text_pipeline.font_system.db_mut().set_monospace_family(name);
     }
 
-    /// Measure the provided [`Text`].
+    /// Returns the minimum bounds required by the given [`Text`].
     pub fn measure_text(&mut self, text: &Text) -> Vec2 {
         let key = TextCacheKey::from(text);
         let (_hash, entry) = self.text_manager.cache
