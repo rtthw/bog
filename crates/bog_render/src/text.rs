@@ -11,7 +11,7 @@ use crate::{FontFamily, FontStyle, Text};
 
 
 pub struct TextManager {
-    cache: TextCache,
+    pub(crate) cache: TextCache,
     layers: Vec<TextLayer>,
     prepare_layer: usize,
 }
@@ -47,14 +47,7 @@ impl TextManager {
         let layer = &mut self.layers[self.prepare_layer];
         let keys = texts.iter()
             .map(|t| {
-                let key = TextCacheKey {
-                    content: &t.content,
-                    size: t.size,
-                    line_height: t.line_height,
-                    font_family: t.font_family,
-                    font_style: t.font_style,
-                    bounds: t.bounds,
-                };
+                let key = TextCacheKey::from(t);
                 let (hash, _entry) = self.cache.allocate(&mut pipeline.font_system, key);
 
                 hash
@@ -144,7 +137,7 @@ impl TextPipeline {
 
 
 #[derive(Clone, Copy, Debug)]
-struct TextCacheKey<'a> {
+pub(crate) struct TextCacheKey<'a> {
     content: &'a str,
     size: f32,
     line_height: f32,
@@ -167,13 +160,26 @@ impl TextCacheKey<'_> {
     }
 }
 
-struct TextCacheEntry {
-    buffer: glyphon::Buffer,
-    min_bounds: Vec2,
+impl<'a> From<&'a Text> for TextCacheKey<'a> {
+    fn from(value: &'a Text) -> Self {
+        Self {
+            content: &value.content,
+            size: value.size,
+            line_height: value.line_height,
+            font_family: value.font_family,
+            font_style: value.font_style,
+            bounds: value.bounds,
+        }
+    }
+}
+
+pub(crate) struct TextCacheEntry {
+    pub(crate) buffer: glyphon::Buffer,
+    pub(crate) min_bounds: Vec2,
 }
 
 #[derive(Default)]
-struct TextCache {
+pub(crate) struct TextCache {
     entries: rustc_hash::FxHashMap<u64, TextCacheEntry>,
     aliases: rustc_hash::FxHashMap<u64, u64>,
     recently_used: rustc_hash::FxHashSet<u64>,
@@ -184,7 +190,7 @@ impl TextCache {
         self.entries.get(key)
     }
 
-    fn allocate<'a>(
+    pub(crate) fn allocate<'a>(
         &mut self,
         font_system: &mut glyphon::FontSystem,
         key: TextCacheKey<'a>,

@@ -212,6 +212,15 @@ impl Renderer {
     pub fn set_monospace_family(&mut self, name: impl Into<String>) {
         self.text_pipeline.font_system.db_mut().set_monospace_family(name);
     }
+
+    /// Measure the provided [`Text`].
+    pub fn measure_text(&mut self, text: &Text) -> Vec2 {
+        let key = TextCacheKey::from(text);
+        let (_hash, entry) = self.text_manager.cache
+            .allocate(&mut self.text_pipeline.font_system, key);
+
+        entry.min_bounds
+    }
 }
 
 impl Render for Renderer {
