@@ -165,6 +165,31 @@ impl<'a, V: View> ModelProxy<'a, V> {
             root_layout.width(new_size.x).height(new_size.y),
         );
         self.layout_map.compute_layout(self.model.root_node, new_size);
+
+        // Call `Object::on_placement` for all elements.
+        // fn update_placements<'a, V: View>(
+        //     placement: Placement,
+        //     view: &'a mut V,
+        //     model: &'a mut Model<V>,
+        //     // window: &'a Window,
+        //     renderer: &'a mut Renderer,
+        // ) {
+        //     if let Some(mut obj) = model.grab(placement.node()) {
+        //         obj.on_placement(RenderContext {
+        //             view,
+        //             // model,
+        //             // window,
+        //             renderer,
+        //             placement,
+        //         });
+        //         model.place(placement.node(), obj);
+        //     }
+        //     for placement in placement.children() {
+        //         update_placements(placement, view, model, renderer);
+        //     }
+        // }
+        // let root_placement = self.layout_map.placement(self.model.root_node, Vec2::ZERO);
+        // update_placements(root_placement, self.view, self.model, self.renderer);
     }
 
     pub fn handle_mouse_move(&mut self, new_pos: Vec2) {
@@ -201,10 +226,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         self.model.is_dragging = true;
                         if let Some(mut obj) = self.model.grab(drag_node) {
                             obj.on_drag_start(EventContext {
+                                node: drag_node,
                                 view: self.view,
                                 model: self.model,
                                 // window: self.window,
                                 renderer: self.renderer,
+                                layout_map: self.layout_map,
                             });
                             self.model.place(drag_node, obj);
                         }
@@ -214,10 +241,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
                     // TODO: let delta = new_pos - drag_origin_pos;
                     if let Some(mut obj) = self.model.grab(drag_node) {
                         obj.on_drag_move(EventContext {
+                            node: drag_node,
                             view: self.view,
                             model: self.model,
                             // window: self.window,
                             renderer: self.renderer,
+                            layout_map: self.layout_map,
                         });
                         self.model.place(drag_node, obj);
                     }
@@ -229,10 +258,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
             if let Some(left_node) = self.model.hovered_node.take() {
                 if let Some(mut obj) = self.model.grab(left_node) {
                     obj.on_mouse_leave(EventContext {
+                        node: left_node,
                         view: self.view,
                         model: self.model,
                         // window: self.window,
                         renderer: self.renderer,
+                        layout_map: self.layout_map,
                     });
                     self.model.place(left_node, obj);
                 }
@@ -240,10 +271,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
             if let Some(entered_node) = topmost_hovered {
                 if let Some(mut obj) = self.model.grab(entered_node) {
                     obj.on_mouse_enter(EventContext {
+                        node: entered_node,
                         view: self.view,
                         model: self.model,
                         // window: self.window,
                         renderer: self.renderer,
+                        layout_map: self.layout_map,
                     });
                     self.model.place(entered_node, obj);
                 }
@@ -256,10 +289,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
         if let Some(node) = self.model.hovered_node {
             if let Some(mut obj) = self.model.grab(node) {
                 obj.on_mouse_down(EventContext {
+                    node,
                     view: self.view,
                     model: self.model,
                     // window: self.window,
                     renderer: self.renderer,
+                    layout_map: self.layout_map,
                 });
                 self.model.place(node, obj);
             }
@@ -273,10 +308,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
         if let Some(node) = self.model.hovered_node {
             if let Some(mut obj) = self.model.grab(node) {
                 obj.on_mouse_up(EventContext {
+                    node,
                     view: self.view,
                     model: self.model,
                     // window: self.window,
                     renderer: self.renderer,
+                    layout_map: self.layout_map,
                 });
                 self.model.place(node, obj);
             }
@@ -287,10 +324,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
                 self.model.is_dragging = false;
                 if let Some(mut obj) = self.model.grab(node) {
                     obj.on_drag_end(EventContext {
+                        node,
                         view: self.view,
                         model: self.model,
                         // window: self.window,
                         renderer: self.renderer,
+                        layout_map: self.layout_map,
                     });
                     self.model.place(node, obj);
                 }
@@ -364,6 +403,11 @@ pub trait Object {
     /// This function will be called after all descendants of this object have finished their
     /// render passes.
     fn post_render(&mut self, cx: RenderContext<Self::View>) {}
+
+    // /// This function is called every time this object's [`Placement`] is updated. This does not
+    // /// necessarily mean that the area taken up by the object has changed, just that the node's
+    // /// layout needed to be recomputed for some reason.
+    // fn on_placement(&mut self, cx: RenderContext<Self::View>) {}
 
     /// This function is called when the user clicks down with the primary mouse button on this
     /// object.
@@ -458,10 +502,22 @@ fn render_placement<V: View>(
 
 
 pub struct EventContext<'a, V: View> {
+    pub node: u64,
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
     // pub window: &'a Window,
     pub renderer: &'a mut Renderer,
+    pub layout_map: &'a mut LayoutMap,
+}
+
+impl<'a, V: View> EventContext<'a, V> {
+    pub fn get_layout(&self) -> Layout {
+        self.layout_map.get_layout(self.node)
+    }
+
+    pub fn change_layout(&mut self, new_layout: Layout) {
+        self.layout_map.update_layout(self.node, new_layout);
+    }
 }
 
 
