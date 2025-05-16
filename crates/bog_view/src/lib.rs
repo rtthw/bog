@@ -5,7 +5,7 @@
 use bog_collections::NoHashMap;
 use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
-use bog_render::{Render as _, Renderer};
+use bog_render::{Render as _, Renderer, Text};
 // use bog_window::Window;
 
 
@@ -375,13 +375,6 @@ pub trait Object {
     /// [`Placement`] area.
     fn on_mouse_leave(&mut self, cx: EventContext<Self::View>) {}
 
-    /* TODO
-    - Maybe remove the `on_drag_over` callback and just call `on_mouse_enter` with `dragged_node`
-      as an option?
-    - Maybe remove the `on_drag_drop` callback and indicate whether the caller is the receiver in
-      `on_drag_end`?
-    */
-
     /// This function is called when the user's mouse pointer moves while this object is being
     /// dragged.
     fn on_drag_move(&mut self, cx: EventContext<Self::View>) {}
@@ -466,4 +459,32 @@ pub struct EventContext<'a, V: View> {
     pub model: &'a mut Model<V>,
     // pub window: &'a Window,
     pub renderer: &'a mut Renderer,
+}
+
+
+
+pub fn static_paragraph<V: View + 'static>(text: Text, layout: Layout) -> Element<V> {
+    Element::new()
+        .object(StaticParagraph {
+            text,
+            _data: core::marker::PhantomData,
+        })
+        .layout(layout)
+}
+
+struct StaticParagraph<V: View> {
+    text: Text,
+    _data: core::marker::PhantomData<V>,
+}
+
+impl<V: View> Object for StaticParagraph<V> {
+    type View = V;
+
+    fn render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.fill_text(Text {
+            pos: cx.placement.position(),
+            bounds: cx.placement.size(),
+            ..self.text.clone()
+        });
+    }
 }

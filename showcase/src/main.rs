@@ -1,7 +1,7 @@
 
 
 
-use bog::{prelude::*, view::{Element, Model, Object, View}};
+use bog::{prelude::*, view::{static_paragraph, Element, Model, Object, View}};
 
 
 
@@ -57,7 +57,19 @@ impl View for App {
                 .layout(Layout::default()
                     .flex_initial()
                     .width(300.0)
-                    .padding(7.0)))
+                    .padding(7.0))
+                .child(static_paragraph(
+                    Text {
+                        content: "Bog".to_string(),
+                        color: GRAY_8,
+                        size: 29.0,
+                        line_height: 37.0,
+                        font_family: FontFamily::Monospace,
+                        font_style: FontStyle::Normal,
+                        ..Default::default()
+                    },
+                    Layout::default().fill_width(),
+                )))
             .child(Element::new()
                 .object(RightPanel { color: GRAY_3 })
                 .layout(Layout::default()
@@ -108,7 +120,7 @@ struct RightPanel {
 impl Object for RightPanel {
     type View = App;
 
-    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
+    fn render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.fill_quad(Quad {
             bounds: cx.placement.rect(),
             bg_color: self.color,
@@ -134,7 +146,7 @@ struct DraggableButton {
 impl Object for DraggableButton {
     type View = App;
 
-    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
+    fn render(&mut self, cx: RenderContext<Self::View>) {
         self.known_rect = cx.placement.rect();
         cx.renderer.fill_quad(Quad {
             bounds: self.known_rect,
@@ -148,11 +160,11 @@ impl Object for DraggableButton {
         });
     }
 
-    fn on_mouse_enter(&mut self, _cx: bog::view::EventContext<Self::View>) {
+    fn on_mouse_enter(&mut self, _cx: EventContext<Self::View>) {
         self.bg_color = GRAY_5;
     }
 
-    fn on_mouse_leave(&mut self, _cx: bog::view::EventContext<Self::View>) {
+    fn on_mouse_leave(&mut self, _cx: EventContext<Self::View>) {
         self.bg_color = GRAY_4;
     }
 
