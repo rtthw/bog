@@ -1,7 +1,7 @@
 
 
 
-use bog_math::{Rect, Vec2};
+use bog_math::{vec2, Rect, Vec2};
 use slotmap::Key as _;
 
 
@@ -34,7 +34,7 @@ impl LayoutNode for u64 {
 
 
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
     children: slotmap::SlotMap<slotmap::DefaultKey, Vec<u64>>,
@@ -92,6 +92,7 @@ impl LayoutMap {
             style: layout.into(),
             layout: taffy::Layout::with_order(0),
             cache: taffy::Cache::new(),
+            measure: Box::new(move |_available_space| Vec2::ZERO),
         });
         let _ = self.children.insert(Vec::with_capacity(0));
         let _ = self.parents.insert(None);
@@ -118,7 +119,24 @@ impl LayoutMap {
 
     pub fn compute_layout(&mut self, node: u64, available_space: Vec2) {
         taffy::compute_root_layout(
-            self,
+            &mut LayoutMapProxy {
+                map: self,
+                context: (),
+            },
+            node.into(),
+            taffy::Size {
+                width: taffy::AvailableSpace::Definite(available_space.x),
+                height: taffy::AvailableSpace::Definite(available_space.y),
+            },
+        );
+    }
+
+    pub fn compute_contextual_layout<T>(&mut self, node: u64, available_space: Vec2, context: T) {
+        taffy::compute_root_layout(
+            &mut LayoutMapProxy {
+                map: self,
+                context,
+            },
             node.into(),
             taffy::Size {
                 width: taffy::AvailableSpace::Definite(available_space.x),
@@ -181,7 +199,7 @@ impl LayoutMap {
 
 
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Placement<'a> {
     node: u64,
     position: Vec2,
@@ -266,11 +284,12 @@ impl<'a> Iterator for PlacementIter<'a> {
 
 
 
-#[derive(Debug)]
+// #[derive(Debug)]
 struct NodeInfo {
     style: taffy::Style,
     layout: taffy::Layout,
     cache: taffy::Cache,
+    measure: Box<dyn Fn(Vec2) -> Vec2>,
 }
 
 impl LayoutMap {
@@ -293,40 +312,46 @@ impl<'a> Iterator for LayoutNodeChildIter<'a> {
     }
 }
 
-impl taffy::TraversePartialTree for LayoutMap {
-    type ChildIter<'a> = LayoutNodeChildIter<'a>;
+struct LayoutMapProxy<'a, T> {
+    map: &'a mut LayoutMap,
+    context: T,
+}
+
+impl<'a, T> taffy::TraversePartialTree for LayoutMapProxy<'a, T> {
+    type ChildIter<'b> = LayoutNodeChildIter<'b> where Self: 'b;
 
     fn child_ids(&self, node_id: taffy::NodeId) -> Self::ChildIter<'_> {
-        LayoutNodeChildIter(self.children(node_id.into()).iter())
+        LayoutNodeChildIter(self.map.children(node_id.into()).iter())
     }
 
     fn child_count(&self, node_id: taffy::NodeId) -> usize {
-        self.children(node_id.into()).len()
+        self.map.children(node_id.into()).len()
     }
 
     fn get_child_id(&self, node_id: taffy::NodeId, index: usize) -> taffy::NodeId {
-        self.children(node_id.into())[index].into()
+        self.map.children(node_id.into())[index].into()
     }
 }
 
-impl taffy::LayoutPartialTree for LayoutMap {
-    type CoreContainerStyle<'a> = &'a taffy::Style where Self: 'a;
+impl<'a, T> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
+    type CoreContainerStyle<'b> = &'b taffy::Style where Self: 'b;
 
     fn get_core_container_style(&self, node_id: taffy::NodeId) -> Self::CoreContainerStyle<'_> {
-        &self.node_info(node_id).style
+        &self.map.node_info(node_id).style
     }
 
     fn set_unrounded_layout(&mut self, node_id: taffy::NodeId, layout: &taffy::Layout) {
-        self.node_info_mut(node_id).layout = *layout;
+        self.map.node_info_mut(node_id).layout = *layout;
     }
 
     fn compute_child_layout(
-        &mut self, node_id: taffy::NodeId,
+        &mut self,
+        node_id: taffy::NodeId,
         inputs: taffy::tree::LayoutInput,
     ) -> taffy::tree::LayoutOutput {
         taffy::compute_cached_layout(self, node_id, inputs, |tree, id, inputs| {
-            let display_mode = tree.nodes[id.into()].style.display;
-            let has_children = tree.children[id.into()].len() > 0;
+            let display_mode = tree.map.nodes[id.into()].style.display;
+            let has_children = tree.map.children[id.into()].len() > 0;
 
             match (display_mode, has_children) {
                 (taffy::Display::None, _) => taffy::compute_hidden_layout(tree, id),
@@ -334,9 +359,17 @@ impl taffy::LayoutPartialTree for LayoutMap {
                 (taffy::Display::Flex, true) => taffy::compute_flexbox_layout(tree, id, inputs),
                 (taffy::Display::Grid, true) => taffy::compute_grid_layout(tree, id, inputs),
                 (_, false) => {
-                    let style = &tree.nodes[id.into()].style;
-                    taffy::compute_leaf_layout(inputs, style, |_dimensions, _available_space| {
-                        taffy::Size::ZERO
+                    let style = &tree.map.nodes[id.into()].style;
+                    let measure = &tree.map.nodes[id.into()].measure;
+                    taffy::compute_leaf_layout(inputs, style, |_dimensions, available_space| {
+                        let size = (measure)(vec2(
+                            available_space.width.unwrap(),
+                            available_space.height.unwrap(),
+                        ));
+                        taffy::Size {
+                            width: size.x,
+                            height: size.y,
+                        }
                     })
                 }
             }
@@ -344,7 +377,7 @@ impl taffy::LayoutPartialTree for LayoutMap {
     }
 }
 
-impl taffy::CacheTree for LayoutMap {
+impl<'a, T> taffy::CacheTree for LayoutMapProxy<'a, T> {
     fn cache_get(
         &self,
         node_id: taffy::NodeId,
@@ -352,7 +385,7 @@ impl taffy::CacheTree for LayoutMap {
         available_space: taffy::Size<taffy::AvailableSpace>,
         run_mode: taffy::RunMode,
     ) -> Option<taffy::LayoutOutput> {
-        self.node_info(node_id).cache.get(known_dimensions, available_space, run_mode)
+        self.map.node_info(node_id).cache.get(known_dimensions, available_space, run_mode)
     }
 
     fn cache_store(
@@ -363,49 +396,49 @@ impl taffy::CacheTree for LayoutMap {
         run_mode: taffy::RunMode,
         layout_output: taffy::LayoutOutput,
     ) {
-        self.node_info_mut(node_id).cache.store(known_dimensions, available_space, run_mode, layout_output)
+        self.map.node_info_mut(node_id).cache.store(known_dimensions, available_space, run_mode, layout_output)
     }
 
     fn cache_clear(&mut self, node_id: taffy::NodeId) {
-        self.node_info_mut(node_id).cache.clear();
+        self.map.node_info_mut(node_id).cache.clear();
     }
 }
 
-impl taffy::LayoutBlockContainer for LayoutMap {
-    type BlockContainerStyle<'a> = &'a taffy::Style where Self: 'a;
-    type BlockItemStyle<'a> = &'a taffy::Style where Self: 'a;
+impl<'a, T> taffy::LayoutBlockContainer for LayoutMapProxy<'a, T> {
+    type BlockContainerStyle<'b> = &'b taffy::Style where Self: 'b;
+    type BlockItemStyle<'b> = &'b taffy::Style where Self: 'b;
 
     fn get_block_container_style(&self, node_id: taffy::NodeId) -> Self::BlockContainerStyle<'_> {
-        &self.node_info(node_id).style
+        &self.map.node_info(node_id).style
     }
 
     fn get_block_child_style(&self, child_node_id: taffy::NodeId) -> Self::BlockItemStyle<'_> {
-        &self.node_info(child_node_id).style
+        &self.map.node_info(child_node_id).style
     }
 }
 
-impl taffy::LayoutFlexboxContainer for LayoutMap {
-    type FlexboxContainerStyle<'a> = &'a taffy::Style where Self: 'a;
-    type FlexboxItemStyle<'a> = &'a taffy::Style where Self: 'a;
+impl<'a, T> taffy::LayoutFlexboxContainer for LayoutMapProxy<'a, T> {
+    type FlexboxContainerStyle<'b> = &'b taffy::Style where Self: 'b;
+    type FlexboxItemStyle<'b> = &'b taffy::Style where Self: 'b;
 
     fn get_flexbox_container_style(&self, node_id: taffy::NodeId) -> Self::FlexboxContainerStyle<'_> {
-        &self.node_info(node_id).style
+        &self.map.node_info(node_id).style
     }
 
     fn get_flexbox_child_style(&self, child_node_id: taffy::NodeId) -> Self::FlexboxItemStyle<'_> {
-        &self.node_info(child_node_id).style
+        &self.map.node_info(child_node_id).style
     }
 }
 
-impl taffy::LayoutGridContainer for LayoutMap {
-    type GridContainerStyle<'a> = &'a taffy::Style where Self: 'a;
-    type GridItemStyle<'a> = &'a taffy::Style where Self: 'a;
+impl<'a, T> taffy::LayoutGridContainer for LayoutMapProxy<'a, T> {
+    type GridContainerStyle<'b> = &'b taffy::Style where Self: 'b;
+    type GridItemStyle<'b> = &'b taffy::Style where Self: 'b;
 
     fn get_grid_container_style(&self, node_id: taffy::NodeId) -> Self::GridContainerStyle<'_> {
-        &self.node_info(node_id).style
+        &self.map.node_info(node_id).style
     }
 
     fn get_grid_child_style(&self, child_node_id: taffy::NodeId) -> Self::GridItemStyle<'_> {
-        &self.node_info(child_node_id).style
+        &self.map.node_info(child_node_id).style
     }
 }
