@@ -2,10 +2,13 @@
 
 
 
+use core::marker::PhantomData;
+
 use bog_collections::NoHashMap;
+use bog_color::Color;
 use bog_layout::{Layout, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
-use bog_render::{Render as _, Renderer, Text};
+use bog_render::{Border, Quad, Render as _, Renderer, Text};
 // use bog_window::Window;
 
 
@@ -463,18 +466,22 @@ pub struct EventContext<'a, V: View> {
 
 
 
+// ---
+
+
+
 pub fn static_paragraph<V: View + 'static>(text: Text, layout: Layout) -> Element<V> {
     Element::new()
         .object(StaticParagraph {
             text,
-            _data: core::marker::PhantomData,
+            _data: PhantomData,
         })
         .layout(layout)
 }
 
 struct StaticParagraph<V: View> {
     text: Text,
-    _data: core::marker::PhantomData<V>,
+    _data: PhantomData<V>,
 }
 
 impl<V: View> Object for StaticParagraph<V> {
@@ -485,6 +492,61 @@ impl<V: View> Object for StaticParagraph<V> {
             pos: cx.placement.position(),
             bounds: cx.placement.size(),
             ..self.text.clone()
+        });
+    }
+}
+
+
+
+pub struct HorizontalRule<V: View> {
+    inner: Element<V>,
+    object: HorizontalRuleObject<V>,
+}
+
+impl<V: View + 'static> HorizontalRule<V> {
+    pub fn new() -> Self {
+        Self {
+            inner: Element::new()
+                .layout(Layout::default()
+                    .fill_width()
+                    .height(3.0)),
+            object: HorizontalRuleObject {
+                quad: Quad {
+                    bg_color: Color::new(139, 139, 149, 255),
+                    border: Border {
+                        radius: [3.0; 4],
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                _view: PhantomData
+            },
+        }
+    }
+
+    pub fn color(mut self, color: Color) -> Self {
+        self.object.quad.bg_color = color;
+        self
+    }
+
+    pub fn into(self) -> Element<V> {
+        self.inner
+            .object(self.object)
+    }
+}
+
+struct HorizontalRuleObject<V: View> {
+    quad: Quad,
+    _view: PhantomData<V>,
+}
+
+impl<V: View> Object for HorizontalRuleObject<V> {
+    type View = V;
+
+    fn render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.fill_quad(Quad {
+            bounds: cx.placement.rect(),
+            ..self.quad
         });
     }
 }

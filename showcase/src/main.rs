@@ -1,7 +1,7 @@
 
 
 
-use bog::{prelude::*, view::{static_paragraph, Element, Model, Object, View}};
+use bog::{prelude::*, view::{static_paragraph, Element, HorizontalRule, Model, Object, View}};
 
 
 
@@ -56,6 +56,7 @@ impl View for App {
                 .object(LeftPanel { color: GRAY_2 })
                 .layout(Layout::default()
                     .flex_initial()
+                    .flex_column()
                     .width(300.0)
                     .padding(7.0))
                 .child(static_paragraph(
@@ -69,7 +70,8 @@ impl View for App {
                         ..Default::default()
                     },
                     Layout::default().fill_width(),
-                )))
+                ))
+                .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)).into()))
             .child(Element::new()
                 .object(RightPanel { color: GRAY_3 })
                 .layout(Layout::default()
