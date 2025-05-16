@@ -493,6 +493,15 @@ impl<V: View> Object for StaticParagraph<V> {
             bounds: cx.placement.size(),
             ..self.text.clone()
         });
+        // cx.renderer.fill_quad(Quad {
+        //     bounds: cx.placement.rect(),
+        //     border: Border {
+        //         color: Color::from_u32(0xffffffff),
+        //         width: 1.0,
+        //         ..Default::default()
+        //     },
+        //     ..Default::default()
+        // });
     }
 }
 
