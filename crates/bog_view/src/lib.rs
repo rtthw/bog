@@ -9,7 +9,7 @@ use bog_color::Color;
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Border, Quad, Render as _, Renderer, Text};
-// use bog_window::Window;
+use bog_window::{CursorIcon, Window};
 
 
 
@@ -149,7 +149,7 @@ pub struct ModelProxy<'a, V: View> {
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
     pub layout_map: &'a mut LayoutMap,
-    // pub window: &'a Window,
+    pub window: Option<&'a Window>,
     pub renderer: &'a mut Renderer,
 }
 
@@ -237,7 +237,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                                 node: drag_node,
                                 view: self.view,
                                 model: self.model,
-                                // window: self.window,
+                                window: self.window,
                                 renderer: self.renderer,
                                 layout_map: self.layout_map,
                             });
@@ -252,7 +252,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             node: drag_node,
                             view: self.view,
                             model: self.model,
-                            // window: self.window,
+                            window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
                         });
@@ -269,7 +269,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         node: left_node,
                         view: self.view,
                         model: self.model,
-                        // window: self.window,
+                        window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
@@ -282,7 +282,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         node: entered_node,
                         view: self.view,
                         model: self.model,
-                        // window: self.window,
+                        window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
@@ -300,7 +300,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                     node,
                     view: self.view,
                     model: self.model,
-                    // window: self.window,
+                    window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
                 });
@@ -319,7 +319,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                     node,
                     view: self.view,
                     model: self.model,
-                    // window: self.window,
+                    window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
                 });
@@ -335,7 +335,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         node,
                         view: self.view,
                         model: self.model,
-                        // window: self.window,
+                        window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
@@ -533,7 +533,7 @@ pub struct EventContext<'a, V: View> {
     pub node: u64,
     pub view: &'a mut V,
     pub model: &'a mut Model<V>,
-    // pub window: &'a Window,
+    pub window: Option<&'a Window>,
     pub renderer: &'a mut Renderer,
     pub layout_map: &'a mut LayoutMap,
 }
@@ -593,6 +593,14 @@ impl<V: View> Object for StaticParagraph<V> {
         //     },
         //     ..Default::default()
         // });
+    }
+
+    fn on_mouse_enter(&mut self, cx: EventContext<Self::View>) {
+        cx.window.map(|w| w.set_cursor(CursorIcon::Text));
+    }
+
+    fn on_mouse_leave(&mut self, cx: EventContext<Self::View>) {
+        cx.window.map(|w| w.set_cursor(CursorIcon::Pointer));
     }
 }
 

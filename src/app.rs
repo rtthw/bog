@@ -121,6 +121,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                     view: &mut self.app,
                     model: &mut self.model,
                     layout_map: &mut self.layout_map,
+                    window: Some(&window),
                     renderer,
                 }.handle_resize(physical_size);
                 window.request_redraw();
@@ -132,6 +133,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                     view: &mut self.app,
                     model: &mut self.model,
                     layout_map: &mut self.layout_map,
+                    window: Some(&window),
                     renderer,
                 }.handle_mouse_move(vec2(x, y));
                 window.request_redraw();
@@ -142,6 +144,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                         view: &mut self.app,
                         model: &mut self.model,
                         layout_map: &mut self.layout_map,
+                        window: Some(&window),
                         renderer,
                     }.handle_mouse_down();
                 }
@@ -152,6 +155,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                         view: &mut self.app,
                         model: &mut self.model,
                         layout_map: &mut self.layout_map,
+                        window: Some(&window),
                         renderer,
                     }.handle_mouse_up();
                 }
