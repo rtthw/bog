@@ -25,7 +25,7 @@ pub struct HorizontalRule<V: View> {
     object: HorizontalRuleObject<V>,
 }
 
-impl<V: View + 'static> HorizontalRule<V> {
+impl<V: View> HorizontalRule<V> {
     pub fn new() -> Self {
         Self {
             inner: Element::new()
@@ -50,8 +50,10 @@ impl<V: View + 'static> HorizontalRule<V> {
         self.object.quad.bg_color = color;
         self
     }
+}
 
-    pub fn into(self) -> Element<V> {
+impl<V: View + 'static> Into<Element<V>> for HorizontalRule<V> {
+    fn into(self) -> Element<V> {
         self.inner
             .object(self.object)
     }

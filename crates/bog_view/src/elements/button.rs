@@ -30,8 +30,10 @@ impl<V: View + 'static> Button<V> {
         self.on_click = Some(Box::new(callback));
         self
     }
+}
 
-    pub fn into_element(self) -> Element<V> {
+impl<V: View + 'static> Into<Element<V>> for Button<V> {
+    fn into(self) -> Element<V> {
         Element::new()
             .object(ButtonObject {
                 on_click: self.on_click,

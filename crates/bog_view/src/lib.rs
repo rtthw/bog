@@ -397,14 +397,17 @@ impl<V: View> Element<V> {
     }
 
     /// Add the given children to this element.
-    pub fn children(mut self, children: impl IntoIterator<Item = Element<V>>) -> Self {
-        self.children.extend(children.into_iter());
+    pub fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<Element<V>>>,
+    ) -> Self {
+        self.children.extend(children.into_iter().map(|e| e.into()));
         self
     }
 
     /// Add the given child to this element.
-    pub fn child(mut self, child: Element<V>) -> Self {
-        self.children.push(child);
+    pub fn child(mut self, child: impl Into<Element<V>>) -> Self {
+        self.children.push(child.into());
         self
     }
 }
