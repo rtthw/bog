@@ -58,6 +58,7 @@ impl View for App {
                     .flex_initial()
                     .flex_column()
                     .width(300.0)
+                    .gap_y(7.0)
                     .padding(7.0))
                 .child(static_paragraph(
                     Text {
@@ -71,7 +72,21 @@ impl View for App {
                     },
                     Layout::default().fill_width(),
                 ))
-                .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)).into()))
+                .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)).into())
+                .child(Button::new(static_paragraph(
+                    Text {
+                        content: "Click Me".to_string(),
+                        color: GRAY_8,
+                        size: 17.0,
+                        line_height: 19.0,
+                        font_family: FontFamily::SansSerif,
+                        font_style: FontStyle::Normal,
+                        ..Default::default()
+                    },
+                    Layout::default(),
+                )).on_click(|_cx| {
+                    println!("Button clicked!");
+                }).into_element()))
             .child(Element::new()
                 .object(RightPanel { color: GRAY_3 })
                 .layout(Layout::default()
