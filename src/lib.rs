@@ -88,7 +88,7 @@ pub mod prelude {
         View,
     };
     #[cfg(feature = "builtin-elements")]
-    pub use bog_view::builtin::{
+    pub use bog_view::elements::{
         HorizontalRule,
         Paragraph,
         static_paragraph,

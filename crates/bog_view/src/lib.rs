@@ -3,7 +3,7 @@
 
 
 #[cfg(feature = "builtin-elements")]
-pub mod builtin;
+pub mod elements;
 
 use bog_collections::NoHashMap;
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
