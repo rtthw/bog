@@ -87,6 +87,12 @@ pub mod prelude {
         RenderContext,
         View,
     };
+    #[cfg(feature = "builtin-elements")]
+    pub use bog_view::builtin::{
+        HorizontalRule,
+        Paragraph,
+        static_paragraph,
+    };
     pub use bog_window::{
         CursorIcon,
         Window,

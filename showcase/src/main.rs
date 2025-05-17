@@ -1,7 +1,7 @@
 
 
 
-use bog::{prelude::*, view::{static_paragraph, HorizontalRule}};
+use bog::prelude::*;
 
 
 
