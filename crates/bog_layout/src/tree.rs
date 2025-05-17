@@ -314,10 +314,12 @@ struct NodeInfo {
 }
 
 impl LayoutMap {
+    #[inline(always)]
     fn node_info(&self, node_id: taffy::NodeId) -> &NodeInfo {
         &self.nodes[slotmap::KeyData::from_ffi(node_id.into()).into()]
     }
 
+    #[inline(always)]
     fn node_info_mut(&mut self, node_id: taffy::NodeId) -> &mut NodeInfo {
         &mut self.nodes[slotmap::KeyData::from_ffi(node_id.into()).into()]
     }
@@ -371,8 +373,10 @@ impl<'a, T: LayoutContext> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
         inputs: taffy::tree::LayoutInput,
     ) -> taffy::tree::LayoutOutput {
         taffy::compute_cached_layout(self, node_id, inputs, |tree, id, inputs| {
-            let display_mode = tree.map.nodes[id.into()].style.display;
-            let has_children = tree.map.children[id.into()].len() > 0;
+            let display_mode = tree.map.node_info(node_id).style.display;
+            let has_children = tree.map
+                .children[slotmap::KeyData::from_ffi(node_id.into()).into()]
+                .len() > 0;
 
             match (display_mode, has_children) {
                 (taffy::Display::None, _) => taffy::compute_hidden_layout(tree, id),
@@ -380,7 +384,7 @@ impl<'a, T: LayoutContext> taffy::LayoutPartialTree for LayoutMapProxy<'a, T> {
                 (taffy::Display::Flex, true) => taffy::compute_flexbox_layout(tree, id, inputs),
                 (taffy::Display::Grid, true) => taffy::compute_grid_layout(tree, id, inputs),
                 (_, false) => {
-                    let style = &tree.map.nodes[id.into()].style;
+                    let style = &tree.map.node_info(node_id).style;
                     taffy::compute_leaf_layout(inputs, style, |_dimensions, available_space| {
                         let size = tree.context.measure_node(id.into(), vec2(
                             // FIXME: This should be different based on whether avaible space is

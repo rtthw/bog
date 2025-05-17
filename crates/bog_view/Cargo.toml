@@ -3,6 +3,10 @@ name = "bog_view"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["builtin-elements"]
+builtin-elements = []
+
 [dependencies]
 bog_collections.workspace = true
 bog_color.workspace = true

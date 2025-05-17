@@ -1996,7 +1996,6 @@ dependencies = [
  "arrayvec",
  "grid",
  "serde",
- "slotmap",
 ]
 
 [[package]]

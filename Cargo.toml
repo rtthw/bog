@@ -13,8 +13,9 @@ repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
 
 [features]
-default = ["all"]
-all = []
+default = ["builtin-elements"]
+app = []
+builtin-elements = ["bog_view/builtin-elements"]
 
 [dependencies]
 bog_alloc.workspace = true
