@@ -2,9 +2,9 @@
 
 
 
-use glam::Vec4Swizzles as _;
+use glam::Vec3Swizzles as _;
 
-use crate::{vec4, Mat4, Vec2};
+use crate::{vec3, Mat4, Vec2};
 
 
 
@@ -124,8 +124,8 @@ impl core::ops::Mul<Mat4> for Rect<f32> {
         let size = self.size();
 
         Self::new(
-            transform.mul_vec4(vec4(pos.x, pos.y, 1.0, 0.0)).xy(),
-            transform.mul_vec4(vec4(size.x, size.y, 1.0, 0.0)).xy(),
+            transform.transform_point3(vec3(pos.x, pos.y, 0.0)).xy(),
+            transform.transform_vector3(vec3(size.x, size.y, 0.0)).xy(),
         )
     }
 }

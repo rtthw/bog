@@ -139,7 +139,7 @@ struct Uniforms {
 impl Uniforms {
     fn new(transform: Mat4, scale: f32) -> Self {
         Self {
-            transform: transform.to_cols_array(),
+            transform: *transform.as_ref(),
             scale,
             _padding: [0.0, 0.0, 0.0],
         }

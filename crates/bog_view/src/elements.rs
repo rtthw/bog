@@ -4,6 +4,7 @@
 
 mod button;
 use bog_event::WheelMovement;
+use bog_math::{mat4_translation, vec3};
 pub use button::*;
 
 mod paragraph;
@@ -151,9 +152,11 @@ impl<V: View> Object for ScrollableObject<V> {
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
         self.content_height = cx.placement.content_size().y;
         cx.renderer.start_layer(cx.placement.rect());
+        cx.renderer.start_transform(mat4_translation(vec3(1.0, self.v_offset, 1.0)));
     }
 
     fn post_render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.end_transform();
         cx.renderer.end_layer();
     }
 
@@ -162,9 +165,10 @@ impl<V: View> Object for ScrollableObject<V> {
             println!("Scrolling by {:?}", movement);
             match movement {
                 WheelMovement::Lines { y, .. } => {
-                    self.v_offset = (self.v_offset + (y * 20.0))
+                    self.v_offset = (self.v_offset + (-y * 20.0))
                         .min(self.content_height)
                         .max(0.0);
+                    println!("V_OFFSET: {}", self.v_offset);
                 }
                 WheelMovement::Pixels { y, .. } => {
                     self.v_offset = (self.v_offset + y)

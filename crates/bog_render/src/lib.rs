@@ -259,9 +259,14 @@ impl Render for Renderer {
     }
 
     fn fill_text(&mut self, text: Text) {
-        let (layer, _transform) = self.layers.current_mut();
+        let (layer, transform) = self.layers.current_mut();
+        let rect = Rect::new(text.pos, text.bounds) * transform;
 
-        layer.texts.push(text);
+        layer.texts.push(Text {
+            pos: rect.position(),
+            bounds: rect.size(),
+            ..text
+        });
     }
 
     fn clear(&mut self) {
