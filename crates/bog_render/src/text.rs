@@ -73,7 +73,7 @@ impl TextManager {
             }
         });
 
-        layer.renderer.prepare(
+        if layer.renderer.prepare(
             device,
             queue,
             &mut pipeline.font_system,
@@ -81,8 +81,9 @@ impl TextManager {
             &mut pipeline.viewport,
             text_areas,
             &mut pipeline.swash_cache,
-        )
-            .unwrap();
+        ).is_ok() {
+            self.prepare_layer += 1;
+        }
     }
 
     pub fn render<'a>(
