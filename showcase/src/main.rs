@@ -170,10 +170,15 @@ impl Object for RightPanel {
         });
     }
 
+    fn pre_render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.start_layer(cx.placement.rect());
+    }
+
     fn post_render(&mut self, cx: RenderContext<Self::View>) {
         if let Some(drag_indicator) = &cx.view.drag_indicator {
             cx.renderer.fill_quad(*drag_indicator);
         }
+        cx.renderer.end_layer();
     }
 }
 
@@ -246,7 +251,7 @@ impl Object for DraggableButton {
 fn test_element<V: View + 'static>() -> Element<V> {
     static_paragraph(
         Text {
-            content: "Something, something, something... And more...".to_string(),
+            content: "This is a test paragraph that may span a few lines or so.".to_string(),
             color: GRAY_8,
             size: 17.0,
             line_height: 19.0,

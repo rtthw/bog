@@ -43,14 +43,14 @@ impl<V: View> Object for StaticParagraph<V> {
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.fill_text(Text {
-            pos: cx.placement.position(),
+            pos: cx.placement.inner_position(),
             bounds: cx.placement.size(),
             ..self.text.clone()
         });
-        // cx.renderer.fill_quad(Quad {
+        // cx.renderer.fill_quad(bog_render::Quad {
         //     bounds: cx.placement.rect(),
-        //     border: Border {
-        //         color: Color::from_u32(0xffffffff),
+        //     border: bog_render::Border {
+        //         color: bog_color::Color::from_u32(0xffffffff),
         //         width: 1.0,
         //         ..Default::default()
         //     },

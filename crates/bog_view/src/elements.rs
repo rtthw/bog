@@ -88,8 +88,9 @@ impl<V: View> Scrollable<V> {
         Self {
             inner: Element::new()
                 .layout(Layout::default()
-                    .flex_auto()
-                    .flex_grow(1.0)
+                    // .flex_auto()
+                    // .flex_grow(1.0)
+                    .overflow_scroll_y()
                     .flex_column()
                     .gap_y(7.0)
                     .padding(7.0)),
@@ -136,10 +137,10 @@ impl<V: View> Object for ScrollableObject<V> {
     type View = V;
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
-        // cx.renderer.fill_quad(Quad {
-        //     bounds: cx.placement.rect(),
-        //     ..self.quad
-        // });
+        cx.renderer.fill_quad(bog_render::Quad {
+            bounds: cx.placement.rect(),
+            ..self.quad
+        });
     }
 
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
