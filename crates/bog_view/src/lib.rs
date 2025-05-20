@@ -6,6 +6,7 @@
 pub mod elements;
 
 use bog_collections::NoHashMap;
+use bog_event::WheelMovement;
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
@@ -33,6 +34,7 @@ pub struct Model<V: View> {
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
     drag_start_node: Option<u64>,
+    latest_wheel_movement: Option<WheelMovement>,
 }
 
 impl<V: View> Model<V> {
@@ -72,6 +74,7 @@ impl<V: View> Model<V> {
             drag_start_pos: None,
             drag_start_time: std::time::Instant::now(),
             drag_start_node: None,
+            latest_wheel_movement: None,
         }
     }
 
@@ -130,6 +133,12 @@ impl<V: View> Model<V> {
         } else {
             None
         }
+    }
+
+    /// Grab the latest wheel movement event, preventing node further down in the tree from
+    /// accessing it.
+    pub fn take_wheel_movement(&mut self) -> Option<WheelMovement> {
+        self.latest_wheel_movement.take()
     }
 
     /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
@@ -344,6 +353,23 @@ impl<'a, V: View> ModelProxy<'a, V> {
             }
         }
     }
+
+    pub fn handle_wheel_movement(&mut self, movement: WheelMovement) {
+        self.model.latest_wheel_movement = Some(movement);
+        if let Some(node) = self.model.hovered_node {
+            if let Some(mut obj) = self.model.grab(node) {
+                obj.on_wheel(EventContext {
+                    node,
+                    view: self.view,
+                    model: self.model,
+                    window: self.window,
+                    renderer: self.renderer,
+                    layout_map: self.layout_map,
+                });
+                self.model.place(node, obj);
+            }
+        }
+    }
 }
 
 struct ModelProxyContext<'a, V: View> {
@@ -452,6 +478,8 @@ pub trait Object {
     /// This function is called immediately after the user's mouse pointer leaves this object's
     /// [`Placement`] area.
     fn on_mouse_leave(&mut self, cx: EventContext<Self::View>) {}
+
+    fn on_wheel(&mut self, cx: EventContext<Self::View>) {}
 
     /// This function is called when the user's mouse pointer moves while this object is being
     /// dragged.

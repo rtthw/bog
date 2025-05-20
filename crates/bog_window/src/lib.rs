@@ -9,7 +9,7 @@ pub mod x11;
 
 use std::sync::Arc;
 
-use bog_event::{KeyCode, WindowEvent};
+use bog_event::{KeyCode, WheelMovement, WindowEvent};
 use bog_math::{vec2, Vec2};
 
 pub use winit::raw_window_handle as rwh;
@@ -211,6 +211,18 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
             } else {
                 WindowEvent::MouseUp { code }
             })
+        }
+        // TODO: Handle touch inputs.
+        winit::event::WindowEvent::MouseWheel { delta, phase: _, .. } => {
+            let movement = match delta {
+                winit::event::MouseScrollDelta::LineDelta(x, y) => {
+                    WheelMovement::Lines { x, y }
+                }
+                winit::event::MouseScrollDelta::PixelDelta(pos) => {
+                    WheelMovement::Pixels { x: pos.x as _, y: pos.y as _ }
+                }
+            };
+            Some(WindowEvent::WheelMove(movement))
         }
 
         _ => None,

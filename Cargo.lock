@@ -254,6 +254,7 @@ version = "0.1.0"
 dependencies = [
  "bog_collections",
  "bog_color",
+ "bog_event",
  "bog_layout",
  "bog_math",
  "bog_render",

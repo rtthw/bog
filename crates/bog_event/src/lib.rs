@@ -124,4 +124,18 @@ pub enum WindowEvent {
     MouseUp {
         code: u8,
     },
+
+    WheelMove(WheelMovement),
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum WheelMovement {
+    Lines {
+        x: f32,
+        y: f32,
+    },
+    Pixels {
+        x: f32,
+        y: f32,
+    },
 }

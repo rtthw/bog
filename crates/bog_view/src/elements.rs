@@ -3,6 +3,7 @@
 
 
 mod button;
+use bog_event::WheelMovement;
 pub use button::*;
 
 mod paragraph;
@@ -105,6 +106,8 @@ impl<V: View> Scrollable<V> {
                     },
                     ..Default::default()
                 },
+                v_offset: 0.0,
+                content_height: 0.0,
                 _view: PhantomData,
             },
         }
@@ -130,6 +133,8 @@ impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
 
 struct ScrollableObject<V: View> {
     quad: Quad,
+    v_offset: f32,
+    content_height: f32,
     _view: PhantomData<V>,
 }
 
@@ -144,10 +149,29 @@ impl<V: View> Object for ScrollableObject<V> {
     }
 
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
+        self.content_height = cx.placement.content_size().y;
         cx.renderer.start_layer(cx.placement.rect());
     }
 
     fn post_render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.end_layer();
+    }
+
+    fn on_wheel(&mut self, cx: crate::EventContext<Self::View>) {
+        if let Some(movement) = cx.model.take_wheel_movement() {
+            println!("Scrolling by {:?}", movement);
+            match movement {
+                WheelMovement::Lines { y, .. } => {
+                    self.v_offset = (self.v_offset + (y * 20.0))
+                        .min(self.content_height)
+                        .max(0.0);
+                }
+                WheelMovement::Pixels { y, .. } => {
+                    self.v_offset = (self.v_offset + y)
+                        .min(self.content_height)
+                        .max(0.0);
+                }
+            }
+        }
     }
 }

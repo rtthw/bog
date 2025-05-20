@@ -160,6 +160,15 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                     }.handle_mouse_up();
                 }
             }
+            WindowEvent::WheelMove(movement) => {
+                ModelProxy {
+                    view: &mut self.app,
+                    model: &mut self.model,
+                    layout_map: &mut self.layout_map,
+                    window: Some(&window),
+                    renderer,
+                }.handle_wheel_movement(movement);
+            }
             _ => {}
         }
     }

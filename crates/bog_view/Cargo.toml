@@ -10,6 +10,7 @@ builtin-elements = []
 [dependencies]
 bog_collections.workspace = true
 bog_color.workspace = true
+bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
 bog_render.workspace = true
