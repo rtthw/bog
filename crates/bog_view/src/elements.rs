@@ -162,19 +162,23 @@ impl<V: View> Object for ScrollableObject<V> {
 
     fn on_wheel(&mut self, cx: crate::EventContext<Self::View>) {
         if let Some(movement) = cx.model.take_wheel_movement() {
-            println!("Scrolling by {:?}", movement);
+            // println!("Scrolling by {:?}", movement);
+            let prev_offset = self.v_offset;
             match movement {
                 WheelMovement::Lines { y, .. } => {
                     self.v_offset = (self.v_offset + (-y * 20.0))
                         .min(self.content_height)
                         .max(0.0);
-                    println!("V_OFFSET: {}", self.v_offset);
                 }
                 WheelMovement::Pixels { y, .. } => {
                     self.v_offset = (self.v_offset + y)
                         .min(self.content_height)
                         .max(0.0);
                 }
+            }
+            if prev_offset != self.v_offset {
+                // FIXME: Don't perform this check when there is no window.
+                cx.window.map(|w| w.request_redraw());
             }
         }
     }

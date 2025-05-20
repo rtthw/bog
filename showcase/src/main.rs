@@ -91,26 +91,29 @@ impl View for App {
                     }))
                 .child(Scrollable::new()
                     .children([
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
-                        test_element(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_button(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_button(),
+                        test_button(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
+                        test_paragraph(),
                     ])))
             .child(Element::new()
                 .object(RightPanel { color: GRAY_3 })
@@ -248,7 +251,27 @@ impl Object for DraggableButton {
 
 
 
-fn test_element<V: View + 'static>() -> Element<V> {
+fn test_button<V: View + 'static>() -> Element<V> {
+    Button::new(
+        static_paragraph(
+            Text {
+                content: "Button".to_string(),
+                color: GRAY_8,
+                size: 17.0,
+                line_height: 19.0,
+                font_family: FontFamily::SansSerif,
+                font_style: FontStyle::Normal,
+                ..Default::default()
+            },
+            Layout::default(),
+        ))
+        .on_click(|_cx| {
+            println!("Test button clicked!");
+        })
+        .into()
+}
+
+fn test_paragraph<V: View + 'static>() -> Element<V> {
     static_paragraph(
         Text {
             content: "This is a test paragraph that may span a few lines or so.".to_string(),
