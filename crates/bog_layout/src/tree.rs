@@ -234,29 +234,52 @@ impl<'a> Placement<'a> {
             map: &self.map,
         }
     }
+}
 
+// Positioning.
+impl Placement<'_> {
+    /// Get the absolute position of the node relative to the root of the layout tree.
     pub fn position(&self) -> Vec2 {
         self.position
     }
 
-    pub fn content_position(&self) -> Vec2 {
-        self.position + Vec2::new(self.layout.padding.left, self.layout.padding.top)
+    /// Get the absolute position of this node's content (position + border + padding).
+    pub fn inner_position(&self) -> Vec2 {
+        self.position + Vec2::new(
+            self.layout.padding.left + self.layout.border.left,
+            self.layout.padding.top + self.layout.border.top,
+        )
     }
 
+    /// Get the size allocated for this node (border + padding + content_size).
     pub fn size(&self) -> Vec2 {
         Vec2::new(self.layout.size.width, self.layout.size.height)
     }
 
-    pub fn content_size(&self) -> Vec2 {
+    /// Get the size of the area allocated for this node's content.
+    /// This is often NOT the same as [`Self::content_size`].
+    pub fn inner_size(&self) -> Vec2 {
         Vec2::new(self.layout.content_box_width(), self.layout.content_box_height())
     }
 
+    /// Get the size taken up by this node's children.
+    pub fn content_size(&self) -> Vec2 {
+        Vec2::new(self.layout.content_size.width, self.layout.content_size.height)
+    }
+
+    /// A [`Rect`] representing ([`Self::position`], [`Self::size`]).
     pub fn rect(&self) -> Rect {
         Rect::new(self.position, self.size())
     }
 
+    /// A [`Rect`] representing ([`Self::inner_position`], [`Self::inner_size`]).
+    pub fn inner_rect(&self) -> Rect {
+        Rect::new(self.inner_position(), self.inner_size())
+    }
+
+    /// A [`Rect`] representing ([`Self::inner_position`], [`Self::content_size`]).
     pub fn content_rect(&self) -> Rect {
-        Rect::new(self.content_position(), self.content_size())
+        Rect::new(self.inner_position(), self.content_size())
     }
 }
 
