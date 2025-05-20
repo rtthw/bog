@@ -92,6 +92,7 @@ pub mod prelude {
         Button,
         HorizontalRule,
         Paragraph,
+        Scrollable,
         static_paragraph,
     };
     pub use bog_window::{

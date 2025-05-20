@@ -41,7 +41,7 @@ impl<V: View> HorizontalRule<V> {
                     },
                     ..Default::default()
                 },
-                _view: PhantomData
+                _view: PhantomData,
             },
         }
     }
@@ -72,5 +72,81 @@ impl<V: View> Object for HorizontalRuleObject<V> {
             bounds: cx.placement.rect(),
             ..self.quad
         });
+    }
+}
+
+
+
+pub struct Scrollable<V: View> {
+    inner: Element<V>,
+    children: Vec<Element<V>>,
+    object: ScrollableObject<V>,
+}
+
+impl<V: View> Scrollable<V> {
+    pub fn new() -> Self {
+        Self {
+            inner: Element::new()
+                .layout(Layout::default()
+                    .flex_auto()
+                    .flex_grow(1.0)
+                    .flex_column()
+                    .gap_y(7.0)
+                    .padding(7.0)),
+            children: Vec::with_capacity(1),
+            object: ScrollableObject {
+                quad: Quad {
+                    bg_color: Color::new(73, 73, 83, 255),
+                    border: Border {
+                        width: 2.0,
+                        color: Color::new(113, 113, 127, 255),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                _view: PhantomData,
+            },
+        }
+    }
+
+    /// Add the given children to this scrollable.
+    pub fn children(
+        mut self,
+        children: impl IntoIterator<Item = impl Into<Element<V>>>,
+    ) -> Self {
+        self.children.extend(children.into_iter().map(|e| e.into()));
+        self
+    }
+}
+
+impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
+    fn into(self) -> Element<V> {
+        self.inner
+            .children(self.children)
+            .object(self.object)
+    }
+}
+
+struct ScrollableObject<V: View> {
+    quad: Quad,
+    _view: PhantomData<V>,
+}
+
+impl<V: View> Object for ScrollableObject<V> {
+    type View = V;
+
+    fn render(&mut self, cx: RenderContext<Self::View>) {
+        // cx.renderer.fill_quad(Quad {
+        //     bounds: cx.placement.rect(),
+        //     ..self.quad
+        // });
+    }
+
+    fn pre_render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.start_layer(cx.placement.rect());
+    }
+
+    fn post_render(&mut self, cx: RenderContext<Self::View>) {
+        cx.renderer.end_layer();
     }
 }

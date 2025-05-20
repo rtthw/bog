@@ -88,7 +88,30 @@ impl View for App {
                     ))
                     .on_click(|_cx| {
                         println!("Button clicked!");
-                    })))
+                    }))
+                .child(Scrollable::new()
+                    .children([
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                        test_element(),
+                    ])))
             .child(Element::new()
                 .object(RightPanel { color: GRAY_3 })
                 .layout(Layout::default()
@@ -216,4 +239,21 @@ impl Object for DraggableButton {
     fn on_drag_end(&mut self, cx: EventContext<Self::View>) {
         cx.view.drag_indicator = None;
     }
+}
+
+
+
+fn test_element<V: View + 'static>() -> Element<V> {
+    static_paragraph(
+        Text {
+            content: "Something, something, something... And more...".to_string(),
+            color: GRAY_8,
+            size: 17.0,
+            line_height: 19.0,
+            font_family: FontFamily::SansSerif,
+            font_style: FontStyle::Normal,
+            ..Default::default()
+        },
+        Layout::default(),
+    )
 }
