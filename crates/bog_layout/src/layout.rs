@@ -126,6 +126,46 @@ impl Layout {
         self.0.display = taffy::Display::Flex;
         self
     }
+
+    pub fn overflow_visible_y(mut self) -> Self {
+        self.0.overflow.y = taffy::Overflow::Visible;
+        self
+    }
+
+    pub fn overflow_scroll_y(mut self) -> Self {
+        self.0.overflow.y = taffy::Overflow::Scroll;
+        self
+    }
+
+    pub fn overflow_clip_y(mut self) -> Self {
+        self.0.overflow.y = taffy::Overflow::Clip;
+        self
+    }
+
+    pub fn overflow_hide_y(mut self) -> Self {
+        self.0.overflow.y = taffy::Overflow::Hidden;
+        self
+    }
+
+    pub fn overflow_visible_x(mut self) -> Self {
+        self.0.overflow.x = taffy::Overflow::Visible;
+        self
+    }
+
+    pub fn overflow_scroll_x(mut self) -> Self {
+        self.0.overflow.x = taffy::Overflow::Scroll;
+        self
+    }
+
+    pub fn overflow_clip_x(mut self) -> Self {
+        self.0.overflow.x = taffy::Overflow::Clip;
+        self
+    }
+
+    pub fn overflow_hide_x(mut self) -> Self {
+        self.0.overflow.x = taffy::Overflow::Hidden;
+        self
+    }
 }
 
 // Flex.
