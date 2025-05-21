@@ -81,9 +81,11 @@ impl LayoutMap {
     }
 
     pub fn placement(&self, node: u64, position: Vec2) -> Placement {
+        let offset = self.node_info(node.into()).offset;
         Placement {
             node,
             position,
+            offset,
             layout: &self.node_info(node.into()).layout,
             map: self,
         }
@@ -94,6 +96,7 @@ impl LayoutMap {
             style: layout.into(),
             layout: taffy::Layout::with_order(0),
             cache: taffy::Cache::new(),
+            offset: Vec2::ZERO,
         });
         let _ = self.children.insert(Vec::with_capacity(0));
         let _ = self.parents.insert(None);
@@ -116,6 +119,11 @@ impl LayoutMap {
     pub fn update_layout(&mut self, node: u64, layout: crate::Layout) {
         self.nodes[slotmap::KeyData::from_ffi(node).into()].style = layout.into();
         self.mark_dirty(node);
+    }
+
+    pub fn set_offset(&mut self, node: u64, offset: Vec2) {
+        self.nodes[slotmap::KeyData::from_ffi(node).into()].offset = offset;
+        // Offset doesn't affect the layout computation, so no need to recompute.
     }
 
     pub fn compute_layout(&mut self, node: u64, available_space: Vec2) {
@@ -209,20 +217,12 @@ impl LayoutMap {
 pub struct Placement<'a> {
     node: u64,
     position: Vec2,
+    offset: Vec2,
     layout: &'a taffy::Layout,
     map: &'a LayoutMap,
 }
 
 impl<'a> Placement<'a> {
-    pub fn new(node: u64, map: &'a LayoutMap, position: Vec2) -> Self {
-        Self {
-            node,
-            position,
-            layout: &map.node_info(node.into()).layout,
-            map,
-        }
-    }
-
     pub fn node(&self) -> u64 {
         self.node
     }
@@ -230,6 +230,7 @@ impl<'a> Placement<'a> {
     pub fn children(&self) -> PlacementIter<'a> {
         PlacementIter {
             parent_position: self.position,
+            parent_offset: self.offset,
             children: self.map.children(self.node).iter(),
             map: &self.map,
         }
@@ -246,6 +247,14 @@ impl Placement<'_> {
     /// Get the absolute position of this node's content (position + border + padding).
     pub fn inner_position(&self) -> Vec2 {
         self.position + Vec2::new(
+            self.layout.padding.left + self.layout.border.left,
+            self.layout.padding.top + self.layout.border.top,
+        )
+    }
+
+    /// Get the absolute position of this node's content (position + border + padding + offset).
+    pub fn offset_position(&self) -> Vec2 {
+        self.position + self.offset + Vec2::new(
             self.layout.padding.left + self.layout.border.left,
             self.layout.padding.top + self.layout.border.top,
         )
@@ -272,6 +281,11 @@ impl Placement<'_> {
         Rect::new(self.position, self.size())
     }
 
+    /// A [`Rect`] representing ([`Self::offset_position`], [`Self::size`]).
+    pub fn offset_rect(&self) -> Rect {
+        Rect::new(self.offset_position(), self.size())
+    }
+
     /// A [`Rect`] representing ([`Self::inner_position`], [`Self::inner_size`]).
     pub fn inner_rect(&self) -> Rect {
         Rect::new(self.inner_position(), self.inner_size())
@@ -285,6 +299,7 @@ impl Placement<'_> {
 
 pub struct PlacementIter<'a> {
     parent_position: Vec2,
+    parent_offset: Vec2,
     children: core::slice::Iter<'a, u64>,
     map: &'a LayoutMap,
 }
@@ -295,9 +310,11 @@ impl<'a> Iterator for PlacementIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.children.next().map(|id| {
             let location = self.map.node_info((*id).into()).layout.location;
+            let offset = self.map.node_info((*id).into()).offset;
             Placement {
                 node: *id,
                 position: self.parent_position + Vec2::new(location.x, location.y),
+                offset: self.parent_offset + offset,
                 layout: &self.map.node_info((*id).into()).layout,
                 map: self.map,
             }
@@ -334,6 +351,7 @@ struct NodeInfo {
     style: taffy::Style,
     layout: taffy::Layout,
     cache: taffy::Cache,
+    offset: Vec2,
 }
 
 impl LayoutMap {

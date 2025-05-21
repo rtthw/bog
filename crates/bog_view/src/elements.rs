@@ -4,7 +4,7 @@
 
 mod button;
 use bog_event::WheelMovement;
-use bog_math::{mat4_translation, vec3};
+use bog_math::{mat4_translation, vec2, vec3};
 pub use button::*;
 
 mod paragraph;
@@ -152,7 +152,7 @@ impl<V: View> Object for ScrollableObject<V> {
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
         self.content_height = cx.placement.content_size().y;
         cx.renderer.start_layer(cx.placement.rect());
-        cx.renderer.start_transform(mat4_translation(vec3(1.0, self.v_offset, 1.0)));
+        cx.renderer.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));
     }
 
     fn post_render(&mut self, cx: RenderContext<Self::View>) {
@@ -177,6 +177,7 @@ impl<V: View> Object for ScrollableObject<V> {
                 }
             }
             if prev_offset != self.v_offset {
+                cx.layout_map.set_offset(cx.node, vec2(0.0, -self.v_offset));
                 // FIXME: Don't perform this check when there is no window.
                 cx.window.map(|w| w.request_redraw());
             }
