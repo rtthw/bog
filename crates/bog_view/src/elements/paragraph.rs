@@ -47,13 +47,18 @@ impl<V: View> Object for StaticParagraph<V> {
             bounds: cx.placement.size(),
             ..self.text.clone()
         });
+        // cx.renderer.fill_quad(bog_render::Quad {
+        //     bounds: cx.placement.rect(),
+        //     border: bog_render::Border {
+        //         color: bog_color::Color::from_u32(0xffffffff),
+        //         width: 1.0,
+        //         ..Default::default()
+        //     },
+        //     ..Default::default()
+        // });
         cx.renderer.fill_quad(bog_render::Quad {
-            bounds: cx.placement.rect(),
-            border: bog_render::Border {
-                color: bog_color::Color::from_u32(0xffffffff),
-                width: 1.0,
-                ..Default::default()
-            },
+            bounds: cx.placement.parent_rect(),
+            border: bog_render::Border::new(bog_color::Color::from_u32(0xff0000ff), 1.0, 0.0),
             ..Default::default()
         });
     }

@@ -218,6 +218,9 @@ impl<'a, V: View> ModelProxy<'a, V> {
         let mut hovered = Vec::with_capacity(3);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
+            if !placement.parent_rect().contains(pos) {
+                return;
+            }
             if !placement.offset_rect().contains(pos) {
                 return;
             }

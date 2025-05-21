@@ -142,14 +142,19 @@ struct ScrollableObject<V: View> {
 impl<V: View> Object for ScrollableObject<V> {
     type View = V;
 
-    fn render(&mut self, cx: RenderContext<Self::View>) {
+    // fn render(&mut self, cx: RenderContext<Self::View>) {
+    // }
+
+    fn pre_render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.fill_quad(bog_render::Quad {
             bounds: cx.placement.rect(),
             ..self.quad
         });
-    }
-
-    fn pre_render(&mut self, cx: RenderContext<Self::View>) {
+        // cx.renderer.fill_quad(bog_render::Quad {
+        //     bounds: cx.placement.parent_rect(),
+        //     border: Border::new(Color::from_u32(0xff0000ff), 1.0, 0.0),
+        //     ..Default::default()
+        // });
         self.content_height = cx.placement.content_size().y;
         cx.renderer.start_layer(cx.placement.rect());
         cx.renderer.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));

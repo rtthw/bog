@@ -82,10 +82,12 @@ impl LayoutMap {
 
     pub fn placement(&self, node: u64, position: Vec2) -> Placement {
         let offset = self.node_info(node.into()).offset;
+        let size = self.node_info(node.into()).layout.size;
         Placement {
             node,
             position,
             offset,
+            parent_rect: Rect::new(position, vec2(size.width, size.height)),
             layout: &self.node_info(node.into()).layout,
             map: self,
         }
@@ -218,6 +220,7 @@ pub struct Placement<'a> {
     node: u64,
     position: Vec2,
     offset: Vec2,
+    parent_rect: Rect,
     layout: &'a taffy::Layout,
     map: &'a LayoutMap,
 }
@@ -229,8 +232,8 @@ impl<'a> Placement<'a> {
 
     pub fn children(&self) -> PlacementIter<'a> {
         PlacementIter {
-            parent_position: self.position,
-            parent_offset: self.offset,
+            rect: self.rect(),
+            offset: self.offset,
             children: self.map.children(self.node).iter(),
             map: &self.map,
         }
@@ -295,11 +298,16 @@ impl Placement<'_> {
     pub fn content_rect(&self) -> Rect {
         Rect::new(self.inner_position(), self.content_size())
     }
+
+    /// A [`Rect`] representing this node's parent.
+    pub fn parent_rect(&self) -> Rect {
+        self.parent_rect
+    }
 }
 
 pub struct PlacementIter<'a> {
-    parent_position: Vec2,
-    parent_offset: Vec2,
+    rect: Rect,
+    offset: Vec2,
     children: core::slice::Iter<'a, u64>,
     map: &'a LayoutMap,
 }
@@ -313,8 +321,9 @@ impl<'a> Iterator for PlacementIter<'a> {
             let offset = self.map.node_info((*id).into()).offset;
             Placement {
                 node: *id,
-                position: self.parent_position + Vec2::new(location.x, location.y),
-                offset: self.parent_offset + offset,
+                position: self.rect.position() + Vec2::new(location.x, location.y),
+                offset: self.offset + offset,
+                parent_rect: self.rect,
                 layout: &self.map.node_info((*id).into()).layout,
                 map: self.map,
             }
