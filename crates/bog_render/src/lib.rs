@@ -72,6 +72,7 @@ impl Renderer {
         viewport: &Viewport,
     ) -> wgpu::SubmissionIndex {
         // 1. Prepare.
+        // let start = std::time::Instant::now();
         let scale_factor = viewport.scale_factor as f32;
         let mut encoder = self.device.create_command_encoder(
             &wgpu::CommandEncoderDescriptor {
@@ -166,6 +167,8 @@ impl Renderer {
         self.staging_belt.finish();
         let submission = self.queue.submit(std::iter::once(encoder.finish()));
         self.staging_belt.recall();
+
+        // println!("render : {}us", std::time::Instant::now().duration_since(start).as_micros());
 
         submission
     }

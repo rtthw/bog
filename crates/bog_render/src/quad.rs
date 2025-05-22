@@ -29,6 +29,8 @@ impl QuadManager {
         transform: Mat4,
         scale: f32,
     ) {
+        debug_assert!(!quads.is_empty());
+
         if self.layers.len() <= self.prepare_layer {
             self.layers.push(QuadLayer::new(device, &pipeline.constants_layout));
         }
@@ -116,12 +118,10 @@ impl QuadLayer {
             device,
         ).copy_from_slice(bytes);
 
-        if !quads.is_empty() {
-            let _ = self.instance_buffer.resize(device, quads.len());
-            let _ = self.instance_buffer.write(device, encoder, belt, 0, quads);
+        let _ = self.instance_buffer.resize(device, quads.len());
+        let _ = self.instance_buffer.write(device, encoder, belt, 0, quads);
 
-            self.instance_count = quads.len();
-        }
+        self.instance_count = quads.len();
     }
 }
 

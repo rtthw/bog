@@ -49,3 +49,7 @@ bog_view = { path = "crates/bog_view" }
 bog_window = { path = "crates/bog_window" }
 
 wgpu = "25"
+
+
+[profile.dev.package."*"]
+opt-level = 3
