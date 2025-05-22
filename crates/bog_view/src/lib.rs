@@ -407,6 +407,9 @@ pub struct Element<V: View> {
     object: Option<Box<dyn Object<View = V>>>,
     layout: Layout,
     children: Vec<Element<V>>,
+
+    mouseenter_listener: Option<EventListener<V>>,
+    mouseleave_listener: Option<EventListener<V>>,
 }
 
 impl<V: View> Element<V> {
@@ -417,6 +420,9 @@ impl<V: View> Element<V> {
             object: None,
             layout: Layout::default(),
             children: Vec::new(),
+
+            mouseenter_listener: None,
+            mouseleave_listener: None,
         }
     }
 
@@ -444,6 +450,24 @@ impl<V: View> Element<V> {
     /// Add the given child to this element.
     pub fn child(mut self, child: impl Into<Element<V>>) -> Self {
         self.children.push(child.into());
+        self
+    }
+}
+
+impl<V: View> Element<V> {
+    pub fn on_mouseenter<F>(mut self, listener: F) -> Self
+    where
+        F: Fn(EventContext<V>) + 'static,
+    {
+        self.mouseenter_listener = Some(Box::new(listener));
+        self
+    }
+
+    pub fn on_mouseleave<F>(mut self, listener: F) -> Self
+    where
+        F: Fn(EventContext<V>) + 'static,
+    {
+        self.mouseleave_listener = Some(Box::new(listener));
         self
     }
 }
@@ -508,6 +532,10 @@ pub trait Object {
     /// object.
     fn on_drag_drop(&mut self, cx: EventContext<Self::View>) {}
 }
+
+
+
+pub type EventListener<V> = Box<dyn Fn(EventContext<V>) + 'static>;
 
 
 

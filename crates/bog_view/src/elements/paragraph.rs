@@ -17,7 +17,7 @@ pub struct Paragraph {}
 
 
 
-pub fn static_paragraph<V: View + 'static>(text: Text, layout: Layout) -> Element<V> {
+pub fn static_paragraph<'a, V: View + 'static>(text: Text, layout: Layout) -> Element<V> {
     Element::new()
         .object(StaticParagraph {
             text,
