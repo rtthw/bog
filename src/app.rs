@@ -99,7 +99,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                let root_placement = self.layout_map.placement(self.model.root_node(), Vec2::ZERO);
+                let root_placement = self.layout_map.placement(self.model.state().root_node(), Vec2::ZERO);
                 render_view(
                     &mut self.model,
                     &mut self.app,

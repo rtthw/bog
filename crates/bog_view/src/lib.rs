@@ -26,15 +26,7 @@ pub trait View {
 /// A view model really just a tree of [`Element`]s that have been attached to the [`View`].
 pub struct Model<V: View> {
     elements: NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
-    root_node: u64,
-    mouse_pos: Vec2,
-    viewport_size: Vec2,
-    hovered_node: Option<u64>,
-    is_dragging: bool,
-    drag_start_pos: Option<Vec2>,
-    drag_start_time: std::time::Instant,
-    drag_start_node: Option<u64>,
-    latest_wheel_movement: Option<WheelMovement>,
+    state: ModelState,
 }
 
 impl<V: View> Model<V> {
@@ -66,18 +58,30 @@ impl<V: View> Model<V> {
 
         Self {
             elements,
-            root_node,
-            mouse_pos: Vec2::ZERO,
-            viewport_size: Vec2::ZERO,
-            hovered_node: None,
-            is_dragging: false,
-            drag_start_pos: None,
-            drag_start_time: std::time::Instant::now(),
-            drag_start_node: None,
-            latest_wheel_movement: None,
+            state: ModelState {
+                root_node,
+                mouse_pos: Vec2::ZERO,
+                viewport_size: Vec2::ZERO,
+                hovered_node: None,
+                is_dragging: false,
+                drag_start_pos: None,
+                drag_start_time: std::time::Instant::now(),
+                drag_start_node: None,
+                latest_wheel_movement: None,
+            },
         }
     }
 
+    pub fn state(&self) -> &ModelState {
+        &self.state
+    }
+
+    pub fn state_mut(&mut self) -> &mut ModelState {
+        &mut self.state
+    }
+}
+
+impl ModelState {
     /// The node identifier for the root [`Element`] of this model.
     pub fn root_node(&self) -> u64 {
         self.root_node
@@ -140,18 +144,18 @@ impl<V: View> Model<V> {
     pub fn take_wheel_movement(&mut self) -> Option<WheelMovement> {
         self.latest_wheel_movement.take()
     }
+}
 
-    /// Attempt to grab an [`Object`] out of this model. If you do not call [`Model::place`] after
-    /// using the object, then the object will be dropped, and therefore inaccessible until
-    /// replaced.
-    pub fn grab(&mut self, node: u64) -> Option<Box<dyn Object<View = V>>> {
-        self.elements.insert(node, None).and_then(|mut o| o.take())
-    }
-
-    /// Place an element into this model.
-    pub fn place(&mut self, node: u64, obj: Box<dyn Object<View = V>>) {
-        let _ = self.elements.insert(node, Some(obj));
-    }
+pub struct ModelState {
+    root_node: u64,
+    mouse_pos: Vec2,
+    viewport_size: Vec2,
+    hovered_node: Option<u64>,
+    is_dragging: bool,
+    drag_start_pos: Option<Vec2>,
+    drag_start_time: std::time::Instant,
+    drag_start_node: Option<u64>,
+    latest_wheel_movement: Option<WheelMovement>,
 }
 
 pub struct ModelProxy<'a, V: View> {
@@ -164,17 +168,17 @@ pub struct ModelProxy<'a, V: View> {
 
 impl<'a, V: View> ModelProxy<'a, V> {
     pub fn handle_resize(&mut self, new_size: Vec2) {
-        if new_size == self.model.viewport_size {
+        if new_size == self.model.state.viewport_size {
             return;
         }
-        self.model.viewport_size = new_size;
-        let root_layout = self.layout_map.get_layout(self.model.root_node);
+        self.model.state.viewport_size = new_size;
+        let root_layout = self.layout_map.get_layout(self.model.state.root_node);
         self.layout_map.update_layout(
-            self.model.root_node,
+            self.model.state.root_node,
             root_layout.width(new_size.x).height(new_size.y),
         );
         self.layout_map.compute_contextual_layout(
-            self.model.root_node,
+            self.model.state.root_node,
             new_size,
             ModelProxyContext {
                 // view: self.view,
@@ -210,10 +214,10 @@ impl<'a, V: View> ModelProxy<'a, V> {
     }
 
     pub fn handle_mouse_move(&mut self, new_pos: Vec2) -> bool {
-        if new_pos == self.model.mouse_pos {
+        if new_pos == self.model.state.mouse_pos {
             return false;
         }
-        self.model.mouse_pos = new_pos;
+        self.model.state.mouse_pos = new_pos;
 
         let mut should_redraw = false;
         let mut hovered = Vec::with_capacity(3);
@@ -233,77 +237,77 @@ impl<'a, V: View> ModelProxy<'a, V> {
             }
         }
 
-        find_hovered(self.model.root_placement(self.layout_map), &mut hovered, new_pos);
+        find_hovered(self.model.state.root_placement(self.layout_map), &mut hovered, new_pos);
 
         let topmost_hovered = hovered.last().copied();
 
-        if let Some(_drag_origin_pos) = self.model.drag_start_pos {
-            if let Some(drag_node) = self.model.drag_start_node {
-                if !self.model.is_dragging {
+        if let Some(_drag_origin_pos) = self.model.state.drag_start_pos {
+            if let Some(drag_node) = self.model.state.drag_start_node {
+                if !self.model.state.is_dragging {
                     let dur_since = std::time::Instant::now()
-                        .duration_since(self.model.drag_start_time);
+                        .duration_since(self.model.state.drag_start_time);
                     if dur_since.as_secs_f64() > 0.1 { // TODO: Custom hysteresis.
                         // User is likely dragging now.
-                        self.model.is_dragging = true;
-                        if let Some(mut obj) = self.model.grab(drag_node) {
+                        self.model.state.is_dragging = true;
+                        if let Some(Some(obj)) = self.model.elements.get_mut(&drag_node) {
                             obj.on_drag_start(EventContext {
                                 node: drag_node,
                                 view: self.view,
-                                model: self.model,
+                                model: &mut self.model.state,
                                 window: self.window,
                                 renderer: self.renderer,
                                 layout_map: self.layout_map,
                             });
-                            self.model.place(drag_node, obj);
+                            // self.model.place(drag_node, obj);
                         }
                     }
                 }
                 // NOTE: We check twice here instead of just saying "else" because it could change
                 //       in the first statement.
-                if self.model.is_dragging {
-                    if let Some(mut obj) = self.model.grab(drag_node) {
+                if self.model.state.is_dragging {
+                    if let Some(Some(obj)) = self.model.elements.get_mut(&drag_node) {
                         obj.on_drag_move(EventContext {
                             node: drag_node,
                             view: self.view,
-                            model: self.model,
+                            model: &mut self.model.state,
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
                         });
-                        self.model.place(drag_node, obj);
+                        // self.model.place(drag_node, obj);
                     }
                 }
                 should_redraw = true;
             }
         }
 
-        if self.model.hovered_node != topmost_hovered {
-            if let Some(left_node) = self.model.hovered_node.take() {
-                if let Some(mut obj) = self.model.grab(left_node) {
+        if self.model.state.hovered_node != topmost_hovered {
+            if let Some(left_node) = self.model.state.hovered_node.take() {
+                if let Some(Some(obj)) = self.model.elements.get_mut(&left_node) {
                     obj.on_mouse_leave(EventContext {
                         node: left_node,
                         view: self.view,
-                        model: self.model,
+                        model: &mut self.model.state,
                         window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
-                    self.model.place(left_node, obj);
+                    // self.model.place(left_node, obj);
                 }
             }
             if let Some(entered_node) = topmost_hovered {
-                if let Some(mut obj) = self.model.grab(entered_node) {
+                if let Some(Some(obj)) = self.model.elements.get_mut(&entered_node) {
                     obj.on_mouse_enter(EventContext {
                         node: entered_node,
                         view: self.view,
-                        model: self.model,
+                        model: &mut self.model.state,
                         window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
-                    self.model.place(entered_node, obj);
+                    // self.model.place(entered_node, obj);
                 }
-                self.model.hovered_node = Some(entered_node);
+                self.model.state.hovered_node = Some(entered_node);
             }
 
             should_redraw = true;
@@ -313,70 +317,70 @@ impl<'a, V: View> ModelProxy<'a, V> {
     }
 
     pub fn handle_mouse_down(&mut self) {
-        if let Some(node) = self.model.hovered_node {
-            if let Some(mut obj) = self.model.grab(node) {
+        if let Some(node) = self.model.state.hovered_node {
+            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
                 obj.on_mouse_down(EventContext {
                     node,
                     view: self.view,
-                    model: self.model,
+                    model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
                 });
-                self.model.place(node, obj);
+                // self.model.place(node, obj);
             }
         }
-        self.model.drag_start_time = std::time::Instant::now();
-        self.model.drag_start_pos = Some(self.model.mouse_pos);
-        self.model.drag_start_node = self.model.hovered_node.clone();
+        self.model.state.drag_start_time = std::time::Instant::now();
+        self.model.state.drag_start_pos = Some(self.model.state.mouse_pos);
+        self.model.state.drag_start_node = self.model.state.hovered_node.clone();
     }
 
     pub fn handle_mouse_up(&mut self) {
-        if let Some(node) = self.model.hovered_node {
-            if let Some(mut obj) = self.model.grab(node) {
+        if let Some(node) = self.model.state.hovered_node {
+            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
                 obj.on_mouse_up(EventContext {
                     node,
                     view: self.view,
-                    model: self.model,
+                    model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
                 });
-                self.model.place(node, obj);
+                // self.model.place(node, obj);
             }
         }
-        self.model.drag_start_pos = None;
-        if let Some(node) = self.model.drag_start_node.take() {
-            if self.model.is_dragging {
-                self.model.is_dragging = false;
-                if let Some(mut obj) = self.model.grab(node) {
+        self.model.state.drag_start_pos = None;
+        if let Some(node) = self.model.state.drag_start_node.take() {
+            if self.model.state.is_dragging {
+                self.model.state.is_dragging = false;
+                if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
                     obj.on_drag_end(EventContext {
                         node,
                         view: self.view,
-                        model: self.model,
+                        model: &mut self.model.state,
                         window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
                     });
-                    self.model.place(node, obj);
+                    // self.model.place(node, obj);
                 }
             }
         }
     }
 
     pub fn handle_wheel_movement(&mut self, movement: WheelMovement) {
-        self.model.latest_wheel_movement = Some(movement);
-        if let Some(node) = self.model.hovered_node {
-            if let Some(mut obj) = self.model.grab(node) {
+        self.model.state.latest_wheel_movement = Some(movement);
+        if let Some(node) = self.model.state.hovered_node {
+            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
                 obj.on_wheel(EventContext {
                     node,
                     view: self.view,
-                    model: self.model,
+                    model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
                 });
-                self.model.place(node, obj);
+                // self.model.place(node, obj);
             }
         }
     }
@@ -391,9 +395,9 @@ struct ModelProxyContext<'a, V: View> {
 impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2 {
         let mut size = Vec2::ZERO;
-        if let Some(obj) = self.model.grab(node) {
+        if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
             size = obj.measure(available_space, self.renderer);
-            self.model.place(node, obj);
+            // self.model.place(node, obj);
         }
 
         size
@@ -566,7 +570,7 @@ fn render_placement<V: View>(
     renderer: &mut Renderer,
 ) {
     for child_placement in placement.children() {
-        if let Some(mut obj) = model.grab(child_placement.node()) {
+        if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,
                 // model,
@@ -579,19 +583,19 @@ fn render_placement<V: View>(
                 renderer,
                 placement: child_placement,
             });
-            model.place(child_placement.node(), obj);
+            // model.place(child_placement.node(), obj);
         }
 
         render_placement(child_placement, model, view, renderer);
 
-        if let Some(mut obj) = model.grab(child_placement.node()) {
+        if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.post_render(RenderContext {
                 view,
                 // model,
                 renderer,
                 placement: child_placement,
             });
-            model.place(child_placement.node(), obj);
+            // model.place(child_placement.node(), obj);
         }
     }
 }
@@ -601,7 +605,7 @@ fn render_placement<V: View>(
 pub struct EventContext<'a, V: View> {
     pub node: u64,
     pub view: &'a mut V,
-    pub model: &'a mut Model<V>,
+    pub model: &'a mut ModelState,
     pub window: Option<&'a Window>,
     pub renderer: &'a mut Renderer,
     pub layout_map: &'a mut LayoutMap,
