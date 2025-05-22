@@ -209,12 +209,13 @@ impl<'a, V: View> ModelProxy<'a, V> {
         // update_placements(root_placement, self.view, self.model, self.renderer);
     }
 
-    pub fn handle_mouse_move(&mut self, new_pos: Vec2) {
+    pub fn handle_mouse_move(&mut self, new_pos: Vec2) -> bool {
         if new_pos == self.model.mouse_pos {
-            return;
+            return false;
         }
         self.model.mouse_pos = new_pos;
 
+        let mut should_redraw = false;
         let mut hovered = Vec::with_capacity(3);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
@@ -241,8 +242,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                 if !self.model.is_dragging {
                     let dur_since = std::time::Instant::now()
                         .duration_since(self.model.drag_start_time);
-                    if dur_since.as_secs_f64() > 0.1 {
-                        // User is likely dragging.
+                    if dur_since.as_secs_f64() > 0.1 { // TODO: Custom hysteresis.
+                        // User is likely dragging now.
                         self.model.is_dragging = true;
                         if let Some(mut obj) = self.model.grab(drag_node) {
                             obj.on_drag_start(EventContext {
@@ -257,8 +258,9 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         }
                     }
                 }
+                // NOTE: We check twice here instead of just saying "else" because it could change
+                //       in the first statement.
                 if self.model.is_dragging {
-                    // TODO: let delta = new_pos - drag_origin_pos;
                     if let Some(mut obj) = self.model.grab(drag_node) {
                         obj.on_drag_move(EventContext {
                             node: drag_node,
@@ -271,6 +273,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         self.model.place(drag_node, obj);
                     }
                 }
+                should_redraw = true;
             }
         }
 
@@ -302,7 +305,11 @@ impl<'a, V: View> ModelProxy<'a, V> {
                 }
                 self.model.hovered_node = Some(entered_node);
             }
+
+            should_redraw = true;
         }
+
+        should_redraw
     }
 
     pub fn handle_mouse_down(&mut self) {

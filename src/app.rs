@@ -129,14 +129,16 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
             // WindowEvent::KeyDown { code, repeat } => {}
             // WindowEvent::KeyUp { code } => {}
             WindowEvent::MouseMove { x, y } => {
-                ModelProxy {
+                let should_redraw = ModelProxy {
                     view: &mut self.app,
                     model: &mut self.model,
                     layout_map: &mut self.layout_map,
                     window: Some(&window),
                     renderer,
                 }.handle_mouse_move(vec2(x, y));
-                window.request_redraw();
+                if should_redraw {
+                    window.request_redraw();
+                }
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
@@ -158,6 +160,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                         window: Some(&window),
                         renderer,
                     }.handle_mouse_up();
+                    window.request_redraw();
                 }
             }
             WindowEvent::WheelMove(movement) => {
