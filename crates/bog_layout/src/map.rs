@@ -305,10 +305,6 @@ impl<'a> Iterator for PlacementIter<'a> {
 
 
 
-pub type LayoutMeasureFunction<T> = dyn Fn(T, Vec2) -> Vec2; // (context, space) -> size
-
-
-
 pub trait LayoutContext {
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2;
 }
