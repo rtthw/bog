@@ -5,7 +5,7 @@
 
 
 mod layout;
-pub mod tree;
+pub mod map;
 
 pub use layout::Layout;
-pub use tree::*;
+pub use map::*;
