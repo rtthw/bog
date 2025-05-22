@@ -8,34 +8,6 @@ use slotmap::Key as _;
 
 
 
-pub trait LayoutNode {
-    fn id(&self) -> u64;
-
-    fn children<'a>(&self, map: &'a LayoutMap) -> &'a [u64] {
-        map.children(self.id())
-    }
-
-    fn parent(&self, map: &LayoutMap) -> Option<u64> {
-        map.parent(self.id())
-    }
-
-    fn absolute_position(&self, map: &LayoutMap) -> Vec2 {
-        map.absolute_position(self.id())
-    }
-
-    fn change_layout(&self, map: &mut LayoutMap, layout: crate::Layout) {
-        map.update_layout(self.id(), layout);
-    }
-}
-
-impl LayoutNode for u64 {
-    fn id(&self) -> u64 {
-        *self
-    }
-}
-
-
-
 #[derive(Debug)]
 pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
