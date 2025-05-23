@@ -25,7 +25,8 @@ impl<V: View> Scrollable<V> {
         Self {
             inner: Element::new()
                 .layout(Layout::default()
-                    .overflow_scroll_y()),
+                    .overflow_scroll_y()
+                    .padding(7.0)),
             children: Vec::with_capacity(1),
             object: ScrollableObject {
                 quad: Quad {
@@ -65,8 +66,7 @@ impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
                     .fill_height()
                     .overflow_scroll_y()
                     .flex_column()
-                    .gap_y(7.0)
-                    .padding(7.0))
+                    .gap_y(7.0))
                 .children(self.children))
             .object(self.object)
     }
@@ -104,7 +104,7 @@ impl<V: View> Object for ScrollableObject<V> {
         //     ..Default::default()
         // });
         self.content_height = cx.placement.content_size().y;
-        cx.renderer.start_layer(cx.placement.rect());
+        cx.renderer.start_layer(cx.placement.inner_rect());
         cx.renderer.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));
     }
 

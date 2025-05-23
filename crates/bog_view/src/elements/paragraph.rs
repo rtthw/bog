@@ -56,11 +56,11 @@ impl<V: View> Object for StaticParagraph<V> {
         //     },
         //     ..Default::default()
         // });
-        cx.renderer.fill_quad(bog_render::Quad {
-            bounds: cx.placement.parent_rect(),
-            border: bog_render::Border::new(bog_color::Color::from_u32(0xff0000ff), 1.0, 0.0),
-            ..Default::default()
-        });
+        // cx.renderer.fill_quad(bog_render::Quad {
+        //     bounds: cx.placement.parent_rect(),
+        //     border: bog_render::Border::new(bog_color::Color::from_u32(0xff0000ff), 1.0, 0.0),
+        //     ..Default::default()
+        // });
     }
 
     fn on_mouse_enter(&mut self, cx: EventContext<Self::View>) {

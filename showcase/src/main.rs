@@ -116,7 +116,7 @@ impl View for App {
                         test_paragraph(),
                     ])))
             .child(Element::new()
-                .object(RightPanel { color: GRAY_3 })
+                .object(RightPanel { color: GRAY_3, border_color: GRAY_6 })
                 .layout(Layout::default()
                     .flex_auto()
                     .flex_wrap()
@@ -160,6 +160,7 @@ impl Object for LeftPanel {
 
 struct RightPanel {
     color: Color,
+    border_color: Color,
 }
 
 impl Object for RightPanel {
@@ -169,6 +170,11 @@ impl Object for RightPanel {
         cx.renderer.fill_quad(Quad {
             bounds: cx.placement.rect(),
             bg_color: self.color,
+            border: Border {
+                color: self.border_color,
+                width: 2.0,
+                radius: [0.0; 4],
+            },
             ..Default::default()
         });
     }
@@ -182,6 +188,14 @@ impl Object for RightPanel {
             cx.renderer.fill_quad(*drag_indicator);
         }
         cx.renderer.end_layer();
+    }
+
+    fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
+        self.border_color = GRAY_7;
+    }
+
+    fn on_mouse_leave(&mut self, _cx: crate::EventContext<Self::View>) {
+        self.border_color = GRAY_6;
     }
 }
 
