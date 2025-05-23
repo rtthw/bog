@@ -90,6 +90,76 @@ impl Rect<f32> {
     }
 }
 
+impl Rect<f32> {
+    pub const fn shrink(self, margin_x: f32, margin_y: f32) -> Self {
+        let doubled_margin_horizontal = margin_x * 2.0;
+        let doubled_margin_vertical = margin_y * 2.0;
+
+        if self.w < doubled_margin_horizontal || self.h < doubled_margin_vertical {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x + margin_x,
+                y: self.y + margin_y,
+                w: self.w - doubled_margin_horizontal,
+                h: self.h - doubled_margin_vertical,
+            }
+        }
+    }
+
+    pub const fn shrink_h(self, margin: f32) -> Self {
+        let doubled_margin = margin * 2.0;
+
+        if self.w < doubled_margin {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x + margin,
+                y: self.y,
+                w: self.w - doubled_margin,
+                h: self.h,
+            }
+        }
+    }
+
+    pub const fn shrink_v(self, margin: f32) -> Self {
+        let doubled_margin = margin * 2.0;
+
+        if self.h < doubled_margin {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x,
+                y: self.y + margin,
+                w: self.w,
+                h: self.h - doubled_margin,
+            }
+        }
+    }
+
+    pub fn hsplit_len(&self, len: f32) -> (Self, Self) {
+        (
+            Self { x: self.x, y: self.y, w: len, h: self.h },
+            Self { x: self.x + len, y: self.y, w: self.w - len, h: self.h },
+        )
+    }
+
+    pub fn hsplit_portion(&self, portion: f32) -> (Self, Self) {
+        self.hsplit_len(self.w * portion)
+    }
+
+    pub fn vsplit_len(&self, len: f32) -> (Self, Self) {
+        (
+            Self { x: self.x, y: self.y, w: self.w, h: len },
+            Self { x: self.x, y: self.y + len, w: self.w, h: self.h - len },
+        )
+    }
+
+    pub fn vsplit_portion(&self, portion: f32) -> (Self, Self) {
+        self.vsplit_len(self.h * portion)
+    }
+}
+
 impl core::ops::Add<Vec2> for Rect<f32> {
     type Output = Self;
 
