@@ -178,7 +178,8 @@ impl<V: View> Object for ScrollableObject<V> {
         cx.renderer.end_layer();
     }
 
-    fn on_wheel(&mut self, cx: crate::EventContext<Self::View>) {
+    fn on_wheel(&mut self, mut cx: crate::EventContext<Self::View>) {
+        cx.stop_propagation();
         if let Some(movement) = cx.model.take_wheel_movement() {
             // println!("Scrolling by {:?}", movement);
             let prev_offset = self.v_offset;

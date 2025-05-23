@@ -259,8 +259,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                                 window: self.window,
                                 renderer: self.renderer,
                                 layout_map: self.layout_map,
+                                propagate: &mut false, // TODO
                             });
-                            // self.model.place(drag_node, obj);
                         }
                     }
                 }
@@ -275,8 +275,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
+                            propagate: &mut false, // TODO
                         });
-                        // self.model.place(drag_node, obj);
                     }
                 }
                 should_redraw = true;
@@ -296,6 +296,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
+                            propagate: &mut false, // TODO
                         });
                     }
                 }
@@ -310,6 +311,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
+                            propagate: &mut false, // TODO
                         });
                     }
                 }
@@ -335,8 +337,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
+                    propagate: &mut false, // TODO
                 });
-                // self.model.place(node, obj);
             }
         }
         self.model.state.drag_start_time = std::time::Instant::now();
@@ -354,8 +356,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
+                    propagate: &mut false, // TODO
                 });
-                // self.model.place(node, obj);
             }
         }
         self.model.state.drag_start_pos = None;
@@ -370,8 +372,8 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
+                        propagate: &mut false, // TODO
                     });
-                    // self.model.place(node, obj);
                 }
             }
         }
@@ -379,17 +381,21 @@ impl<'a, V: View> ModelProxy<'a, V> {
 
     pub fn handle_wheel_movement(&mut self, movement: WheelMovement) {
         self.model.state.latest_wheel_movement = Some(movement);
-        if let Some(node) = self.model.state.hovered_node {
-            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+        let mut propagate = true;
+        'dispatch: for node in &self.model.state.hovered.clone() { // TODO: Avoid cloning here?
+            if let Some(Some(obj)) = self.model.elements.get_mut(node) {
                 obj.on_wheel(EventContext {
-                    node,
+                    node: *node,
                     view: self.view,
                     model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
+                    propagate: &mut propagate,
                 });
-                // self.model.place(node, obj);
+                if !propagate {
+                    break 'dispatch;
+                }
             }
         }
     }
@@ -406,7 +412,6 @@ impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
         let mut size = Vec2::ZERO;
         if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
             size = obj.measure(available_space, self.renderer);
-            // self.model.place(node, obj);
         }
 
         size
@@ -618,9 +623,14 @@ pub struct EventContext<'a, V: View> {
     pub window: Option<&'a Window>,
     pub renderer: &'a mut Renderer,
     pub layout_map: &'a mut LayoutMap,
+    pub propagate: &'a mut bool,
 }
 
 impl<'a, V: View> EventContext<'a, V> {
+    pub fn stop_propagation(&mut self) {
+        *self.propagate = false;
+    }
+
     pub fn get_layout(&self) -> Layout {
         self.layout_map.get_layout(self.node)
     }

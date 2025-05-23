@@ -1,16 +1,6 @@
 //! Application
 
 
-/* TODO
-
-- Event propagation. This will probably involve an `Event` type that can be used by the event
-  targets with just a simple flag that can tell the app proxy whether to "bubble up" events.
-  Accessing ancestors should be as simple as calling `LayoutMap::parent` on the node. Should the UI
-  handle event propagation, or is that best handled by the app?
-- Figure out how to best dispatch events that involve multiple targets (like drags).
-
-*/
-
 
 use bog_event::WindowEvent;
 use bog_layout::LayoutMap;
