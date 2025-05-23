@@ -90,12 +90,7 @@ impl<V: View> Scrollable<V> {
         Self {
             inner: Element::new()
                 .layout(Layout::default()
-                    // .flex_auto()
-                    // .flex_grow(1.0)
-                    .overflow_scroll_y()
-                    .flex_column()
-                    .gap_y(7.0)
-                    .padding(7.0)),
+                    .overflow_scroll_y()),
             children: Vec::with_capacity(1),
             object: ScrollableObject {
                 quad: Quad {
@@ -127,7 +122,17 @@ impl<V: View> Scrollable<V> {
 impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
     fn into(self) -> Element<V> {
         self.inner
-            .children(self.children)
+            // NOTE: We need this containner child because we set its offset. The top-level
+            //       scrollable element needs to remain in place for accurate interactions.
+            .child(Element::new()
+                .layout(Layout::default()
+                    .fill_width()
+                    .fill_height()
+                    .overflow_scroll_y()
+                    .flex_column()
+                    .gap_y(7.0)
+                    .padding(7.0))
+                .children(self.children))
             .object(self.object)
     }
 }
@@ -144,6 +149,14 @@ impl<V: View> Object for ScrollableObject<V> {
 
     // fn render(&mut self, cx: RenderContext<Self::View>) {
     // }
+
+    fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
+        self.quad.border.color = Color::new(139, 139, 149, 255);
+    }
+
+    fn on_mouse_leave(&mut self, _cx: crate::EventContext<Self::View>) {
+        self.quad.border.color = Color::new(113, 113, 127, 255);
+    }
 
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
         cx.renderer.fill_quad(bog_render::Quad {
@@ -182,7 +195,8 @@ impl<V: View> Object for ScrollableObject<V> {
                 }
             }
             if prev_offset != self.v_offset {
-                cx.layout_map.set_offset(cx.node, vec2(0.0, -self.v_offset));
+                let container_node = cx.layout_map.children(cx.node)[0];
+                cx.layout_map.set_offset(container_node, vec2(0.0, -self.v_offset));
                 // FIXME: Don't perform this check when there is no window.
                 cx.window.map(|w| w.request_redraw());
             }
