@@ -296,7 +296,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
-                            propagate: &mut false, // TODO
+                            propagate: &mut false, // TODO (?)
                         });
                     }
                 }
@@ -311,7 +311,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                             window: self.window,
                             renderer: self.renderer,
                             layout_map: self.layout_map,
-                            propagate: &mut false, // TODO
+                            propagate: &mut false, // TODO (?)
                         });
                     }
                 }
@@ -328,17 +328,21 @@ impl<'a, V: View> ModelProxy<'a, V> {
     }
 
     pub fn handle_mouse_down(&mut self) {
-        if let Some(node) = self.model.state.hovered_node {
-            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+        let mut propagate = true;
+        'dispatch: for node in &self.model.state.hovered.clone() { // TODO: Avoid cloning here?
+            if let Some(Some(obj)) = self.model.elements.get_mut(node) {
                 obj.on_mouse_down(EventContext {
-                    node,
+                    node: *node,
                     view: self.view,
                     model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
-                    propagate: &mut false, // TODO
+                    propagate: &mut propagate,
                 });
+                if !propagate {
+                    break 'dispatch;
+                }
             }
         }
         self.model.state.drag_start_time = std::time::Instant::now();
@@ -347,17 +351,21 @@ impl<'a, V: View> ModelProxy<'a, V> {
     }
 
     pub fn handle_mouse_up(&mut self) {
-        if let Some(node) = self.model.state.hovered_node {
-            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+        let mut propagate = true;
+        'dispatch: for node in &self.model.state.hovered.clone() { // TODO: Avoid cloning here?
+            if let Some(Some(obj)) = self.model.elements.get_mut(node) {
                 obj.on_mouse_up(EventContext {
-                    node,
+                    node: *node,
                     view: self.view,
                     model: &mut self.model.state,
                     window: self.window,
                     renderer: self.renderer,
                     layout_map: self.layout_map,
-                    propagate: &mut false, // TODO
+                    propagate: &mut propagate,
                 });
+                if !propagate {
+                    break 'dispatch;
+                }
             }
         }
         self.model.state.drag_start_pos = None;
@@ -372,7 +380,7 @@ impl<'a, V: View> ModelProxy<'a, V> {
                         window: self.window,
                         renderer: self.renderer,
                         layout_map: self.layout_map,
-                        propagate: &mut false, // TODO
+                        propagate: &mut false, // TODO (?)
                     });
                 }
             }
