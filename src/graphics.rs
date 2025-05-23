@@ -43,11 +43,21 @@ impl<'w> WindowGraphics<'w> {
     ) -> Result<(Self, wgpu::Device, wgpu::Queue, wgpu::TextureFormat)>
     where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let backends = {
             #[cfg(not(target_arch = "wasm32"))]
-            backends: wgpu::Backends::PRIMARY,
+            {
+                #[cfg(target_os = "linux")]
+                {
+                    wgpu::Backends::GL
+                }
+                #[cfg(not(target_os = "linux"))]
+                wgpu::Backends::PRIMARY
+            }
             #[cfg(target_arch = "wasm32")]
-            backends: wgpu::Backends::GL,
+            wgpu::Backends::GL
+        };
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends,
             ..Default::default()
         });
 
@@ -55,7 +65,7 @@ impl<'w> WindowGraphics<'w> {
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
