@@ -63,6 +63,7 @@ impl<V: View> Model<V> {
                 mouse_pos: Vec2::ZERO,
                 viewport_size: Vec2::ZERO,
                 hovered_node: None,
+                hovered: Vec::with_capacity(5),
                 is_dragging: false,
                 drag_start_pos: None,
                 drag_start_time: std::time::Instant::now(),
@@ -151,6 +152,7 @@ pub struct ModelState {
     mouse_pos: Vec2,
     viewport_size: Vec2,
     hovered_node: Option<u64>,
+    hovered: Vec<u64>,
     is_dragging: bool,
     drag_start_pos: Option<Vec2>,
     drag_start_time: std::time::Instant,
@@ -220,12 +222,12 @@ impl<'a, V: View> ModelProxy<'a, V> {
         self.model.state.mouse_pos = new_pos;
 
         let mut should_redraw = false;
-        let mut hovered = Vec::with_capacity(3);
+        let mut hovered = Vec::with_capacity(5);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
-            if !placement.parent_rect().contains(pos) {
-                return;
-            }
+            // if !placement.parent_rect().contains(pos) {
+            //     return;
+            // }
             if !placement.offset_rect().contains(pos) {
                 return;
             }
@@ -281,34 +283,41 @@ impl<'a, V: View> ModelProxy<'a, V> {
             }
         }
 
-        if self.model.state.hovered_node != topmost_hovered {
-            if let Some(left_node) = self.model.state.hovered_node.take() {
-                if let Some(Some(obj)) = self.model.elements.get_mut(&left_node) {
-                    obj.on_mouse_leave(EventContext {
-                        node: left_node,
-                        view: self.view,
-                        model: &mut self.model.state,
-                        window: self.window,
-                        renderer: self.renderer,
-                        layout_map: self.layout_map,
-                    });
-                    // self.model.place(left_node, obj);
+        if self.model.state.hovered != hovered {
+            let previous_hovered = self.model.state.hovered.clone();
+
+            for node in &previous_hovered {
+                if !hovered.contains(node) {
+                    if let Some(Some(obj)) = self.model.elements.get_mut(node) {
+                        obj.on_mouse_leave(EventContext {
+                            node: *node,
+                            view: self.view,
+                            model: &mut self.model.state,
+                            window: self.window,
+                            renderer: self.renderer,
+                            layout_map: self.layout_map,
+                        });
+                    }
+                }
+            }
+            for node in &hovered {
+                if !previous_hovered.contains(node) {
+                    if let Some(Some(obj)) = self.model.elements.get_mut(node) {
+                        obj.on_mouse_enter(EventContext {
+                            node: *node,
+                            view: self.view,
+                            model: &mut self.model.state,
+                            window: self.window,
+                            renderer: self.renderer,
+                            layout_map: self.layout_map,
+                        });
+                    }
                 }
             }
             if let Some(entered_node) = topmost_hovered {
-                if let Some(Some(obj)) = self.model.elements.get_mut(&entered_node) {
-                    obj.on_mouse_enter(EventContext {
-                        node: entered_node,
-                        view: self.view,
-                        model: &mut self.model.state,
-                        window: self.window,
-                        renderer: self.renderer,
-                        layout_map: self.layout_map,
-                    });
-                    // self.model.place(entered_node, obj);
-                }
                 self.model.state.hovered_node = Some(entered_node);
             }
+            self.model.state.hovered = hovered;
 
             should_redraw = true;
         }
