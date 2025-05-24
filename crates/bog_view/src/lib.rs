@@ -5,8 +5,10 @@
 #[cfg(feature = "builtin-elements")]
 pub mod elements;
 
+use std::collections::HashSet;
+
 use bog_collections::NoHashMap;
-use bog_event::WheelMovement;
+use bog_event::{KeyCode, WheelMovement};
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
@@ -61,6 +63,7 @@ impl<V: View> Model<V> {
             state: ModelState {
                 root_node,
                 mouse_pos: Vec2::ZERO,
+                keys_down: HashSet::with_capacity(3),
                 viewport_size: Vec2::ZERO,
                 hovered_node: None,
                 hovered: Vec::with_capacity(5),
@@ -96,6 +99,10 @@ impl ModelState {
     /// The current position of the user's mouse.
     pub fn mouse_position(&self) -> Vec2 {
         self.mouse_pos
+    }
+
+    pub fn keys_down(&self) -> &HashSet<KeyCode> {
+        &self.keys_down
     }
 
     /// The viewport's current [`Rect`].
@@ -150,6 +157,7 @@ impl ModelState {
 pub struct ModelState {
     root_node: u64,
     mouse_pos: Vec2,
+    keys_down: HashSet<KeyCode>,
     viewport_size: Vec2,
     hovered_node: Option<u64>,
     hovered: Vec<u64>,
@@ -407,6 +415,14 @@ impl<'a, V: View> ModelProxy<'a, V> {
             }
         }
     }
+
+    pub fn handle_key_down(&mut self, key: KeyCode, repeat: bool) {
+        let _was_present = !self.model.state.keys_down.insert(key);
+    }
+
+    pub fn handle_key_up(&mut self, key: KeyCode) {
+        let _was_present = self.model.state.keys_down.remove(&key);
+    }
 }
 
 struct ModelProxyContext<'a, V: View> {
@@ -525,6 +541,11 @@ pub trait Object {
     // /// necessarily mean that the area taken up by the object has changed, just that the node's
     // /// layout needed to be recomputed for some reason.
     // fn on_placement(&mut self, cx: RenderContext<Self::View>) {}
+
+    /// This function is called when the user begins holding a keyboard key down.
+    fn on_key_down(&mut self, cx: EventContext<Self::View>) {}
+    /// This function is called when the user releases a keyboard key after having held it down.
+    fn on_key_up(&mut self, cx: EventContext<Self::View>) {}
 
     /// This function is called when the user clicks down with the primary mouse button on this
     /// object.
