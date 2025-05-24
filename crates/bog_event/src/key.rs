@@ -2,6 +2,18 @@
 
 
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum KeyUpdate {
+    Down {
+        code: KeyCode,
+        repeat: bool,
+    },
+    Up {
+        code: KeyCode,
+    },
+}
+
+
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct KeyCode(pub u8);
 

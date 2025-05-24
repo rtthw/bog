@@ -116,8 +116,24 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 }.handle_resize(physical_size);
                 window.request_redraw();
             }
-            // WindowEvent::KeyDown { code, repeat } => {}
-            // WindowEvent::KeyUp { code } => {}
+            WindowEvent::KeyDown { code, repeat } => {
+                ModelProxy {
+                    view: &mut self.app,
+                    model: &mut self.model,
+                    layout_map: &mut self.layout_map,
+                    window: Some(&window),
+                    renderer,
+                }.handle_key_down(code, repeat);
+            }
+            WindowEvent::KeyUp { code } => {
+                ModelProxy {
+                    view: &mut self.app,
+                    model: &mut self.model,
+                    layout_map: &mut self.layout_map,
+                    window: Some(&window),
+                    renderer,
+                }.handle_key_up(code);
+            }
             WindowEvent::MouseMove { x, y } => {
                 let should_redraw = ModelProxy {
                     view: &mut self.app,

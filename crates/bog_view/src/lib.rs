@@ -8,7 +8,7 @@ pub mod elements;
 use std::collections::HashSet;
 
 use bog_collections::NoHashMap;
-use bog_event::{KeyCode, WheelMovement};
+use bog_event::{KeyCode, KeyUpdate, WheelMovement};
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer};
@@ -64,6 +64,7 @@ impl<V: View> Model<V> {
                 root_node,
                 mouse_pos: Vec2::ZERO,
                 keys_down: HashSet::with_capacity(3),
+                latest_key_update: None,
                 viewport_size: Vec2::ZERO,
                 hovered_node: None,
                 hovered: Vec::with_capacity(5),
@@ -158,6 +159,7 @@ pub struct ModelState {
     root_node: u64,
     mouse_pos: Vec2,
     keys_down: HashSet<KeyCode>,
+    latest_key_update: Option<KeyUpdate>,
     viewport_size: Vec2,
     hovered_node: Option<u64>,
     hovered: Vec<u64>,
@@ -416,12 +418,47 @@ impl<'a, V: View> ModelProxy<'a, V> {
         }
     }
 
-    pub fn handle_key_down(&mut self, key: KeyCode, repeat: bool) {
-        let _was_present = !self.model.state.keys_down.insert(key);
+    // TODO: Handle repeat key presses.
+    pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) {
+        let _was_present = !self.model.state.keys_down.insert(code);
+        self.model.state.latest_key_update = Some(KeyUpdate::Down { code, repeat });
+
+        // FIXME: This just dispatches to the topmost hovered object, there should be some focusing
+        //        system in place.
+        if let Some(node) = self.model.state.hovered_node() {
+            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+                obj.on_key_down(EventContext {
+                    node,
+                    view: self.view,
+                    model: &mut self.model.state,
+                    window: self.window,
+                    renderer: self.renderer,
+                    layout_map: self.layout_map,
+                    propagate: &mut false,
+                });
+            }
+        }
     }
 
-    pub fn handle_key_up(&mut self, key: KeyCode) {
-        let _was_present = self.model.state.keys_down.remove(&key);
+    pub fn handle_key_up(&mut self, code: KeyCode) {
+        let _was_present = self.model.state.keys_down.remove(&code);
+        self.model.state.latest_key_update = Some(KeyUpdate::Up { code });
+
+        // FIXME: This just dispatches to the topmost hovered object, there should be some focusing
+        //        system in place.
+        if let Some(node) = self.model.state.hovered_node() {
+            if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+                obj.on_key_up(EventContext {
+                    node,
+                    view: self.view,
+                    model: &mut self.model.state,
+                    window: self.window,
+                    renderer: self.renderer,
+                    layout_map: self.layout_map,
+                    propagate: &mut false,
+                });
+            }
+        }
     }
 }
 
