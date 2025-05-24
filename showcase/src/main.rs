@@ -190,6 +190,14 @@ impl Object for RightPanel {
         cx.renderer.end_layer();
     }
 
+    fn on_key_down(&mut self, cx: EventContext<Self::View>) {
+        println!("KEYDOWN: {:?}", cx.model.latest_key_update());
+    }
+
+    fn on_key_up(&mut self, cx: EventContext<Self::View>) {
+        println!("KEYUP: {:?}", cx.model.latest_key_update());
+    }
+
     fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
         self.border_color = GRAY_7;
     }

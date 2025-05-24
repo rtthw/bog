@@ -77,13 +77,31 @@ impl<V: View> Model<V> {
         }
     }
 
+    /// Get a reference to the current [`ModelState`].
     pub fn state(&self) -> &ModelState {
         &self.state
     }
 
+    /// Get a mutable reference to the current [`ModelState`].
     pub fn state_mut(&mut self) -> &mut ModelState {
         &mut self.state
     }
+}
+
+/// The state of a [`Model`].
+pub struct ModelState {
+    root_node: u64,
+    mouse_pos: Vec2,
+    keys_down: HashSet<KeyCode>,
+    latest_key_update: Option<KeyUpdate>,
+    viewport_size: Vec2,
+    hovered_node: Option<u64>,
+    hovered: Vec<u64>,
+    is_dragging: bool,
+    drag_start_pos: Option<Vec2>,
+    drag_start_time: std::time::Instant,
+    drag_start_node: Option<u64>,
+    latest_wheel_movement: Option<WheelMovement>,
 }
 
 impl ModelState {
@@ -102,8 +120,14 @@ impl ModelState {
         self.mouse_pos
     }
 
+    /// The set of all keys currently being held down.
     pub fn keys_down(&self) -> &HashSet<KeyCode> {
         &self.keys_down
+    }
+
+    /// The most recent key press/release event.
+    pub fn latest_key_update(&self) -> Option<KeyUpdate> {
+        self.latest_key_update
     }
 
     /// The viewport's current [`Rect`].
@@ -148,26 +172,11 @@ impl ModelState {
         }
     }
 
-    /// Grab the latest wheel movement event, preventing node further down in the tree from
+    /// Grab the latest wheel movement event, preventing nodes further down in the tree from
     /// accessing it.
     pub fn take_wheel_movement(&mut self) -> Option<WheelMovement> {
         self.latest_wheel_movement.take()
     }
-}
-
-pub struct ModelState {
-    root_node: u64,
-    mouse_pos: Vec2,
-    keys_down: HashSet<KeyCode>,
-    latest_key_update: Option<KeyUpdate>,
-    viewport_size: Vec2,
-    hovered_node: Option<u64>,
-    hovered: Vec<u64>,
-    is_dragging: bool,
-    drag_start_pos: Option<Vec2>,
-    drag_start_time: std::time::Instant,
-    drag_start_node: Option<u64>,
-    latest_wheel_movement: Option<WheelMovement>,
 }
 
 pub struct ModelProxy<'a, V: View> {
