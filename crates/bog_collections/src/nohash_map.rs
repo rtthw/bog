@@ -3,7 +3,7 @@
 
 
 use core::{hash::BuildHasherDefault, marker::PhantomData};
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 
 
@@ -41,7 +41,7 @@ impl<K: Default + Eq + core::hash::Hash + Into<u64>, V> NoHashMap<K, V> {
 #[derive(Clone, Copy, Debug, Default)]
 struct NoHashHasher<T>(u64, PhantomData<T>);
 
-impl<T: Into<u64>> std::hash::Hasher for NoHashHasher<T> {
+impl<T: Into<u64>> core::hash::Hasher for NoHashHasher<T> {
     fn write(&mut self, _: &[u8]) { panic!("Invalid use of NoHashHasher") }
 
     fn write_u8(&mut self, n: u8)       { self.0 = u64::from(n) }

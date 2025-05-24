@@ -1,6 +1,6 @@
 //! Bog Collections
 
-// TODO: #![no_std]
+#![no_std]
 
 
 
