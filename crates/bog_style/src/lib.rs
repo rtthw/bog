@@ -17,13 +17,15 @@ pub struct Style {
 #[derive(Clone, Copy, Debug)]
 pub struct BorderStyle {
     pub color: Color,
-    pub width: f32,
+    pub width: Unit,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct ShadowStyle {
     pub color: Color,
-    pub spread: f32,
+    pub offset_x: Unit,
+    pub offset_y: Unit,
+    pub spread: Unit,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -31,6 +33,7 @@ pub struct TextStyle {
     pub family: FontFamily<'static>,
     pub slant: TextSlant,
     pub weight: LineWeight,
+    pub height: Unit,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -89,27 +92,72 @@ impl LineWeight {
 
 
 
+#[derive(Clone, Copy, Debug)]
+pub enum Unit {
+    /// Absolute pixels.
+    Px(f32),
+    /// Relative to the current `em` size.
+    Em(f32),
+    /// Relative to the root `em` size.
+    Rem(f32),
+}
+
+impl Unit {
+    pub fn to_absolute(&self, rem: f32, em: f32) -> f32 {
+        match self {
+            Unit::Px(n) => *n,
+            Unit::Em(n) => n * em,
+            Unit::Rem(n) => n * rem,
+        }
+    }
+}
+
+
+
 /// A [`Style`] that has been resolved to absolute units.
 pub struct ResolvedStyle {
-    pub style: Style, // TODO: Actually implement resolution.
+    pub em: f32,
+
+    pub border_color: Color,
+    pub border_width: f32,
+
+    pub shadow_color: Color,
+    pub shadow_offset_x: f32,
+    pub shadow_offset_y: f32,
+    pub shadow_spread: f32,
 }
 
 
 
 pub struct Theme {
     pub base_style: Style,
-    pub base_text_size: f32,
+    pub root_text_size: f32,
+    pub root_em: f32,
+
     pub class_defaults: slotmap::SlotMap<slotmap::DefaultKey, Styling>,
     pub hover_classes: slotmap::SecondaryMap<slotmap::DefaultKey, Styling>,
     pub focus_classes: slotmap::SecondaryMap<slotmap::DefaultKey, Styling>,
 }
 
 impl Theme {
-    pub fn resolve(&self, class: StyleClass) -> ResolvedStyle {
+    pub fn resolve(&self, class: StyleClass, parent_em: f32) -> ResolvedStyle {
+        let style = self.class_defaults.get(class.0)
+            .and_then(|styling| Some(self.base_style + styling))
+            .unwrap_or(self.base_style);
+
+        // TODO: Actually calculate an accurate `em` size here.
+        let em = style.text.height.to_absolute(self.root_em, parent_em);
+
         ResolvedStyle {
-            style: self.class_defaults.get(class.0)
-                .and_then(|styling| Some(self.base_style + styling))
-                .unwrap_or(self.base_style),
+            em,
+
+            border_color: style.border.color,
+            border_width: style.border.width.to_absolute(self.root_em, em),
+
+            shadow_color: style.shadow.color,
+            shadow_offset_x: style.shadow.offset_x.to_absolute(self.root_em, em),
+            shadow_offset_y: style.shadow.offset_y.to_absolute(self.root_em, em),
+            shadow_spread: style.shadow.spread.to_absolute(self.root_em, em),
         }
     }
 }
@@ -127,8 +175,11 @@ pub struct Styling {
     pub bg_color: Option<Color>,
     pub border_color: Option<Color>,
     pub shadow_color: Option<Color>,
+    pub shadow_offset_x: Option<Unit>,
+    pub shadow_offset_y: Option<Unit>,
     pub text_slant: Option<TextSlant>,
     pub text_weight: Option<LineWeight>,
+    pub text_height: Option<Unit>,
 }
 
 impl Styling {
@@ -138,6 +189,7 @@ impl Styling {
             text: TextStyle {
                 slant: self.text_slant.unwrap_or(style.text.slant),
                 weight: self.text_weight.unwrap_or(style.text.weight),
+                height: self.text_height.unwrap_or(style.text.height),
                 family: style.text.family,
                 // ..style.text
             },
@@ -147,6 +199,8 @@ impl Styling {
             },
             shadow: ShadowStyle {
                 color: self.shadow_color.unwrap_or(style.shadow.color),
+                offset_x: self.shadow_offset_x.unwrap_or(style.shadow.offset_x),
+                offset_y: self.shadow_offset_y.unwrap_or(style.shadow.offset_y),
                 spread: style.shadow.spread,
             },
             bg_color: self.bg_color.unwrap_or(style.bg_color),
