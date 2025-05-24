@@ -26,6 +26,7 @@ bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
 bog_render.workspace = true
+bog_style.workspace = true
 bog_view.workspace = true
 bog_window.workspace = true
 
@@ -45,6 +46,7 @@ bog_event = { path = "crates/bog_event" }
 bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
+bog_style = { path = "crates/bog_style" }
 bog_view = { path = "crates/bog_view" }
 bog_window = { path = "crates/bog_window" }
 

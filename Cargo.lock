@@ -182,6 +182,7 @@ dependencies = [
  "bog_layout",
  "bog_math",
  "bog_render",
+ "bog_style",
  "bog_view",
  "bog_window",
  "bytemuck",
@@ -246,6 +247,13 @@ dependencies = [
  "glyphon",
  "rustc-hash 2.1.1",
  "wgpu",
+]
+
+[[package]]
+name = "bog_style"
+version = "0.1.0"
+dependencies = [
+ "bog_color",
 ]
 
 [[package]]
