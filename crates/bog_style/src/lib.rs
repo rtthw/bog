@@ -2,11 +2,11 @@
 
 
 
-use bog_collections::NoHashMap;
 use bog_color::Color;
 
 
 
+#[derive(Clone, Copy, Debug)]
 pub struct Style {
     pub text: TextStyle,
     pub border: BorderStyle,
@@ -14,22 +14,26 @@ pub struct Style {
     pub bg_color: Color,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct BorderStyle {
     pub color: Color,
     pub width: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct ShadowStyle {
     pub color: Color,
     pub spread: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct TextStyle {
     pub family: FontFamily<'static>,
     pub slant: TextSlant,
     pub weight: LineWeight,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum FontFamily<'a> {
     Named(&'a str),
     Serif,
@@ -39,12 +43,14 @@ pub enum FontFamily<'a> {
     Fantasy,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum TextSlant {
     Normal,
     Italic,
     Oblique,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum TextStretch {
     UltraCondensed,
     ExtraCondensed,
@@ -57,6 +63,7 @@ pub enum TextStretch {
     UltraExpanded,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct LineWeight(pub u16);
 
 impl LineWeight {
@@ -82,14 +89,41 @@ impl LineWeight {
 
 
 
-pub struct Theme {
-    pub base_style: Style,
-    pub class_defaults: NoHashMap<u64, StyleUpdate>,
-    pub hover_classes: NoHashMap<u64, StyleUpdate>,
-    pub focus_classes: NoHashMap<u64, StyleUpdate>,
+/// A [`Style`] that has been resolved to absolute units.
+pub struct ResolvedStyle {
+    pub style: Style, // TODO: Actually implement resolution.
 }
 
-pub struct StyleUpdate {
+
+
+pub struct Theme {
+    pub base_style: Style,
+    pub base_text_size: f32,
+    pub class_defaults: slotmap::SlotMap<slotmap::DefaultKey, Styling>,
+    pub hover_classes: slotmap::SecondaryMap<slotmap::DefaultKey, Styling>,
+    pub focus_classes: slotmap::SecondaryMap<slotmap::DefaultKey, Styling>,
+}
+
+impl Theme {
+    pub fn resolve(&self, class: StyleClass) -> ResolvedStyle {
+        ResolvedStyle {
+            style: self.class_defaults.get(class.0)
+                .and_then(|styling| Some(self.base_style + styling))
+                .unwrap_or(self.base_style),
+        }
+    }
+}
+
+pub struct StyleClass(slotmap::DefaultKey);
+
+impl StyleClass {
+    pub fn new(theme: &mut Theme, styling: Styling) -> Self {
+        Self(theme.class_defaults.insert(styling))
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Styling {
     pub bg_color: Option<Color>,
     pub border_color: Option<Color>,
     pub shadow_color: Option<Color>,
@@ -97,9 +131,9 @@ pub struct StyleUpdate {
     pub text_weight: Option<LineWeight>,
 }
 
-impl StyleUpdate {
+impl Styling {
     /// Apply this set of changes to the given [`Style`].
-    pub fn apply(self, style: Style) -> Style {
+    pub fn apply(&self, style: Style) -> Style {
         Style {
             text: TextStyle {
                 slant: self.text_slant.unwrap_or(style.text.slant),
@@ -117,5 +151,13 @@ impl StyleUpdate {
             },
             bg_color: self.bg_color.unwrap_or(style.bg_color),
         }
+    }
+}
+
+impl core::ops::Add<&Styling> for Style {
+    type Output = Self;
+
+    fn add(self, rhs: &Styling) -> Self::Output {
+        rhs.apply(self)
     }
 }
