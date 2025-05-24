@@ -253,6 +253,7 @@ dependencies = [
 name = "bog_style"
 version = "0.1.0"
 dependencies = [
+ "bog_collections",
  "bog_color",
 ]
 

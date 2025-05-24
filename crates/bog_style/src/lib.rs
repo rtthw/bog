@@ -2,6 +2,7 @@
 
 
 
+use bog_collections::NoHashMap;
 use bog_color::Color;
 
 
@@ -77,4 +78,44 @@ impl LineWeight {
     pub const EXTRA_BOLD: Self = Self(800);
     /// Black line weight (900), the thickest value.
     pub const BLACK: Self = Self(900);
+}
+
+
+
+pub struct Theme {
+    pub base_style: Style,
+    pub class_defaults: NoHashMap<u64, StyleUpdate>,
+    pub hover_classes: NoHashMap<u64, StyleUpdate>,
+    pub focus_classes: NoHashMap<u64, StyleUpdate>,
+}
+
+pub struct StyleUpdate {
+    pub bg_color: Option<Color>,
+    pub border_color: Option<Color>,
+    pub shadow_color: Option<Color>,
+    pub text_slant: Option<TextSlant>,
+    pub text_weight: Option<LineWeight>,
+}
+
+impl StyleUpdate {
+    /// Apply this set of changes to the given [`Style`].
+    pub fn apply(self, style: Style) -> Style {
+        Style {
+            text: TextStyle {
+                slant: self.text_slant.unwrap_or(style.text.slant),
+                weight: self.text_weight.unwrap_or(style.text.weight),
+                family: style.text.family,
+                // ..style.text
+            },
+            border: BorderStyle {
+                color: self.border_color.unwrap_or(style.border.color),
+                width: style.border.width,
+            },
+            shadow: ShadowStyle {
+                color: self.shadow_color.unwrap_or(style.shadow.color),
+                spread: style.shadow.spread,
+            },
+            bg_color: self.bg_color.unwrap_or(style.bg_color),
+        }
+    }
 }
