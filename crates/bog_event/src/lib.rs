@@ -139,3 +139,54 @@ pub enum WheelMovement {
         y: f32,
     },
 }
+
+
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct EventMask(u8);
+
+bitflags::bitflags! {
+    impl EventMask: u8 {
+        /// Associated target responds to `mouseenter` and `mouseleave` events.
+        const HOVER = 0;
+        /// Associated target responds to `mousedown` and `mouseup` events.
+        const CLICK = 1 << 0;
+        /// Associated target responds to `focusin` and `focusout` events.
+        const FOCUS = 1 << 1;
+        /// Associated target responds to `dragmove`, `dragstart`, `dragend`, and `dragdrop` events.
+        const DRAG = 1 << 2;
+    }
+}
+
+impl core::fmt::Debug for EventMask {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EventMask {{")?;
+        if self.clickable() {
+            write!(f, " click")?;
+        }
+        if self.draggable() {
+            write!(f, " drag")?;
+        }
+        if self.focusable() {
+            write!(f, " focus")?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl EventMask {
+    #[inline]
+    pub fn clickable(&self) -> bool {
+        self.contains(Self::CLICK)
+    }
+
+    #[inline]
+    pub fn draggable(&self) -> bool {
+        self.contains(Self::DRAG)
+    }
+
+    #[inline]
+    pub fn focusable(&self) -> bool {
+        self.contains(Self::FOCUS)
+    }
+}
