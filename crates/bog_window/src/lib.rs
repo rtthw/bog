@@ -16,25 +16,17 @@ pub use winit::raw_window_handle as rwh;
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent},
-    window::{CursorIcon, WindowId},
+    window::{Cursor, CursorIcon, CustomCursor, WindowId},
 };
 
 
 
 /// A reference to a managed window.
 ///
-/// You can safely clone this object and access clones the same as would the original. When the
+/// You can safely clone this object and access clones the same as you would the original. When the
 /// last reference to this window is dropped, the window will be closed.
 #[derive(Clone, Debug)]
 pub struct Window(Arc<winit::window::Window>);
-
-impl std::ops::Deref for Window {
-    type Target = Arc<winit::window::Window>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl rwh::HasWindowHandle for Window {
     fn window_handle(&self) -> Result<rwh::WindowHandle<'_>, rwh::HandleError> {
@@ -45,6 +37,64 @@ impl rwh::HasWindowHandle for Window {
 impl rwh::HasDisplayHandle for Window {
     fn display_handle(&self) -> Result<rwh::DisplayHandle<'_>, rwh::HandleError> {
         self.0.display_handle()
+    }
+}
+
+// Getters.
+impl Window {
+    /// Get the name of this window.
+    #[inline]
+    pub fn name(&self) -> String {
+        self.0.title()
+    }
+
+    #[inline]
+    pub fn scale(&self) -> f64 {
+        self.0.scale_factor()
+    }
+}
+
+// Misc.
+impl Window {
+    #[inline]
+    pub fn request_redraw(&self) {
+        self.0.request_redraw();
+    }
+
+    #[inline]
+    pub fn set_cursor(&self, cursor: impl Into<Cursor>) {
+        self.0.set_cursor(cursor);
+    }
+}
+
+// Focusing.
+impl Window {
+    #[inline]
+    pub fn has_focus(&self) -> bool {
+        self.0.has_focus()
+    }
+
+    #[inline]
+    pub fn steal_focus(&self) {
+        self.0.focus_window();
+    }
+}
+
+// Monitors.
+impl Window {
+    #[inline]
+    pub fn monitor(&self) -> Option<Monitor> {
+        self.0.current_monitor().map(|m| Monitor(m))
+    }
+
+    #[inline]
+    pub fn primary_monitor(&self) -> Option<Monitor> {
+        self.0.primary_monitor().map(|m| Monitor(m))
+    }
+
+    #[inline]
+    pub fn available_monitors(&self) -> impl Iterator<Item = Monitor> {
+        self.0.available_monitors().map(|m| Monitor(m))
     }
 }
 

@@ -57,14 +57,6 @@
 *This window's name.*
 - **Signature:** `(&self) -> Option<String>`
 
-### Window.notify
-*Send a notification to the windowing system for this window.*
-- **Signature:** `(&self, WindowNotification) -> Result<()>`
-
-### Window.request
-*Send a request to the windowing system for this window, and wait on its reply.*
-- **Signature:** `(&self, WindowRequest) -> Result<WindowReply>`
-
 ### Window.scale
 *This window's display scaling.*
 - **Signature:** `(&self) -> f64`
