@@ -5,7 +5,7 @@
 use bog_event::WindowEvent;
 use bog_layout::LayoutMap;
 use bog_math::{vec2, Vec2};
-use bog_render::{Renderer, Viewport};
+use bog_render::{LayerStack, Renderer, Viewport};
 use bog_view::*;
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
@@ -89,17 +89,20 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                let root_placement = self.layout_map.placement(self.model.state().root_node(), Vec2::ZERO);
+                let root_placement = self.layout_map
+                    .placement(self.model.state().root_node(), Vec2::ZERO);
+                let mut layer_stack = LayerStack::new();
                 render_view(
                     &mut self.model,
                     &mut self.app,
                     renderer,
+                    &mut layer_stack,
                     root_placement,
                     viewport.rect(),
                 );
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-                renderer.render(&target, &viewport);
+                renderer.render(&mut layer_stack, &target, &viewport);
                 texture.present();
             }
             WindowEvent::Resize { width, height } => {

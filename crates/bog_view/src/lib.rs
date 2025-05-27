@@ -11,7 +11,7 @@ use bog_collections::NoHashMap;
 use bog_event::{KeyCode, KeyUpdate, WheelMovement};
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
-use bog_render::{Render as _, Renderer};
+use bog_render::{LayerStack, Render as _, Renderer};
 use bog_window::Window;
 
 
@@ -635,7 +635,7 @@ pub type EventListener<V> = Box<dyn Fn(EventContext<V>) + 'static>;
 pub struct RenderContext<'a, V: View> {
     pub view: &'a mut V,
     // pub model: &'a mut Model<V>,
-    pub renderer: &'a mut Renderer,
+    pub renderer: &'a mut LayerStack,
     pub placement: Placement<'a>,
 }
 
@@ -643,13 +643,14 @@ pub fn render_view<V: View>(
     model: &mut Model<V>,
     view: &mut V,
     renderer: &mut Renderer,
+    layer_stack: &mut LayerStack,
     root_placement: Placement,
     viewport_rect: Rect,
 ) {
-    renderer.clear();
-    renderer.start_layer(viewport_rect);
-    render_placement(root_placement, model, view, renderer);
-    renderer.end_layer();
+    layer_stack.clear();
+    layer_stack.start_layer(viewport_rect);
+    render_placement(root_placement, model, view, renderer, layer_stack);
+    layer_stack.end_layer();
 }
 
 fn render_placement<V: View>(
@@ -657,31 +658,32 @@ fn render_placement<V: View>(
     model: &mut Model<V>,
     view: &mut V,
     renderer: &mut Renderer,
+    layer_stack: &mut LayerStack,
 ) {
     for child_placement in placement.children() {
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,
                 // model,
-                renderer,
+                renderer: layer_stack,
                 placement: child_placement,
             });
             obj.render(RenderContext {
                 view,
                 // model,
-                renderer,
+                renderer: layer_stack,
                 placement: child_placement,
             });
             // model.place(child_placement.node(), obj);
         }
 
-        render_placement(child_placement, model, view, renderer);
+        render_placement(child_placement, model, view, renderer, layer_stack);
 
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.post_render(RenderContext {
                 view,
                 // model,
-                renderer,
+                renderer: layer_stack,
                 placement: child_placement,
             });
             // model.place(child_placement.node(), obj);

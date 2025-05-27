@@ -37,8 +37,6 @@ pub struct Renderer {
     queue: wgpu::Queue,
     staging_belt: wgpu::util::StagingBelt,
 
-    layers: LayerStack,
-
     quad_pipeline: QuadPipeline,
     quad_manager: QuadManager,
 
@@ -56,8 +54,6 @@ impl Renderer {
             queue,
             staging_belt: wgpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
 
-            layers: LayerStack::new(),
-
             quad_pipeline,
             quad_manager: QuadManager::new(),
 
@@ -68,6 +64,7 @@ impl Renderer {
 
     pub fn render(
         &mut self,
+        layer_stack: &mut LayerStack,
         target: &wgpu::TextureView,
         viewport: &Viewport,
     ) -> wgpu::SubmissionIndex {
@@ -79,7 +76,7 @@ impl Renderer {
                 label: Some("bog::encoder"),
             },
         );
-        for layer in self.layers.iter_mut() {
+        for layer in layer_stack.iter_mut() {
             if !layer.quads.is_empty() {
                 self.quad_manager.prepare(
                     &self.quad_pipeline,
@@ -126,7 +123,7 @@ impl Renderer {
             };
             let mut quad_layer = 0;
             let mut text_layer = 0;
-            for layer in self.layers.iter() {
+            for layer in layer_stack.iter() {
                 let Some(physical_bounds) =
                     physical_bounds.intersection(&(layer.bounds * scale_factor))
                 else {
@@ -226,25 +223,25 @@ impl Renderer {
     }
 }
 
-impl Render for Renderer {
+impl Render for LayerStack {
     fn start_layer(&mut self, bounds: Rect) {
-        self.layers.push_clip(bounds);
+        self.push_clip(bounds);
     }
 
     fn end_layer(&mut self) {
-        self.layers.pop_clip();
+        self.pop_clip();
     }
 
     fn start_transform(&mut self, transform: Mat4) {
-        self.layers.push_transformation(transform);
+        self.push_transformation(transform);
     }
 
     fn end_transform(&mut self) {
-        self.layers.pop_transformation();
+        self.pop_transformation();
     }
 
     fn fill_quad(&mut self, quad: Quad) {
-        let (layer, transform) = self.layers.current_mut();
+        let (layer, transform) = self.current_mut();
         let bounds = quad.bounds * transform;
         let color = quad.bg_color.to_u32();
         let quad = QuadPrimitive {
@@ -262,7 +259,7 @@ impl Render for Renderer {
     }
 
     fn fill_text(&mut self, text: Text) {
-        let (layer, transform) = self.layers.current_mut();
+        let (layer, transform) = self.current_mut();
         let rect = Rect::new(text.pos, text.bounds) * transform;
 
         layer.texts.push(Text {
@@ -273,6 +270,6 @@ impl Render for Renderer {
     }
 
     fn clear(&mut self) {
-        self.layers.clear();
+        self.clear();
     }
 }

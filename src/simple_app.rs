@@ -4,7 +4,7 @@
 
 use bog_event::WindowEvent;
 use bog_math::vec2;
-use bog_render::{Renderer, Viewport};
+use bog_render::{LayerStack, Renderer, Viewport};
 use bog_window::{
     Window, WindowDescriptor, WindowId, WindowManager, WindowingClient, WindowingSystem,
 };
@@ -33,7 +33,7 @@ pub fn run_simple_app<A: SimpleAppHandler>(app: A) -> Result<()> {
 
 #[allow(unused_variables)]
 pub trait SimpleAppHandler {
-    fn render(&mut self, renderer: &mut Renderer, window: &Window);
+    fn render(&mut self, renderer: &mut Renderer, layer_stack: &mut LayerStack, window: &Window);
     fn handle_event(&mut self, event: WindowEvent, window: &Window);
     fn window_desc(&self) -> WindowDescriptor;
 }
@@ -82,10 +82,11 @@ impl<A: SimpleAppHandler> WindowingClient for Runner<A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                self.app.render(renderer, &window);
+                let mut layer_stack = LayerStack::new();
+                self.app.render(renderer, &mut layer_stack, &window);
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-                renderer.render(&target, &viewport);
+                renderer.render(&mut layer_stack, &target, &viewport);
                 texture.present();
             }
             WindowEvent::Resize { width, height } => {
