@@ -9,13 +9,13 @@ use crate::{QuadSolid, Text};
 
 
 #[derive(Debug)]
-pub struct Layer {
+pub struct Layer<'a> {
     pub bounds: Rect,
     pub quads: Vec<QuadSolid>,
-    pub texts: Vec<Text>,
+    pub texts: Vec<Text<'a>>,
 }
 
-impl Default for Layer {
+impl Default for Layer<'_> {
     fn default() -> Self {
         Self {
             bounds: Rect::INFINITE,
@@ -25,7 +25,7 @@ impl Default for Layer {
     }
 }
 
-impl Layer {
+impl<'a> Layer<'a> {
     pub fn with_bounds(bounds: Rect) -> Self {
         Self {
             bounds,
@@ -47,15 +47,15 @@ impl Layer {
     }
 }
 
-pub struct LayerStack {
-    layers: Vec<Layer>,
+pub struct LayerStack<'a> {
+    layers: Vec<Layer<'a>>,
     transformations: Vec<Mat4>,
     previous: Vec<usize>,
     current: usize,
     active_count: usize,
 }
 
-impl LayerStack {
+impl<'a> LayerStack<'a> {
     pub fn new() -> Self {
         Self {
             layers: vec![Layer::default()],
@@ -67,7 +67,7 @@ impl LayerStack {
     }
 
     #[inline]
-    pub fn current_mut(&mut self) -> (&mut Layer, Mat4) {
+    pub fn current_mut(&mut self) -> (&mut Layer<'a>, Mat4) {
         let transformation = self.transformation();
 
         (&mut self.layers[self.current], transformation)
@@ -107,7 +107,7 @@ impl LayerStack {
         let _ = self.transformations.pop();
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Layer> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Layer<'a>> {
         self.flush();
 
         self.layers[..self.active_count].iter_mut()

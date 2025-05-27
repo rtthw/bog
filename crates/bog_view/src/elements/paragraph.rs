@@ -17,7 +17,7 @@ pub struct Paragraph {}
 
 
 
-pub fn static_paragraph<'a, V: View + 'static>(text: Text, layout: Layout) -> Element<V> {
+pub fn static_paragraph<V: View + 'static>(text: Text<'static>, layout: Layout) -> Element<V> {
     Element::new()
         .object(StaticParagraph {
             text,
@@ -27,7 +27,7 @@ pub fn static_paragraph<'a, V: View + 'static>(text: Text, layout: Layout) -> El
 }
 
 struct StaticParagraph<V: View> {
-    text: Text,
+    text: Text<'static>,
     _data: PhantomData<V>,
 }
 
@@ -45,7 +45,7 @@ impl<V: View> Object for StaticParagraph<V> {
         cx.renderer.fill_text(Text {
             pos: cx.placement.inner_position(),
             bounds: cx.placement.size(),
-            ..self.text.clone()
+            ..self.text
         });
         // cx.renderer.fill_quad(bog_render::Quad {
         //     bounds: cx.placement.rect(),

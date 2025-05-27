@@ -11,8 +11,8 @@ use bog_math::{Rect, Vec2};
 
 /// A renderable piece of text.
 #[derive(Clone, Debug)]
-pub struct Text {
-    pub content: String,
+pub struct Text<'a> {
+    pub content: &'a str,
     pub pos: Vec2,
     pub size: f32,
     pub color: Color,
@@ -22,10 +22,10 @@ pub struct Text {
     pub bounds: Vec2,
 }
 
-impl Default for Text {
+impl Default for Text<'_> {
     fn default() -> Self {
         Self {
-            content: String::new(),
+            content: "",
             pos: Vec2::ZERO,
             size: 20.0,
             color: Color::default(),

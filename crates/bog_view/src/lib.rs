@@ -632,18 +632,22 @@ pub type EventListener<V> = Box<dyn Fn(EventContext<V>) + 'static>;
 
 
 
-pub struct RenderContext<'a, V: View> {
+// FIXME: Compiler is happy with this lifetime hack, but I'm not.
+
+
+
+pub struct RenderContext<'a, 'b: 'a, V: View + 'b> {
     pub view: &'a mut V,
     // pub model: &'a mut Model<V>,
-    pub renderer: &'a mut LayerStack,
+    pub renderer: &'a mut LayerStack<'b>,
     pub placement: Placement<'a>,
 }
 
-pub fn render_view<V: View>(
+pub fn render_view<'a, 'b: 'a, V: View + 'b>(
     model: &mut Model<V>,
     view: &mut V,
     renderer: &mut Renderer,
-    layer_stack: &mut LayerStack,
+    layer_stack: &'a mut LayerStack<'b>,
     root_placement: Placement,
     viewport_rect: Rect,
 ) {
@@ -653,12 +657,12 @@ pub fn render_view<V: View>(
     layer_stack.end_layer();
 }
 
-fn render_placement<V: View>(
-    placement: Placement,
+fn render_placement<'a, 'b: 'a, V: View + 'b>(
+    placement: Placement<'a>,
     model: &mut Model<V>,
-    view: &mut V,
+    view: &'a mut V,
     renderer: &mut Renderer,
-    layer_stack: &mut LayerStack,
+    layer_stack: &'a mut LayerStack<'b>,
 ) {
     for child_placement in placement.children() {
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {

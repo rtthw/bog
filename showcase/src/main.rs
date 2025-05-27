@@ -62,7 +62,7 @@ impl View for App {
                     .padding(7.0))
                 .child(static_paragraph(
                     Text {
-                        content: "Bog".to_string(),
+                        content: "Bog",
                         color: GRAY_8,
                         size: 29.0,
                         line_height: 37.0,
@@ -76,7 +76,7 @@ impl View for App {
                 .child(Button::new(
                     static_paragraph(
                         Text {
-                            content: "Click Me".to_string(),
+                            content: "Click Me",
                             color: GRAY_8,
                             size: 17.0,
                             line_height: 19.0,
@@ -277,7 +277,7 @@ fn test_button<V: View + 'static>() -> Element<V> {
     Button::new(
         static_paragraph(
             Text {
-                content: "Button".to_string(),
+                content: "Button",
                 color: GRAY_8,
                 size: 17.0,
                 line_height: 19.0,
@@ -296,7 +296,7 @@ fn test_button<V: View + 'static>() -> Element<V> {
 fn test_paragraph<V: View + 'static>() -> Element<V> {
     static_paragraph(
         Text {
-            content: "This is a test paragraph that may span a few lines or so.".to_string(),
+            content: "This is a test paragraph that may span a few lines or so.",
             color: GRAY_8,
             size: 17.0,
             line_height: 19.0,

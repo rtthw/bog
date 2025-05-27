@@ -20,13 +20,13 @@ use bog_math::{vec2, Mat4, Rect, Vec2};
 
 
 
-pub trait Render {
+pub trait Render<'a> {
     fn start_layer(&mut self, bounds: Rect);
     fn end_layer(&mut self);
     fn start_transform(&mut self, transform: Mat4);
     fn end_transform(&mut self);
     fn fill_quad(&mut self, quad: Quad);
-    fn fill_text(&mut self, text: Text);
+    fn fill_text(&mut self, text: Text<'a>);
     fn clear(&mut self);
 }
 
@@ -223,7 +223,7 @@ impl Renderer {
     }
 }
 
-impl Render for LayerStack {
+impl<'a> Render<'a> for LayerStack<'a> {
     fn start_layer(&mut self, bounds: Rect) {
         self.push_clip(bounds);
     }
@@ -258,7 +258,7 @@ impl Render for LayerStack {
         layer.quads.push(QuadSolid { color, quad });
     }
 
-    fn fill_text(&mut self, text: Text) {
+    fn fill_text(&mut self, text: Text<'a>) {
         let (layer, transform) = self.current_mut();
         let rect = Rect::new(text.pos, text.bounds) * transform;
 

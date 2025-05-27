@@ -161,10 +161,10 @@ impl TextCacheKey<'_> {
     }
 }
 
-impl<'a> From<&'a Text> for TextCacheKey<'a> {
+impl<'a> From<&'a Text<'a>> for TextCacheKey<'a> {
     fn from(value: &'a Text) -> Self {
         Self {
-            content: &value.content,
+            content: value.content,
             size: value.size,
             line_height: value.line_height,
             font_family: value.font_family,
