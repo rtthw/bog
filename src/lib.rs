@@ -4,6 +4,7 @@
 
 pub mod app;
 pub mod graphics;
+pub mod simple_app;
 
 pub use bog_alloc as alloc;
 pub use bog_collections as collections;
@@ -48,6 +49,10 @@ pub mod prelude {
             WindowGraphics,
         },
         Result,
+        simple_app::{
+            run_simple_app,
+            SimpleAppHandler,
+        },
     };
 
     pub use bog_color::Color;
