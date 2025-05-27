@@ -12,6 +12,9 @@ homepage = "https://github.com/rtthw/bog"
 repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
 
+[[example]]
+name = "quickstart"
+
 [features]
 default = ["builtin-elements"]
 app = []

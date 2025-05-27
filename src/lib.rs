@@ -56,6 +56,10 @@ pub mod prelude {
     };
 
     pub use bog_color::Color;
+    pub use bog_event::{
+        EventMask,
+        WindowEvent,
+    };
     pub use bog_layout::{
         Layout,
         LayoutMap,
@@ -76,6 +80,8 @@ pub mod prelude {
         FontStyle,
         FontWeight,
         FontWidth,
+        Layer,
+        LayerStack,
         Quad,
         Render as _,
         Renderer,
