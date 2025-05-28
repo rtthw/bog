@@ -253,6 +253,7 @@ dependencies = [
  "bog_collections",
  "bog_color",
  "bog_math",
+ "bog_style",
  "bytemuck",
  "glyphon",
  "rustc-hash 2.1.1",

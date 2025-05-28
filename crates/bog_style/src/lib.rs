@@ -11,6 +11,7 @@ pub struct Style {
     pub text: TextStyle,
     pub border: BorderStyle,
     pub shadow: ShadowStyle,
+    pub fg_color: Color,
     pub bg_color: Color,
 }
 
@@ -18,6 +19,42 @@ pub struct Style {
 pub struct BorderStyle {
     pub color: Color,
     pub width: Unit,
+    pub radius: BorderRadius,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum BorderRadius {
+    Uniform(f32),
+    Corners {
+        top_left_bottom_right: f32,
+        top_right_bottom_left: f32,
+    },
+    Discrete {
+        top_left: f32,
+        top_right: f32,
+        bottom_right: f32,
+        bottom_left: f32,
+    },
+}
+
+impl BorderRadius {
+    pub fn to_absolute(&self) -> [f32; 4] {
+        match self {
+            Self::Uniform(n) => [*n; 4],
+            Self::Corners { top_left_bottom_right, top_right_bottom_left } => [
+                *top_left_bottom_right,
+                *top_right_bottom_left,
+                *top_left_bottom_right,
+                *top_right_bottom_left,
+            ],
+            Self::Discrete { top_left, top_right, bottom_right, bottom_left } => [
+                *top_left,
+                *top_right,
+                *bottom_right,
+                *bottom_left,
+            ],
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -118,8 +155,12 @@ impl Unit {
 pub struct ResolvedStyle {
     pub em: f32,
 
+    pub fg_color: Color,
+    pub bg_color: Color,
+
     pub border_color: Color,
     pub border_width: f32,
+    pub border_radius: [f32; 4],
 
     pub shadow_color: Color,
     pub shadow_offset_x: f32,
@@ -151,8 +192,12 @@ impl Theme {
         ResolvedStyle {
             em,
 
+            fg_color: style.fg_color,
+            bg_color: style.bg_color,
+
             border_color: style.border.color,
             border_width: style.border.width.to_absolute(self.root_em, em),
+            border_radius: style.border.radius.to_absolute(),
 
             shadow_color: style.shadow.color,
             shadow_offset_x: style.shadow.offset_x.to_absolute(self.root_em, em),
@@ -172,8 +217,11 @@ impl StyleClass {
 
 #[derive(Debug, Default)]
 pub struct Styling {
+    pub fg_color: Option<Color>,
     pub bg_color: Option<Color>,
     pub border_color: Option<Color>,
+    pub border_width: Option<Unit>,
+    pub border_radius: Option<BorderRadius>,
     pub shadow_color: Option<Color>,
     pub shadow_offset_x: Option<Unit>,
     pub shadow_offset_y: Option<Unit>,
@@ -195,7 +243,8 @@ impl Styling {
             },
             border: BorderStyle {
                 color: self.border_color.unwrap_or(style.border.color),
-                width: style.border.width,
+                width: self.border_width.unwrap_or(style.border.width),
+                radius: self.border_radius.unwrap_or(style.border.radius),
             },
             shadow: ShadowStyle {
                 color: self.shadow_color.unwrap_or(style.shadow.color),
@@ -203,6 +252,7 @@ impl Styling {
                 offset_y: self.shadow_offset_y.unwrap_or(style.shadow.offset_y),
                 spread: style.shadow.spread,
             },
+            fg_color: self.fg_color.unwrap_or(style.fg_color),
             bg_color: self.bg_color.unwrap_or(style.bg_color),
         }
     }
