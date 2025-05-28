@@ -57,11 +57,7 @@ impl<V: View> Object for ButtonObject<V> {
     type View = V;
 
     fn render(&mut self, cx: crate::RenderContext<Self::View>) {
-        cx.renderer.fill_quad(Quad {
-            bounds: cx.placement.rect(),
-            bg_color: self.bg_color,
-            ..Default::default()
-        });
+        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
     }
 
     fn on_mouse_enter(&mut self, cx: EventContext<Self::View>) {

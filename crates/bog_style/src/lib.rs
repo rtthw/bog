@@ -3,6 +3,7 @@
 
 
 use bog_color::Color;
+use slotmap::Key as _;
 
 
 
@@ -248,6 +249,26 @@ impl Theme {
             shadow_spread: style.shadow.spread.to_absolute(self.root_em, em),
         }
     }
+
+    pub fn resolve_root(&self) -> ResolvedStyle {
+        let em = self.root_em;
+
+        ResolvedStyle {
+            em,
+
+            fg_color: self.base_style.fg_color,
+            bg_color: self.base_style.bg_color,
+
+            border_color: self.base_style.border.color,
+            border_width: self.base_style.border.width.to_absolute(self.root_em, em),
+            border_radius: self.base_style.border.radius.to_absolute(),
+
+            shadow_color: self.base_style.shadow.color,
+            shadow_offset_x: self.base_style.shadow.offset_x.to_absolute(self.root_em, em),
+            shadow_offset_y: self.base_style.shadow.offset_y.to_absolute(self.root_em, em),
+            shadow_spread: self.base_style.shadow.spread.to_absolute(self.root_em, em),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -256,6 +277,11 @@ pub struct StyleClass(slotmap::DefaultKey);
 impl StyleClass {
     pub fn new(theme: &mut Theme, styling: Styling) -> Self {
         Self(theme.class_defaults.insert(styling))
+    }
+
+    #[inline]
+    pub fn null() -> Self {
+        Self(slotmap::DefaultKey::null())
     }
 }
 

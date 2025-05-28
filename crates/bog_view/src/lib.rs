@@ -12,7 +12,7 @@ use bog_event::{KeyCode, KeyUpdate, WheelMovement};
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{LayerStack, Render as _, Renderer};
-use bog_style::StyleClass;
+use bog_style::{ResolvedStyle, StyleClass, Theme};
 use bog_window::Window;
 
 
@@ -30,12 +30,13 @@ pub trait View {
 pub struct Model<V: View> {
     elements: NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
     state: ModelState,
+    theme: Theme,
 }
 
 impl<V: View> Model<V> {
     /// Create a new view model with it's element tree as defined by the given root [`Element`].
     /// The provided [`LayoutMap`] will also be updated to match this model.
-    pub fn new(root: Element<V>, layout_map: &mut LayoutMap) -> Self {
+    pub fn new(root: Element<V>, layout_map: &mut LayoutMap, theme: Theme) -> Self {
         fn digest_elements<V: View>(
             element_map: &mut NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
             layout_map: &mut LayoutMap,
@@ -75,6 +76,7 @@ impl<V: View> Model<V> {
                 drag_start_node: None,
                 latest_wheel_movement: None,
             },
+            theme,
         }
     }
 
@@ -650,6 +652,7 @@ pub struct RenderContext<'a, 'b: 'a, V: View + 'b> {
     // pub model: &'a mut Model<V>,
     pub renderer: &'a mut LayerStack<'b>,
     pub placement: Placement<'a>,
+    pub style: &'a ResolvedStyle,
 }
 
 pub fn render_view<'a, 'b: 'a, V: View + 'b>(
@@ -662,7 +665,8 @@ pub fn render_view<'a, 'b: 'a, V: View + 'b>(
 ) {
     layer_stack.clear();
     layer_stack.start_layer(viewport_rect);
-    render_placement(root_placement, model, view, renderer, layer_stack);
+    let style = model.theme.resolve_root();
+    render_placement(root_placement, model, view, renderer, layer_stack, &style);
     layer_stack.end_layer();
 }
 
@@ -672,25 +676,28 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
     view: &'a mut V,
     renderer: &mut Renderer,
     layer_stack: &'a mut LayerStack<'b>,
+    parent_style: &ResolvedStyle,
 ) {
     for child_placement in placement.children() {
+        let style = model.theme.resolve(StyleClass::null(), parent_style.em);
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,
                 // model,
                 renderer: layer_stack,
                 placement: child_placement,
+                style: &style,
             });
             obj.render(RenderContext {
                 view,
                 // model,
                 renderer: layer_stack,
                 placement: child_placement,
+                style: &style,
             });
-            // model.place(child_placement.node(), obj);
         }
 
-        render_placement(child_placement, model, view, renderer, layer_stack);
+        render_placement(child_placement, model, view, renderer, layer_stack, &style);
 
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.post_render(RenderContext {
@@ -698,8 +705,8 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
                 // model,
                 renderer: layer_stack,
                 placement: child_placement,
+                style: &style,
             });
-            // model.place(child_placement.node(), obj);
         }
     }
 }

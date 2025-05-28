@@ -156,7 +156,7 @@ impl View for App {
                     .justify_content_center())
                 .children(draggable_buttons));
 
-        Model::new(root, layout_map)
+        Model::new(root, layout_map, theme)
     }
 }
 
