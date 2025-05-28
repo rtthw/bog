@@ -36,7 +36,7 @@ I want to provide a set of tools you can use to make your project *your project*
 
 ## Quickstart
 
-*Code: [quickstart.rs](examples/quickstart.rs)*
+*Source: [quickstart.rs](examples/quickstart.rs)*
 
 ```rust
 use bog::prelude::*;
@@ -58,24 +58,24 @@ impl AppHandler for QuickstartApp {
 
 impl View for QuickstartApp {
     fn build(&mut self, layout_map: &mut LayoutMap) -> Model<Self> {
+        let mut theme = Theme::default();
+        let style = StyleClass::new(&mut theme, Styling {
+            bg_color: Some(Color::new(43, 43, 53, 255)),
+            text_height: Some(Unit::Em(4.0)),
+            text_slant: Some(TextSlant::Italic),
+            ..Default::default()
+        });
+
         Model::new(
             Element::new()
                 .layout(Layout::default()
                     .align_items_center()
                     .justify_content_center())
-                .child(static_paragraph(
-                    Text {
-                        content: "Hello, World!",
-                        size: 40.0,
-                        color: Color::new(163, 163, 173, 255),
-                        line_height: 45.0,
-                        font_family: FontFamily::SansSerif,
-                        font_style: FontStyle::Normal,
-                        ..Default::default()
-                    },
-                    Layout::default(),
-                )),
+                .child(
+                    static_paragraph("Hello, world!").style(style)
+                ),
             layout_map,
+            theme,
         )
     }
 }
