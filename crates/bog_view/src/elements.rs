@@ -15,9 +15,8 @@ pub use scrollable::*;
 
 use core::marker::PhantomData;
 
-use bog_color::Color;
 use bog_layout::Layout;
-use bog_render::{Border, Quad, Render as _};
+use bog_render::Render as _;
 
 use crate::{Element, Object, RenderContext, View};
 
@@ -36,22 +35,9 @@ impl<V: View> HorizontalRule<V> {
                     .fill_width()
                     .height(3.0)),
             object: HorizontalRuleObject {
-                quad: Quad {
-                    bg_color: Color::new(139, 139, 149, 255),
-                    border: Border {
-                        radius: [3.0; 4],
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
                 _view: PhantomData,
             },
         }
-    }
-
-    pub fn color(mut self, color: Color) -> Self {
-        self.object.quad.bg_color = color;
-        self
     }
 }
 
@@ -63,7 +49,6 @@ impl<V: View + 'static> Into<Element<V>> for HorizontalRule<V> {
 }
 
 struct HorizontalRuleObject<V: View> {
-    quad: Quad,
     _view: PhantomData<V>,
 }
 
@@ -71,9 +56,6 @@ impl<V: View> Object for HorizontalRuleObject<V> {
     type View = V;
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
-        cx.renderer.fill_quad(Quad {
-            bounds: cx.placement.rect(),
-            ..self.quad
-        });
+        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
     }
 }

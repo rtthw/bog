@@ -4,11 +4,10 @@
 
 use core::marker::PhantomData;
 
-use bog_color::Color;
 use bog_event::WheelMovement;
 use bog_layout::Layout;
 use bog_math::{mat4_translation, vec2, vec3};
-use bog_render::{Border, Quad, Render as _};
+use bog_render::Render as _;
 
 use crate::{Element, Object, View};
 
@@ -29,15 +28,6 @@ impl<V: View> Scrollable<V> {
                     .padding(7.0)),
             children: Vec::with_capacity(1),
             object: ScrollableObject {
-                quad: Quad {
-                    bg_color: Color::new(73, 73, 83, 255),
-                    border: Border {
-                        width: 2.0,
-                        color: Color::new(113, 113, 127, 255),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
                 v_offset: 0.0,
                 content_height: 0.0,
                 _view: PhantomData,
@@ -58,7 +48,7 @@ impl<V: View> Scrollable<V> {
 impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
     fn into(self) -> Element<V> {
         self.inner
-            // NOTE: We need this containner child because we set its offset. The top-level
+            // NOTE: We need this container child because we set its offset. The top-level
             //       scrollable element needs to remain in place for accurate interactions.
             .child(Element::new()
                 .layout(Layout::default()
@@ -73,7 +63,6 @@ impl<V: View + 'static> Into<Element<V>> for Scrollable<V> {
 }
 
 struct ScrollableObject<V: View> {
-    quad: Quad,
     v_offset: f32,
     content_height: f32,
     _view: PhantomData<V>,
@@ -82,27 +71,18 @@ struct ScrollableObject<V: View> {
 impl<V: View> Object for ScrollableObject<V> {
     type View = V;
 
-    // fn render(&mut self, cx: RenderContext<Self::View>) {
+    // TODO: Hover styles.
+
+    // fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
+    //     self.quad.border.color = Color::new(139, 139, 149, 255);
     // }
 
-    fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
-        self.quad.border.color = Color::new(139, 139, 149, 255);
-    }
-
-    fn on_mouse_leave(&mut self, _cx: crate::EventContext<Self::View>) {
-        self.quad.border.color = Color::new(113, 113, 127, 255);
-    }
+    // fn on_mouse_leave(&mut self, _cx: crate::EventContext<Self::View>) {
+    //     self.quad.border.color = Color::new(113, 113, 127, 255);
+    // }
 
     fn pre_render(&mut self, cx: crate::RenderContext<Self::View>) {
-        cx.renderer.fill_quad(bog_render::Quad {
-            bounds: cx.placement.rect(),
-            ..self.quad
-        });
-        // cx.renderer.fill_quad(bog_render::Quad {
-        //     bounds: cx.placement.parent_rect(),
-        //     border: Border::new(Color::from_u32(0xff0000ff), 1.0, 0.0),
-        //     ..Default::default()
-        // });
+        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
         self.content_height = cx.placement.content_size().y;
         cx.renderer.start_layer(cx.placement.inner_rect());
         cx.renderer.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));

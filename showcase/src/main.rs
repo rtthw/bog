@@ -78,7 +78,7 @@ impl View for App {
         let small_text_class = StyleClass::new(&mut theme, Styling {
             fg_color: Some(GRAY_7),
             text_height: Some(Unit::Em(0.7)),
-            text_slant: Some(TextSlant::Oblique),
+            text_slant: Some(TextSlant::Italic),
             ..Default::default()
         });
 
@@ -93,13 +93,13 @@ impl View for App {
                 .layout(Layout::default()
                     .flex_initial()
                     .flex_column()
-                    .width(300.0)
+                    .width_percent(0.2)
                     .gap_y(7.0)
                     .padding(7.0))
                 .child(static_paragraph("Bog")
                     .style(large_text_class)
                     .layout(Layout::default().fill_width()))
-                .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)))
+                .child(HorizontalRule::new())
                 .child(Button::new(static_paragraph("Click Me").style(small_text_class))
                     .on_click(|_cx| {
                         println!("Button clicked!");

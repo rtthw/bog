@@ -681,6 +681,9 @@ pub fn render_view<'a, 'b: 'a, V: View + 'b>(
     layer_stack.end_layer();
 }
 
+// TODO: Maybe convert `pre_render` and `post_render` into something like "layer_bounds" and
+//       "layer_transform" to optimize this? Most (probably all) elements won't be using them for
+//       anything else.
 fn render_placement<'a, 'b: 'a, V: View + 'b>(
     placement: Placement<'a>,
     model: &mut Model<V>,
