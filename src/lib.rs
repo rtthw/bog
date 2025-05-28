@@ -76,10 +76,6 @@ pub mod prelude {
     };
     pub use bog_render::{
         Border,
-        FontFamily,
-        FontStyle,
-        FontWeight,
-        FontWidth,
         Layer,
         LayerStack,
         Quad,
@@ -88,6 +84,20 @@ pub mod prelude {
         Shadow,
         Text,
         Viewport,
+    };
+    pub use bog_style::{
+        BorderRadius,
+        BorderStyle,
+        FontFamily,
+        ResolvedStyle,
+        ShadowStyle,
+        Style,
+        StyleClass,
+        Styling,
+        TextSlant,
+        TextStretch,
+        TextStyle,
+        Theme,
     };
     pub use bog_view::{
         Element,

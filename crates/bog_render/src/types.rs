@@ -6,6 +6,7 @@
 
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
+use bog_style::{FontFamily, TextSlant};
 
 
 
@@ -18,7 +19,7 @@ pub struct Text<'a> {
     pub color: Color,
     pub line_height: f32,
     pub font_family: FontFamily<'static>,
-    pub font_style: FontStyle,
+    pub text_slant: TextSlant,
     pub bounds: Vec2,
 }
 
@@ -31,20 +32,11 @@ impl Default for Text<'_> {
             color: Color::default(),
             line_height: 20.0 * 1.2,
             font_family: FontFamily::SansSerif,
-            font_style: FontStyle::Normal,
+            text_slant: TextSlant::Normal,
             bounds: Vec2::INFINITY,
         }
     }
 }
-
-/// The family for a piece of [`Text`].
-pub type FontFamily<'a> = glyphon::Family<'a>;
-/// The style (italic, oblique, or normal) used for a piece of [`Text`].
-pub type FontStyle = glyphon::Style;
-/// The weight applied to a piece of [`Text`].
-pub type FontWeight = glyphon::Weight;
-/// The character width applied to a piece of [`Text`].
-pub type FontWidth = glyphon::Stretch;
 
 
 

@@ -5,8 +5,9 @@
 use core::hash::Hash as _;
 
 use bog_math::{Rect, Vec2};
+use bog_style::{FontFamily, TextSlant};
 
-use crate::{FontFamily, FontStyle, Text};
+use crate::Text;
 
 
 
@@ -143,7 +144,7 @@ pub(crate) struct TextCacheKey<'a> {
     size: f32,
     line_height: f32,
     font_family: FontFamily<'a>,
-    font_style: FontStyle,
+    text_slant: TextSlant,
     bounds: Vec2,
 }
 
@@ -153,7 +154,7 @@ impl TextCacheKey<'_> {
         self.size.to_bits().hash(&mut hasher);
         self.line_height.to_bits().hash(&mut hasher);
         self.font_family.hash(&mut hasher);
-        self.font_style.hash(&mut hasher);
+        self.text_slant.hash(&mut hasher);
         self.bounds.x.to_bits().hash(&mut hasher);
         self.bounds.y.to_bits().hash(&mut hasher);
 
@@ -168,7 +169,7 @@ impl<'a> From<&'a Text<'a>> for TextCacheKey<'a> {
             size: value.size,
             line_height: value.line_height,
             font_family: value.font_family,
-            font_style: value.font_style,
+            text_slant: value.text_slant,
             bounds: value.bounds,
         }
     }
@@ -220,8 +221,8 @@ impl TextCache {
                 font_system,
                 key.content,
                 &glyphon::Attrs::new()
-                    .family(key.font_family)
-                    .style(key.font_style),
+                    .family(family_to_glyphon(key.font_family))
+                    .style(slant_to_glyphon(key.text_slant)),
                 glyphon::Shaping::Advanced,
             );
 
@@ -282,4 +283,23 @@ fn measure_glyphon_buffer(buffer: &glyphon::Buffer) -> (Vec2, bool) {
     );
 
     (Vec2::new(width, height), has_rtl)
+}
+
+const fn family_to_glyphon(family: FontFamily) -> glyphon::Family {
+    match family {
+        FontFamily::Named(name) => glyphon::Family::Name(name),
+        FontFamily::Serif => glyphon::Family::Serif,
+        FontFamily::SansSerif => glyphon::Family::SansSerif,
+        FontFamily::Monospace => glyphon::Family::Monospace,
+        FontFamily::Cursive => glyphon::Family::Cursive,
+        FontFamily::Fantasy => glyphon::Family::Fantasy,
+    }
+}
+
+const fn slant_to_glyphon(slant: TextSlant) -> glyphon::Style {
+    match slant {
+        TextSlant::Normal => glyphon::Style::Normal,
+        TextSlant::Italic => glyphon::Style::Italic,
+        TextSlant::Oblique => glyphon::Style::Oblique,
+    }
 }

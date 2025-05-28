@@ -73,7 +73,7 @@ pub struct TextStyle {
     pub height: Unit,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum FontFamily<'a> {
     Named(&'a str),
     Serif,
@@ -83,7 +83,7 @@ pub enum FontFamily<'a> {
     Fantasy,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum TextSlant {
     Normal,
     Italic,
