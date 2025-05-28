@@ -92,28 +92,13 @@ impl View for App {
                     .gap_y(7.0)
                     .padding(7.0))
                 .child(static_paragraph(
-                    Text {
-                        content: "Bog",
-                        color: GRAY_8,
-                        size: 29.0,
-                        font_family: FontFamily::Monospace,
-                        text_slant: TextSlant::Normal,
-                        ..Default::default()
-                    },
+                    "Bog",
                     Layout::default().fill_width(),
                 ))
                 .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)))
                 .child(Button::new(
                     static_paragraph(
-                        Text {
-                            content: "Click Me",
-                            color: GRAY_8,
-                            size: 17.0,
-                            line_height: 19.0,
-                            font_family: FontFamily::SansSerif,
-                            text_slant: TextSlant::Normal,
-                            ..Default::default()
-                        },
+                        "Click Me",
                         Layout::default(),
                     ))
                     .on_click(|_cx| {
@@ -306,14 +291,7 @@ impl Object for DraggableButton {
 fn test_button<V: View + 'static>() -> Element<V> {
     Button::new(
         static_paragraph(
-            Text {
-                content: "Button",
-                color: GRAY_8,
-                size: 17.0,
-                font_family: FontFamily::SansSerif,
-                text_slant: TextSlant::Normal,
-                ..Default::default()
-            },
+            "Button",
             Layout::default(),
         ))
         .on_click(|_cx| {
@@ -324,14 +302,7 @@ fn test_button<V: View + 'static>() -> Element<V> {
 
 fn test_paragraph<V: View + 'static>() -> Element<V> {
     static_paragraph(
-        Text {
-            content: "This is a test paragraph that may span a few lines or so.",
-            color: GRAY_8,
-            size: 17.0,
-            font_family: FontFamily::SansSerif,
-            text_slant: TextSlant::Normal,
-            ..Default::default()
-        },
+        "This is a test paragraph that may span a few lines or so.",
         Layout::default(),
     )
 }

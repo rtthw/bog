@@ -6,7 +6,7 @@ use core::marker::PhantomData;
 
 use bog_color::Color;
 use bog_layout::Layout;
-use bog_render::{Quad, Render as _};
+use bog_render::Render as _;
 use bog_window::CursorIcon;
 
 use crate::{Element, EventContext, Object, View};

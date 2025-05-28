@@ -167,6 +167,9 @@ pub struct ResolvedStyle {
     pub shadow_offset_x: f32,
     pub shadow_offset_y: f32,
     pub shadow_spread: f32,
+
+    pub font_family: FontFamily<'static>,
+    pub text_slant: TextSlant,
 }
 
 
@@ -225,6 +228,11 @@ impl Theme {
         }
     }
 
+    #[inline]
+    pub const fn root_em(&self) -> f32 {
+        self.root_em
+    }
+
     pub fn resolve(&self, class: StyleClass, parent_em: f32) -> ResolvedStyle {
         let style = self.class_defaults.get(class.0)
             .and_then(|styling| Some(self.base_style + styling))
@@ -247,6 +255,9 @@ impl Theme {
             shadow_offset_x: style.shadow.offset_x.to_absolute(self.root_em, em),
             shadow_offset_y: style.shadow.offset_y.to_absolute(self.root_em, em),
             shadow_spread: style.shadow.spread.to_absolute(self.root_em, em),
+
+            font_family: style.text.family,
+            text_slant: style.text.slant,
         }
     }
 
@@ -267,6 +278,9 @@ impl Theme {
             shadow_offset_x: self.base_style.shadow.offset_x.to_absolute(self.root_em, em),
             shadow_offset_y: self.base_style.shadow.offset_y.to_absolute(self.root_em, em),
             shadow_spread: self.base_style.shadow.spread.to_absolute(self.root_em, em),
+
+            font_family: self.base_style.text.family,
+            text_slant: self.base_style.text.slant,
         }
     }
 }
@@ -295,6 +309,7 @@ pub struct Styling {
     pub shadow_color: Option<Color>,
     pub shadow_offset_x: Option<Unit>,
     pub shadow_offset_y: Option<Unit>,
+    pub font_family: Option<FontFamily<'static>>,
     pub text_slant: Option<TextSlant>,
     pub text_weight: Option<LineWeight>,
     pub text_height: Option<Unit>,
@@ -308,7 +323,7 @@ impl Styling {
                 slant: self.text_slant.unwrap_or(style.text.slant),
                 weight: self.text_weight.unwrap_or(style.text.weight),
                 height: self.text_height.unwrap_or(style.text.height),
-                family: style.text.family,
+                family: self.font_family.unwrap_or(style.text.family),
                 // ..style.text
             },
             border: BorderStyle {

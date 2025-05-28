@@ -6,7 +6,7 @@
 
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
-use bog_style::{FontFamily, TextSlant};
+use bog_style::{FontFamily, ResolvedStyle, TextSlant};
 
 
 
@@ -35,6 +35,21 @@ impl Default for Text<'_> {
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
             bounds: Vec2::INFINITY,
+        }
+    }
+}
+
+impl<'a> Text<'a> {
+    pub fn styled(content: &'a str, bounds: Rect, style: &ResolvedStyle) -> Self {
+        Self {
+            content,
+            pos: bounds.position(),
+            size: style.em,
+            line_height: 0.0, // TODO: Maybe `Style.text_height` instead?
+            color: style.fg_color,
+            font_family: style.font_family,
+            text_slant: style.text_slant,
+            bounds: bounds.size(),
         }
     }
 }

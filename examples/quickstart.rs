@@ -35,15 +35,7 @@ impl View for QuickstartApp {
                     .align_items_center()
                     .justify_content_center())
                 .child(static_paragraph(
-                    Text {
-                        content: "Hello, World!",
-                        size: 40.0,
-                        color: Color::new(163, 163, 173, 255),
-                        line_height: 45.0,
-                        font_family: FontFamily::SansSerif,
-                        text_slant: TextSlant::Normal,
-                        ..Default::default()
-                    },
+                    "Hello, World!",
                     Layout::default(),
                 )),
             layout_map,

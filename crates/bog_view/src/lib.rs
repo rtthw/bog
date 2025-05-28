@@ -484,7 +484,9 @@ impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2 {
         let mut size = Vec2::ZERO;
         if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
-            size = obj.measure(available_space, self.renderer);
+            // TODO: Use real values here.
+            let style = self.model.theme.resolve(StyleClass::null(), self.model.theme.root_em());
+            size = obj.measure(available_space, self.renderer, style);
         }
 
         size
@@ -582,7 +584,9 @@ impl<V: View> Element<V> {
 pub trait Object {
     type View: View;
 
-    fn measure(&self, available_space: Vec2, renderer: &mut Renderer) -> Vec2 { Vec2::ZERO }
+    fn measure(&self, available_space: Vec2, renderer: &mut Renderer, style: ResolvedStyle) -> Vec2 {
+        Vec2::ZERO
+    }
 
     /// This function is called during the object's render pass. Use it to render primitives with
     /// the [`Renderer`].
