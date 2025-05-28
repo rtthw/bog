@@ -89,6 +89,7 @@ pub mod prelude {
         BorderRadius,
         BorderStyle,
         FontFamily,
+        LineWeight,
         ResolvedStyle,
         ShadowStyle,
         Style,
@@ -98,6 +99,7 @@ pub mod prelude {
         TextStretch,
         TextStyle,
         Theme,
+        Unit,
     };
     pub use bog_view::{
         Element,

@@ -34,7 +34,7 @@ impl View for QuickstartApp {
                         color: Color::new(163, 163, 173, 255),
                         line_height: 45.0,
                         font_family: FontFamily::SansSerif,
-                        font_style: FontStyle::Normal,
+                        text_slant: TextSlant::Normal,
                         ..Default::default()
                     },
                     Layout::default(),

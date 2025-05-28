@@ -172,7 +172,6 @@ pub struct ResolvedStyle {
 
 pub struct Theme {
     pub base_style: Style,
-    pub root_text_size: f32,
     pub root_em: f32,
 
     pub class_defaults: slotmap::SlotMap<slotmap::DefaultKey, Styling>,
@@ -181,6 +180,17 @@ pub struct Theme {
 }
 
 impl Theme {
+    pub fn new(base_style: Style, root_font_size: f32) -> Self {
+        Self {
+            base_style,
+            root_em: root_font_size,
+
+            class_defaults: slotmap::SlotMap::with_capacity(16),
+            hover_classes: slotmap::SecondaryMap::with_capacity(16),
+            focus_classes: slotmap::SecondaryMap::with_capacity(16),
+        }
+    }
+
     pub fn resolve(&self, class: StyleClass, parent_em: f32) -> ResolvedStyle {
         let style = self.class_defaults.get(class.0)
             .and_then(|styling| Some(self.base_style + styling))

@@ -46,6 +46,31 @@ impl View for App {
                     .height(50.0))
         });
 
+        let _theme = Theme::new(
+            Style {
+                text: TextStyle {
+                    family: FontFamily::SansSerif,
+                    slant: TextSlant::Normal,
+                    weight: LineWeight::NORMAL,
+                    height: Unit::Em(1.0),
+                },
+                border: BorderStyle {
+                    color: GRAY_5,
+                    width: Unit::Px(2.0),
+                    radius: BorderRadius::Uniform(5.0),
+                },
+                shadow: ShadowStyle {
+                    color: GRAY_0,
+                    offset_x: Unit::Px(3.0),
+                    offset_y: Unit::Px(3.0),
+                    spread: Unit::Px(5.0),
+                },
+                fg_color: GRAY_9,
+                bg_color: GRAY_1,
+            },
+            17.0,
+        );
+
         let root = Element::new()
             .layout(Layout::default()
                 .width(1280.0)
@@ -67,7 +92,7 @@ impl View for App {
                         size: 29.0,
                         line_height: 37.0,
                         font_family: FontFamily::Monospace,
-                        font_style: FontStyle::Normal,
+                        text_slant: TextSlant::Normal,
                         ..Default::default()
                     },
                     Layout::default().fill_width(),
@@ -81,7 +106,7 @@ impl View for App {
                             size: 17.0,
                             line_height: 19.0,
                             font_family: FontFamily::SansSerif,
-                            font_style: FontStyle::Normal,
+                            text_slant: TextSlant::Normal,
                             ..Default::default()
                         },
                         Layout::default(),
@@ -282,7 +307,7 @@ fn test_button<V: View + 'static>() -> Element<V> {
                 size: 17.0,
                 line_height: 19.0,
                 font_family: FontFamily::SansSerif,
-                font_style: FontStyle::Normal,
+                text_slant: TextSlant::Normal,
                 ..Default::default()
             },
             Layout::default(),
@@ -301,7 +326,7 @@ fn test_paragraph<V: View + 'static>() -> Element<V> {
             size: 17.0,
             line_height: 19.0,
             font_family: FontFamily::SansSerif,
-            font_style: FontStyle::Normal,
+            text_slant: TextSlant::Normal,
             ..Default::default()
         },
         Layout::default(),
