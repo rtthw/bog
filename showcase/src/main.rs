@@ -96,7 +96,6 @@ impl View for App {
                         content: "Bog",
                         color: GRAY_8,
                         size: 29.0,
-                        line_height: 37.0,
                         font_family: FontFamily::Monospace,
                         text_slant: TextSlant::Normal,
                         ..Default::default()
@@ -311,7 +310,6 @@ fn test_button<V: View + 'static>() -> Element<V> {
                 content: "Button",
                 color: GRAY_8,
                 size: 17.0,
-                line_height: 19.0,
                 font_family: FontFamily::SansSerif,
                 text_slant: TextSlant::Normal,
                 ..Default::default()
@@ -330,7 +328,6 @@ fn test_paragraph<V: View + 'static>() -> Element<V> {
             content: "This is a test paragraph that may span a few lines or so.",
             color: GRAY_8,
             size: 17.0,
-            line_height: 19.0,
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
             ..Default::default()

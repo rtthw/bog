@@ -17,6 +17,7 @@ pub struct Text<'a> {
     pub pos: Vec2,
     pub size: f32,
     pub color: Color,
+    /// Set this to `0.0` if you just want to use the font's default line height.
     pub line_height: f32,
     pub font_family: FontFamily<'static>,
     pub text_slant: TextSlant,

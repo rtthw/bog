@@ -142,7 +142,7 @@ impl TextPipeline {
 pub(crate) struct TextCacheKey<'a> {
     content: &'a str,
     size: f32,
-    line_height: f32,
+    line_height: f32, // 0.0 == "use font line height"
     font_family: FontFamily<'a>,
     text_slant: TextSlant,
     bounds: Vec2,
@@ -208,14 +208,22 @@ impl TextCache {
         if let std::collections::hash_map::Entry::Vacant(entry) = self.entries.entry(hash) {
             let metrics = glyphon::Metrics::new(
                 key.size,
-                key.line_height.max(f32::MIN_POSITIVE),
+                if key.line_height == 0.0 {
+                    (key.size * 1.4142_f32).max(f32::MIN_POSITIVE)
+                } else {
+                    key.line_height.max(f32::MIN_POSITIVE)
+                },
             );
             let mut buffer = glyphon::Buffer::new(font_system, metrics);
 
             buffer.set_size(
                 font_system,
                 Some(key.bounds.x),
-                Some(key.bounds.y.max(key.line_height)),
+                if key.line_height == 0.0 {
+                    None
+                } else {
+                    Some(key.bounds.y.max(key.line_height))
+                },
             );
             buffer.set_text(
                 font_system,
