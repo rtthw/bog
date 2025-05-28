@@ -4,7 +4,6 @@
 
 use core::marker::PhantomData;
 
-use bog_layout::Layout;
 use bog_math::{Rect, Vec2};
 use bog_render::{Render as _, Renderer, Text};
 use bog_style::ResolvedStyle;
@@ -18,13 +17,12 @@ pub struct Paragraph {}
 
 
 
-pub fn static_paragraph<V: View + 'static>(text: &'static str, layout: Layout) -> Element<V> {
+pub fn static_paragraph<V: View + 'static>(text: &'static str) -> Element<V> {
     Element::new()
         .object(StaticParagraph {
             text,
             _data: PhantomData,
         })
-        .layout(layout)
 }
 
 struct StaticParagraph<V: View> {

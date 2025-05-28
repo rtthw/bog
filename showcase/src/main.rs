@@ -70,6 +70,11 @@ impl View for App {
             },
             17.0,
         );
+        let large_text_class = StyleClass::new(&mut theme, Styling {
+            fg_color: Some(GRAY_6),
+            text_height: Some(Unit::Em(1.7)),
+            ..Default::default()
+        });
         let small_text_class = StyleClass::new(&mut theme, Styling {
             fg_color: Some(GRAY_7),
             text_height: Some(Unit::Em(0.7)),
@@ -91,16 +96,11 @@ impl View for App {
                     .width(300.0)
                     .gap_y(7.0)
                     .padding(7.0))
-                .child(static_paragraph(
-                    "Bog",
-                    Layout::default().fill_width(),
-                ))
+                .child(static_paragraph("Bog")
+                    .style(large_text_class)
+                    .layout(Layout::default().fill_width()))
                 .child(HorizontalRule::new().color(GRAY_7.with_alpha(155)))
-                .child(Button::new(
-                    static_paragraph(
-                        "Click Me",
-                        Layout::default(),
-                    ))
+                .child(Button::new(static_paragraph("Click Me").style(small_text_class))
                     .on_click(|_cx| {
                         println!("Button clicked!");
                     }))
@@ -289,11 +289,7 @@ impl Object for DraggableButton {
 
 
 fn test_button<V: View + 'static>() -> Element<V> {
-    Button::new(
-        static_paragraph(
-            "Button",
-            Layout::default(),
-        ))
+    Button::new(static_paragraph("Button"))
         .on_click(|_cx| {
             println!("Test button clicked!");
         })
@@ -301,8 +297,5 @@ fn test_button<V: View + 'static>() -> Element<V> {
 }
 
 fn test_paragraph<V: View + 'static>() -> Element<V> {
-    static_paragraph(
-        "This is a test paragraph that may span a few lines or so.",
-        Layout::default(),
-    )
+    static_paragraph("This is a test paragraph that may span a few lines or so.")
 }

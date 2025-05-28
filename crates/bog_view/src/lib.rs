@@ -31,6 +31,7 @@ pub struct Model<V: View> {
     elements: NoHashMap<u64, Option<Box<dyn Object<View = V>>>>,
     state: ModelState,
     theme: Theme,
+    styles: NoHashMap<u64, StyleClass>,
 }
 
 impl<V: View> Model<V> {
@@ -42,6 +43,7 @@ impl<V: View> Model<V> {
             layout_map: &mut LayoutMap,
             elements: Vec<Element<V>>,
             parent_node: u64,
+            style_map: &mut NoHashMap<u64, StyleClass>,
         ) {
             for element in elements {
                 let node = layout_map.add_node(element.layout);
@@ -49,16 +51,20 @@ impl<V: View> Model<V> {
                 if let Some(obj) = element.object { // Try to avoid allocating if possible.
                     let _ = element_map.insert(node, Some(obj));
                 }
+                if let Some(class) = element.style {
+                    let _ = style_map.insert(node, class);
+                }
 
-                digest_elements(element_map, layout_map, element.children, node);
+                digest_elements(element_map, layout_map, element.children, node, style_map);
             }
         }
 
         layout_map.clear();
         let mut elements = NoHashMap::with_capacity(16);
+        let mut styles = NoHashMap::with_capacity(16);
         let root_node = layout_map.add_node(root.layout);
 
-        digest_elements(&mut elements, layout_map, root.children, root_node);
+        digest_elements(&mut elements, layout_map, root.children, root_node, &mut styles);
 
         Self {
             elements,
@@ -77,6 +83,7 @@ impl<V: View> Model<V> {
                 latest_wheel_movement: None,
             },
             theme,
+            styles,
         }
     }
 
@@ -484,8 +491,8 @@ impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2 {
         let mut size = Vec2::ZERO;
         if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
-            // TODO: Use real values here.
-            let style = self.model.theme.resolve(StyleClass::null(), self.model.theme.root_em());
+            let class = self.model.styles.get(&node).copied().unwrap_or(StyleClass::null());
+            let style = self.model.theme.resolve(class, self.model.theme.root_em());
             size = obj.measure(available_space, self.renderer, style);
         }
 
@@ -683,7 +690,10 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
     parent_style: &ResolvedStyle,
 ) {
     for child_placement in placement.children() {
-        let style = model.theme.resolve(StyleClass::null(), parent_style.em);
+        let class = model.styles.get(&child_placement.node())
+            .copied()
+            .unwrap_or(StyleClass::null());
+        let style = model.theme.resolve(class, parent_style.em);
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,
