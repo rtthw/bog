@@ -14,4 +14,5 @@ bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
 bog_render.workspace = true
+bog_style.workspace = true
 bog_window.workspace = true

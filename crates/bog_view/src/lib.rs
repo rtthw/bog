@@ -12,6 +12,7 @@ use bog_event::{KeyCode, KeyUpdate, WheelMovement};
 use bog_layout::{Layout, LayoutContext, LayoutMap, Placement};
 use bog_math::{Rect, Vec2};
 use bog_render::{LayerStack, Render as _, Renderer};
+use bog_style::StyleClass;
 use bog_window::Window;
 
 
@@ -494,6 +495,7 @@ impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
 pub struct Element<V: View> {
     object: Option<Box<dyn Object<View = V>>>,
     layout: Layout,
+    style: Option<StyleClass>,
     children: Vec<Element<V>>,
 
     mouseenter_listener: Option<EventListener<V>>,
@@ -501,12 +503,13 @@ pub struct Element<V: View> {
 }
 
 impl<V: View> Element<V> {
-    /// Create an empty element with no associated [`Object`], the default [`Layout`], and no
-    /// children.
+    /// Create an empty element with no associated [`Object`], the default [`Layout`], no
+    /// [`StyleClass`], and no children.
     pub fn new() -> Self {
         Self {
             object: None,
             layout: Layout::default(),
+            style: None,
             children: Vec::new(),
 
             mouseenter_listener: None,
@@ -523,6 +526,12 @@ impl<V: View> Element<V> {
     /// Make this element use the given [`Layout`].
     pub fn layout(mut self, layout: Layout) -> Self {
         self.layout = layout;
+        self
+    }
+
+    /// Make this element use the given [`StyleClass`].
+    pub fn style(mut self, class: StyleClass) -> Self {
+        self.style = Some(class);
         self
     }
 

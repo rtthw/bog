@@ -46,7 +46,7 @@ impl View for App {
                     .height(50.0))
         });
 
-        let _theme = Theme::new(
+        let mut theme = Theme::new(
             Style {
                 text: TextStyle {
                     family: FontFamily::SansSerif,
@@ -70,6 +70,12 @@ impl View for App {
             },
             17.0,
         );
+        let small_text_class = StyleClass::new(&mut theme, Styling {
+            fg_color: Some(GRAY_7),
+            text_height: Some(Unit::Em(0.7)),
+            text_slant: Some(TextSlant::Oblique),
+            ..Default::default()
+        });
 
         let root = Element::new()
             .layout(Layout::default()

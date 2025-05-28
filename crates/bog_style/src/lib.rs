@@ -179,15 +179,48 @@ pub struct Theme {
     pub focus_classes: slotmap::SecondaryMap<slotmap::DefaultKey, Styling>,
 }
 
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            base_style: Style {
+                text: TextStyle {
+                    family: FontFamily::SansSerif,
+                    slant: TextSlant::Normal,
+                    weight: LineWeight::NORMAL,
+                    height: Unit::Em(1.0),
+                },
+                border: BorderStyle {
+                    color: Color::new(89, 89, 109, 255),
+                    width: Unit::Px(2.0),
+                    radius: BorderRadius::Uniform(5.0),
+                },
+                shadow: ShadowStyle {
+                    color: Color::new(13, 13, 23, 255),
+                    offset_x: Unit::Px(3.0),
+                    offset_y: Unit::Px(3.0),
+                    spread: Unit::Px(5.0),
+                },
+                fg_color: Color::new(191, 191, 197, 255),
+                bg_color: Color::new(29, 29, 39, 255),
+            },
+            root_em: 17.0,
+
+            class_defaults: slotmap::SlotMap::with_capacity(8),
+            hover_classes: slotmap::SecondaryMap::with_capacity(8),
+            focus_classes: slotmap::SecondaryMap::with_capacity(8),
+        }
+    }
+}
+
 impl Theme {
     pub fn new(base_style: Style, root_font_size: f32) -> Self {
         Self {
             base_style,
             root_em: root_font_size,
 
-            class_defaults: slotmap::SlotMap::with_capacity(16),
-            hover_classes: slotmap::SecondaryMap::with_capacity(16),
-            focus_classes: slotmap::SecondaryMap::with_capacity(16),
+            class_defaults: slotmap::SlotMap::with_capacity(8),
+            hover_classes: slotmap::SecondaryMap::with_capacity(8),
+            focus_classes: slotmap::SecondaryMap::with_capacity(8),
         }
     }
 
@@ -217,6 +250,7 @@ impl Theme {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct StyleClass(slotmap::DefaultKey);
 
 impl StyleClass {
