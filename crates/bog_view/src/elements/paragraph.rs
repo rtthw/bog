@@ -42,7 +42,7 @@ impl<V: View> Object for StaticParagraph<V> {
     }
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
-        cx.renderer.fill_text(Text::styled(self.text, cx.placement.rect(), cx.style));
+        cx.layer_stack.fill_text(Text::styled(self.text, cx.placement.rect(), cx.style));
         // cx.renderer.fill_quad(bog_render::Quad {
         //     bounds: cx.placement.rect(),
         //     border: bog_render::Border {

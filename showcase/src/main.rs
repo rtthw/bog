@@ -81,6 +81,12 @@ impl View for App {
             text_slant: Some(TextSlant::Italic),
             ..Default::default()
         });
+        let hrule_class = StyleClass::new(&mut theme, Styling {
+            bg_color: Some(GRAY_7.with_alpha(155)),
+            border_width: Some(Unit::Px(0.0)),
+            border_radius: Some(BorderRadius::Uniform(3.0)),
+            ..Default::default()
+        });
 
         let root = Element::new()
             .layout(Layout::default()
@@ -99,7 +105,7 @@ impl View for App {
                 .child(static_paragraph("Bog")
                     .style(large_text_class)
                     .layout(Layout::default().fill_width()))
-                .child(horizontal_rule(5.0))
+                .child(horizontal_rule(5.0).style(hrule_class))
                 .child(Button::new(static_paragraph("Click Me").style(small_text_class))
                     .on_click(|_cx| {
                         println!("Button clicked!");
@@ -165,7 +171,7 @@ impl Object for LeftPanel {
     type View = App;
 
     fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
-        cx.renderer.fill_quad(Quad {
+        cx.layer_stack.fill_quad(Quad {
             bounds: cx.placement.rect(),
             bg_color: self.color,
             ..Default::default()
@@ -182,7 +188,7 @@ impl Object for RightPanel {
     type View = App;
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
-        cx.renderer.fill_quad(Quad {
+        cx.layer_stack.fill_quad(Quad {
             bounds: cx.placement.rect(),
             bg_color: self.color,
             border: Border {
@@ -195,14 +201,14 @@ impl Object for RightPanel {
     }
 
     fn pre_render(&mut self, cx: RenderContext<Self::View>) {
-        cx.renderer.start_layer(cx.placement.rect());
+        cx.layer_stack.start_layer(cx.placement.rect());
     }
 
     fn post_render(&mut self, cx: RenderContext<Self::View>) {
         if let Some(drag_indicator) = &cx.view.drag_indicator {
-            cx.renderer.fill_quad(*drag_indicator);
+            cx.layer_stack.fill_quad(*drag_indicator);
         }
-        cx.renderer.end_layer();
+        cx.layer_stack.end_layer();
     }
 
     fn on_key_down(&mut self, cx: EventContext<Self::View>) {
@@ -235,7 +241,7 @@ impl Object for DraggableButton {
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
         self.known_rect = cx.placement.rect();
-        cx.renderer.fill_quad(Quad {
+        cx.layer_stack.fill_quad(Quad {
             bounds: self.known_rect,
             border: Border {
                 color: self.border_color,

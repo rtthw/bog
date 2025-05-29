@@ -4,7 +4,6 @@
 
 use core::marker::PhantomData;
 
-use bog_color::Color;
 use bog_layout::Layout;
 use bog_render::Render as _;
 use bog_window::CursorIcon;
@@ -37,7 +36,6 @@ impl<V: View + 'static> Into<Element<V>> for Button<V> {
         Element::new()
             .object(ButtonObject {
                 on_click: self.on_click,
-                bg_color: Color::new(89, 89, 109, 255),
                 _view: PhantomData,
             })
             .layout(Layout::default()
@@ -49,7 +47,6 @@ impl<V: View + 'static> Into<Element<V>> for Button<V> {
 
 struct ButtonObject<V: View> {
     on_click: Option<Box<dyn Fn(EventContext<V>)>>,
-    bg_color: Color,
     _view: PhantomData<V>,
 }
 
@@ -57,16 +54,16 @@ impl<V: View> Object for ButtonObject<V> {
     type View = V;
 
     fn render(&mut self, cx: crate::RenderContext<Self::View>) {
-        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
+        cx.layer_stack.fill_styled_quad(cx.placement.rect(), cx.style);
     }
 
     fn on_mouse_enter(&mut self, cx: EventContext<Self::View>) {
-        self.bg_color = Color::new(113, 113, 127, 255);
+        // self.bg_color = Color::new(113, 113, 127, 255);
         cx.window.map(|w| w.set_cursor(CursorIcon::Pointer));
     }
 
     fn on_mouse_leave(&mut self, cx: EventContext<Self::View>) {
-        self.bg_color = Color::new(89, 89, 109, 255);
+        // self.bg_color = Color::new(89, 89, 109, 255);
         cx.window.map(|w| w.set_cursor(CursorIcon::Default));
     }
 

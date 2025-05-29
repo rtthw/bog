@@ -508,9 +508,6 @@ pub struct Element<V: View> {
     layout: Layout,
     style: Option<StyleClass>,
     children: Vec<Element<V>>,
-
-    mouseenter_listener: Option<EventListener<V>>,
-    mouseleave_listener: Option<EventListener<V>>,
 }
 
 impl<V: View> Element<V> {
@@ -522,9 +519,6 @@ impl<V: View> Element<V> {
             layout: Layout::default(),
             style: None,
             children: Vec::new(),
-
-            mouseenter_listener: None,
-            mouseleave_listener: None,
         }
     }
 
@@ -562,24 +556,6 @@ impl<V: View> Element<V> {
     }
 }
 
-impl<V: View> Element<V> {
-    pub fn on_mouseenter<F>(mut self, listener: F) -> Self
-    where
-        F: Fn(EventContext<V>) + 'static,
-    {
-        self.mouseenter_listener = Some(Box::new(listener));
-        self
-    }
-
-    pub fn on_mouseleave<F>(mut self, listener: F) -> Self
-    where
-        F: Fn(EventContext<V>) + 'static,
-    {
-        self.mouseleave_listener = Some(Box::new(listener));
-        self
-    }
-}
-
 
 
 /// An object is just a set of callbacks for UI events.
@@ -591,7 +567,19 @@ impl<V: View> Element<V> {
 pub trait Object {
     type View: View;
 
-    fn measure(&self, available_space: Vec2, renderer: &mut Renderer, style: ResolvedStyle) -> Vec2 {
+    /// Measure this object's content.
+    ///
+    /// This should only be used by objects like labels and images, that have unchanging content
+    /// sizes.
+    ///
+    /// **Performance:** This function is only called when the view needs to be measured (i.e. on
+    /// viewport resize, tree updates, etc.).
+    fn measure(
+        &self,
+        available_space: Vec2,
+        renderer: &mut Renderer,
+        style: ResolvedStyle,
+    ) -> Vec2 {
         Vec2::ZERO
     }
 
@@ -604,11 +592,6 @@ pub trait Object {
     /// This function will be called after all descendants of this object have finished their
     /// render passes.
     fn post_render(&mut self, cx: RenderContext<Self::View>) {}
-
-    // /// This function is called every time this object's [`Placement`] is updated. This does not
-    // /// necessarily mean that the area taken up by the object has changed, just that the node's
-    // /// layout needed to be recomputed for some reason.
-    // fn on_placement(&mut self, cx: RenderContext<Self::View>) {}
 
     /// This function is called when the user begins holding a keyboard key down.
     fn on_key_down(&mut self, cx: EventContext<Self::View>) {}
@@ -658,11 +641,16 @@ pub type EventListener<V> = Box<dyn Fn(EventContext<V>) + 'static>;
 
 
 
+/// Contextual information useful for render handlers.
 pub struct RenderContext<'a, 'b: 'a, V: View + 'b> {
+    /// The top-level [`View`] object.
     pub view: &'a mut V,
     // pub model: &'a mut Model<V>,
-    pub renderer: &'a mut LayerStack<'b>,
+    /// The [`LayerStack`] created for this render pass.
+    pub layer_stack: &'a mut LayerStack<'b>,
+    /// The [`Placement`] of this node.
     pub placement: Placement<'a>,
+    /// The [`ResolvedStyle`] used to render styled primitives.
     pub style: &'a ResolvedStyle,
 }
 
@@ -701,14 +689,14 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
             obj.pre_render(RenderContext {
                 view,
                 // model,
-                renderer: layer_stack,
+                layer_stack,
                 placement: child_placement,
                 style: &style,
             });
             obj.render(RenderContext {
                 view,
                 // model,
-                renderer: layer_stack,
+                layer_stack,
                 placement: child_placement,
                 style: &style,
             });
@@ -720,7 +708,7 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
             obj.post_render(RenderContext {
                 view,
                 // model,
-                renderer: layer_stack,
+                layer_stack,
                 placement: child_placement,
                 style: &style,
             });
@@ -730,25 +718,38 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
 
 
 
+/// Contextual information useful for event handlers.
 pub struct EventContext<'a, V: View> {
+    /// The node ([`Element`] & [`Object`]) receiving this event.
     pub node: u64,
+    /// The top-level [`View`] object.
     pub view: &'a mut V,
+    /// The current [`ModelState`].
+    ///
+    /// Useful for accessing ephemeral information like mouse position, viewport size, etc.
     pub model: &'a mut ModelState,
+    /// The current [`Window`] rendering this node's [`View`], if available.
     pub window: Option<&'a Window>,
+    /// The [`Renderer`] attached to this node's [`View`].
     pub renderer: &'a mut Renderer,
+    /// The [`LayoutMap`] attached to this node's [`View`].
     pub layout_map: &'a mut LayoutMap,
+    /// Whether this event should be propagated to its children.
     pub propagate: &'a mut bool,
 }
 
 impl<'a, V: View> EventContext<'a, V> {
+    /// Don't propagate this event to children.
     pub fn stop_propagation(&mut self) {
         *self.propagate = false;
     }
 
+    /// Get the current [`Layout`] attached to this event's node.
     pub fn get_layout(&self) -> Layout {
         self.layout_map.get_layout(self.node)
     }
 
+    /// Set the current [`Layout`] attached to this event's node.
     pub fn change_layout(&mut self, new_layout: Layout) {
         self.layout_map.update_layout(self.node, new_layout);
     }

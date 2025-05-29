@@ -41,6 +41,6 @@ impl<V: View> Object for HorizontalRule<V> {
     type View = V;
 
     fn render(&mut self, cx: RenderContext<Self::View>) {
-        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
+        cx.layer_stack.fill_styled_quad(cx.placement.rect(), cx.style);
     }
 }

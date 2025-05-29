@@ -82,15 +82,15 @@ impl<V: View> Object for ScrollableObject<V> {
     // }
 
     fn pre_render(&mut self, cx: crate::RenderContext<Self::View>) {
-        cx.renderer.fill_styled_quad(cx.placement.rect(), cx.style);
+        cx.layer_stack.fill_styled_quad(cx.placement.rect(), cx.style);
         self.content_height = cx.placement.content_size().y;
-        cx.renderer.start_layer(cx.placement.inner_rect());
-        cx.renderer.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));
+        cx.layer_stack.start_layer(cx.placement.inner_rect());
+        cx.layer_stack.start_transform(mat4_translation(vec3(0.0, -self.v_offset, 0.0)));
     }
 
     fn post_render(&mut self, cx: crate::RenderContext<Self::View>) {
-        cx.renderer.end_transform();
-        cx.renderer.end_layer();
+        cx.layer_stack.end_transform();
+        cx.layer_stack.end_layer();
     }
 
     fn on_wheel(&mut self, mut cx: crate::EventContext<Self::View>) {
