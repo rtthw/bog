@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bog_alloc.workspace = true
 bog_math.workspace = true
 slotmap = "1"
 # Required for #![no_std].

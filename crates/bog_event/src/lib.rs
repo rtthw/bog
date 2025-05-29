@@ -1,5 +1,7 @@
 //! Bog Events
 
+#![no_std]
+
 
 
 pub mod key;

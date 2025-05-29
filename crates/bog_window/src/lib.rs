@@ -2,13 +2,15 @@
 //!
 //! A set of types and abstractions useful for managing [`Window`]s through [`WindowingSystem`]s.
 
+#![no_std]
+
 
 
 #[cfg(feature = "x11")]
 pub mod x11;
 
-use std::sync::Arc;
-
+use bog_alloc::alloc::string::String;
+use bog_alloc::Arc;
 use bog_event::{KeyCode, WheelMovement, WindowEvent};
 use bog_math::{vec2, Vec2};
 
@@ -241,11 +243,11 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
                         }
                     })
                 }
-                winit::keyboard::PhysicalKey::Unidentified(native_key_code) => {
-                    println!(
-                        "[bog] TODO: Handle unknown native key codes, got {:?}.",
-                        native_key_code,
-                    );
+                winit::keyboard::PhysicalKey::Unidentified(_native_key_code) => {
+                    // println!(
+                    //     "[bog] TODO: Handle unknown native key codes, got {:?}.",
+                    //     native_key_code,
+                    // );
                     None
                 }
             }

@@ -1,6 +1,7 @@
 
 
 
+use bog_alloc::alloc::vec::Vec;
 use bog_math::{vec2, Rect, Vec2};
 use slotmap::Key as _;
 

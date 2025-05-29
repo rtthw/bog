@@ -71,7 +71,7 @@ impl QuadLayer {
     pub fn new(device: &wgpu::Device, constant_layout: &wgpu::BindGroupLayout) -> Self {
         let constants_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("bog::uniforms_buffer::quad"),
-            size: std::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
+            size: core::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -184,7 +184,7 @@ impl QuadPipeline {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
                     min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
+                        core::mem::size_of::<Uniforms>() as wgpu::BufferAddress,
                     ),
                 },
                 count: None,
@@ -211,7 +211,7 @@ impl QuadPipeline {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<QuadSolid>() as u64,
+                    array_stride: core::mem::size_of::<QuadSolid>() as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &wgpu::vertex_attr_array!(
                         // Color.
@@ -284,7 +284,7 @@ impl QuadPipeline {
         render_pass: &mut wgpu::RenderPass<'a>,
         constants: &'a wgpu::BindGroup,
         layer: &'a QuadLayer,
-        range: std::ops::Range<usize>,
+        range: core::ops::Range<usize>,
     ) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, constants, &[]);

@@ -1,6 +1,6 @@
 //! Bog Layout
 
-// TODO: #![no_std]
+#![no_std]
 
 
 

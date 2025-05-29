@@ -1,5 +1,7 @@
 //! Bog Styling
 
+#![no_std]
+
 
 
 use bog_color::Color;

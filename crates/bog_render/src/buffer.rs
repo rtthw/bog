@@ -1,7 +1,7 @@
 
 
 
-use std::num::NonZeroU64;
+use core::num::NonZeroU64;
 
 
 
@@ -19,7 +19,7 @@ pub struct Buffer<T> {
     usage: wgpu::BufferUsages,
     raw: wgpu::Buffer,
     offsets: Vec<wgpu::BufferAddress>,
-    type_: std::marker::PhantomData<T>,
+    type_: core::marker::PhantomData<T>,
 }
 
 impl<T: bytemuck::Pod> Buffer<T> {
@@ -116,7 +116,7 @@ impl<T: bytemuck::Pod> Buffer<T> {
 
     pub fn slice(
         &self,
-        bounds: impl std::ops::RangeBounds<wgpu::BufferAddress>,
+        bounds: impl core::ops::RangeBounds<wgpu::BufferAddress>,
     ) -> wgpu::BufferSlice<'_> {
         self.raw.slice(bounds)
     }
@@ -141,7 +141,7 @@ impl<T: bytemuck::Pod> Buffer<T> {
 fn next_copy_size<T>(amount: usize) -> u64 {
     let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
 
-    (((std::mem::size_of::<T>() * amount).next_power_of_two() as u64
+    (((core::mem::size_of::<T>() * amount).next_power_of_two() as u64
         + align_mask)
         & !align_mask)
         .max(wgpu::COPY_BUFFER_ALIGNMENT)
