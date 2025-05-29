@@ -24,7 +24,6 @@ builtin-elements = ["bog_view/builtin-elements"]
 bog_alloc.workspace = true
 bog_collections.workspace = true
 bog_color.workspace = true
-bog_env.workspace = true
 bog_event.workspace = true
 bog_layout.workspace = true
 bog_math.workspace = true
@@ -44,7 +43,6 @@ wgpu.workspace = true
 bog_alloc = { path = "crates/bog_alloc" }
 bog_collections = { path = "crates/bog_collections" }
 bog_color = { path = "crates/bog_color" }
-bog_env = { path = "crates/bog_env" }
 bog_event = { path = "crates/bog_event" }
 bog_layout = { path = "crates/bog_layout" }
 bog_math = { path = "crates/bog_math" }
