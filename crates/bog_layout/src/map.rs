@@ -235,6 +235,11 @@ impl Placement<'_> {
         )
     }
 
+    /// Whether this node is offset by any amount.
+    pub fn has_offset(&self) -> bool {
+        self.offset != Vec2::ZERO
+    }
+
     /// Get the size allocated for this node (border + padding + content_size).
     pub fn size(&self) -> Vec2 {
         Vec2::new(self.layout.size.width, self.layout.size.height)
@@ -256,9 +261,10 @@ impl Placement<'_> {
         Rect::new(self.position, self.size())
     }
 
-    /// A [`Rect`] representing ([`Self::offset_position`], [`Self::size`]).
+    /// A [`Rect`] representing ([`Self::offset_position`], max([`Self::content_size`],
+    /// [`Self::size`])).
     pub fn offset_rect(&self) -> Rect {
-        Rect::new(self.offset_position(), self.size())
+        Rect::new(self.offset_position(), self.content_size().max(self.size()))
     }
 
     /// A [`Rect`] representing ([`Self::inner_position`], [`Self::inner_size`]).
