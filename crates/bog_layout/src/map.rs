@@ -4,10 +4,11 @@
 use bog_math::{vec2, Rect, Vec2};
 use slotmap::Key as _;
 
-use crate::Placement;
+use crate::{Layout, Placement};
 
 
 
+/// A tree of nodes identified by `u64`s and positioned with [`Layout`]s.
 #[derive(Debug)]
 pub struct LayoutMap {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
@@ -22,10 +23,12 @@ impl Default for LayoutMap {
 }
 
 impl LayoutMap {
+    /// Create a new layout map.
     pub fn new() -> Self {
         Self::with_capacity(16)
     }
 
+    /// Create a new layout map that can hold at least `capacity` nodes before re-allocating.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             nodes: slotmap::SlotMap::with_capacity(capacity),
@@ -34,24 +37,29 @@ impl LayoutMap {
         }
     }
 
+    /// Clear this map.
     pub fn clear(&mut self) {
         self.nodes.clear();
         self.children.clear();
         self.parents.clear();
     }
 
+    /// Get the children of the given node.
     pub fn children(&self, node: u64) -> &[u64] {
         &self.children[slotmap::KeyData::from_ffi(node).into()]
     }
 
+    /// Get an owned vector of the children for the given node.
     pub fn children_owned(&self, node: u64) -> Vec<u64> {
         self.children[slotmap::KeyData::from_ffi(node).into()].clone()
     }
 
+    /// Get the parent of the given node.
     pub fn parent(&self, node: u64) -> Option<u64> {
         self.parents[slotmap::KeyData::from_ffi(node).into()]
     }
 
+    /// Get the [`Placement`] of a node, with the provided absolute position.
     pub fn placement(&self, node: u64, position: Vec2) -> Placement {
         let offset = self.node_info(node.into()).offset;
         let size = self.node_info(node.into()).layout.size;
@@ -65,7 +73,8 @@ impl LayoutMap {
         }
     }
 
-    pub fn add_node(&mut self, layout: crate::Layout) -> u64 {
+    /// Add a node with the given [`Layout`] to the map, returning the allocated ID.
+    pub fn add_node(&mut self, layout: Layout) -> u64 {
         let id = self.nodes.insert(NodeInfo {
             style: layout.into(),
             layout: taffy::Layout::with_order(0),
@@ -78,6 +87,7 @@ impl LayoutMap {
         id.data().as_ffi()
     }
 
+    /// Add the `child` node to `parent`.
     pub fn add_child_to_node(&mut self, parent: u64, child: u64) {
         let parent_key = slotmap::KeyData::from_ffi(parent).into();
         let child_key = slotmap::KeyData::from_ffi(child).into();
@@ -86,20 +96,24 @@ impl LayoutMap {
         self.mark_dirty(parent.into());
     }
 
-    pub fn get_layout(&self, node: u64) -> crate::Layout {
+    /// Get the [`Layout`] for the given node.
+    pub fn get_layout(&self, node: u64) -> Layout {
         self.nodes[slotmap::KeyData::from_ffi(node).into()].style.clone().into()
     }
 
-    pub fn update_layout(&mut self, node: u64, layout: crate::Layout) {
+    /// Set the [`Layout`] for the given node.
+    pub fn update_layout(&mut self, node: u64, layout: Layout) {
         self.nodes[slotmap::KeyData::from_ffi(node).into()].style = layout.into();
         self.mark_dirty(node);
     }
 
+    /// Set the offset for the given node.
     pub fn set_offset(&mut self, node: u64, offset: Vec2) {
         self.nodes[slotmap::KeyData::from_ffi(node).into()].offset = offset;
         // Offset doesn't affect the layout computation, so no need to recompute.
     }
 
+    /// Compute the layout for this map.
     pub fn compute_layout(&mut self, node: u64, available_space: Vec2) {
         taffy::compute_root_layout(
             &mut LayoutMapProxy {
@@ -114,6 +128,7 @@ impl LayoutMap {
         );
     }
 
+    /// Compute the layout for this map with the given object that implements [`LayoutContext`].
     pub fn compute_contextual_layout<T: LayoutContext>(
         &mut self,
         node: u64,
@@ -133,6 +148,7 @@ impl LayoutMap {
         );
     }
 
+    /// Clear the internal cached layout for the given node, and all of its descendents.
     pub fn mark_dirty(&mut self, node: u64) {
         fn mark_dirty_recursive(
             nodes: &mut slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
@@ -153,6 +169,7 @@ impl LayoutMap {
         );
     }
 
+    /// Get the absolute position of the given node.
     pub fn absolute_position(&self, node: u64) -> Vec2 {
         fn update_pos_recursive(
             nodes: &slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
@@ -187,7 +204,9 @@ impl LayoutMap {
 
 
 
+/// Any type that can be passed into [`LayoutMap::compute_contextual_layout`].
 pub trait LayoutContext {
+    /// Measure the node's desired size given the available space left in the layout.
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2;
 }
 
@@ -199,9 +218,7 @@ impl LayoutContext for () {
 
 
 
-// --- Taffy Implementations
-// TODO: Maybe use something like this?
-//       https://github.com/DioxusLabs/taffy/blob/main/examples/custom_tree_owned_unsafe.rs
+// --- PRIVATE: Taffy Implementations
 
 
 
