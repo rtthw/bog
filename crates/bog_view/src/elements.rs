@@ -22,37 +22,22 @@ use crate::{Element, Object, RenderContext, View};
 
 
 
-pub struct HorizontalRule<V: View> {
-    inner: Element<V>,
-    object: HorizontalRuleObject<V>,
+/// Create a horizontal rule element.
+pub fn horizontal_rule<V: View + 'static>(height: f32) -> Element<V> {
+    Element::new()
+        .layout(Layout::default()
+            .fill_width()
+            .height(height))
+        .object(HorizontalRule {
+            _view: PhantomData,
+        })
 }
 
-impl<V: View> HorizontalRule<V> {
-    pub fn new() -> Self {
-        Self {
-            inner: Element::new()
-                .layout(Layout::default()
-                    .fill_width()
-                    .height(3.0)),
-            object: HorizontalRuleObject {
-                _view: PhantomData,
-            },
-        }
-    }
-}
-
-impl<V: View + 'static> Into<Element<V>> for HorizontalRule<V> {
-    fn into(self) -> Element<V> {
-        self.inner
-            .object(self.object)
-    }
-}
-
-struct HorizontalRuleObject<V: View> {
+struct HorizontalRule<V: View> {
     _view: PhantomData<V>,
 }
 
-impl<V: View> Object for HorizontalRuleObject<V> {
+impl<V: View> Object for HorizontalRule<V> {
     type View = V;
 
     fn render(&mut self, cx: RenderContext<Self::View>) {

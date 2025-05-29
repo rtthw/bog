@@ -99,7 +99,7 @@ impl View for App {
                 .child(static_paragraph("Bog")
                     .style(large_text_class)
                     .layout(Layout::default().fill_width()))
-                .child(HorizontalRule::new())
+                .child(horizontal_rule(5.0))
                 .child(Button::new(static_paragraph("Click Me").style(small_text_class))
                     .on_click(|_cx| {
                         println!("Button clicked!");
