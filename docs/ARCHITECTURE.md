@@ -25,10 +25,6 @@ The Bog crate itself (found in `src`) does not fit into any of these categories 
 
 *Color type definitions and conversions.*
 
-### bog_env
-
-*Environment type definitions and functions.*
-
 ### bog_event
 
 *Event type definitions.*
@@ -76,3 +72,4 @@ The Bog crate itself (found in `src`) does not fit into any of these categories 
 ## Patterns
 
 TODO
+

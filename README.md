@@ -30,7 +30,7 @@ A set of tools designed to work as a replacement for (or addition to) Rust's sta
 
 The primary goal of Bog is to have a set of interoperable tools that you can use from the early stages of any project all the way to its final release. Things useful for (almost) anyone doing (almost) anything.
 
-There is no "one size fits all" abstraction. That's why everthing in Bog is divorced from everthing else. Rendering is not tied to window management. User interfacing is not tied to layout. UI elements are not tied to the user interface. You can pick and choose what fits your specific use case best.
+There is no "one size fits all" abstraction. That's why everything in Bog is divorced from everything else. Rendering is not tied to window management. User interfacing is not tied to layout. UI elements are not tied to the user interface. You can pick and choose what fits your specific use case best.
 
 I want to provide a set of tools you can use to make your project *your project*. This is not a framework, it's a toolkit.
 
