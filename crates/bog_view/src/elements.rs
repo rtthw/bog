@@ -5,6 +5,9 @@
 mod button;
 pub use button::*;
 
+mod panel;
+pub use panel::*;
+
 mod paragraph;
 pub use paragraph::*;
 
