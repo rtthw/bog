@@ -293,8 +293,15 @@ impl Theme {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StyleClass(slotmap::DefaultKey);
+
+// For more efficient usage with `bog_collections::NoHashMap`.
+impl core::hash::Hash for StyleClass {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        state.write_u64(self.0.data().as_ffi());
+    }
+}
 
 impl StyleClass {
     pub fn new(theme: &mut Theme, styling: Styling) -> Self {
