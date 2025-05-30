@@ -115,9 +115,8 @@ pub mod prelude {
         Button,
         horizontal_rule,
         panel,
-        Paragraph,
         Scrollable,
-        static_paragraph,
+        static_label,
     };
     pub use bog_window::{
         CursorIcon,

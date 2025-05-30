@@ -5,11 +5,11 @@
 mod button;
 pub use button::*;
 
+mod label;
+pub use label::*;
+
 mod panel;
 pub use panel::*;
-
-mod paragraph;
-pub use paragraph::*;
 
 mod scrollable;
 pub use scrollable::*;

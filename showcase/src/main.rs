@@ -112,11 +112,11 @@ impl View for App {
                     .width_percent(0.2)
                     .gap_y(7.0)
                     .padding(7.0))
-                .child(static_paragraph("Bog")
+                .child(static_label("Bog")
                     .style(large_text_class)
                     .layout(Layout::default().fill_width()))
                 .child(horizontal_rule(5.0).style(hrule_class))
-                .child(Button::new(static_paragraph("Click Me").style(small_text_class))
+                .child(Button::new(static_label("Click Me").style(small_text_class))
                     .on_click(|_cx| {
                         println!("Button clicked!");
                     }))
@@ -238,7 +238,7 @@ impl Object for DraggableButton {
 
 
 fn test_button<V: View + 'static>() -> Element<V> {
-    Button::new(static_paragraph("Button"))
+    Button::new(static_label("Button"))
         .on_click(|_cx| {
             println!("Test button clicked!");
         })
@@ -246,5 +246,5 @@ fn test_button<V: View + 'static>() -> Element<V> {
 }
 
 fn test_paragraph<V: View + 'static>() -> Element<V> {
-    static_paragraph("This is a test paragraph that may span a few lines or so.")
+    static_label("This is a test paragraph that may span a few lines or so.")
 }

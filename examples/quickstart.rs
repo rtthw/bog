@@ -46,7 +46,7 @@ impl View for QuickstartApp {
                         .align_items_center()
                         .justify_content_center())
                     .child(
-                        static_paragraph("Hello, world!").style(style)
+                        static_label("Hello, world!").style(style)
                     )),
             layout_map,
             theme,
