@@ -62,7 +62,9 @@ impl View for QuickstartApp {
         let style = StyleClass::base(&mut theme, Styling {
             fg_color: Some(Color::new(139, 139, 149, 255)),
             bg_color: Some(Color::new(43, 43, 53, 255)),
-            text_height: Some(Unit::Em(4.0)),
+            border_width: Some(Unit::Px(0.0)),
+            border_radius: Some(BorderRadius::Uniform(0.0)),
+            text_height: Some(Unit::Px(40.0)),
             text_slant: Some(TextSlant::Italic),
             ..Default::default()
         });
@@ -73,12 +75,15 @@ impl View for QuickstartApp {
 
         Model::new(
             Element::new()
-                .layout(Layout::default()
-                    .align_items_center()
-                    .justify_content_center())
-                .child(
-                    static_paragraph("Hello, world!").style(style)
-                ),
+                .child(panel()
+                    .style(style)
+                    .layout(Layout::default()
+                        .flex_auto()
+                        .align_items_center()
+                        .justify_content_center())
+                    .child(
+                        static_paragraph("Hello, world!").style(style)
+                    )),
             layout_map,
             theme,
         )

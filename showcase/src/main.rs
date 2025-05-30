@@ -103,11 +103,7 @@ impl View for App {
         });
 
         let root = Element::new()
-            .layout(Layout::default()
-                .width(1280.0)
-                .height(720.0)
-                .gap_x(11.0)
-                .padding(11.0))
+            .layout(Layout::default().gap_x(11.0).padding(11.0))
             .child(panel()
                 .style(left_panel_class)
                 .layout(Layout::default()
