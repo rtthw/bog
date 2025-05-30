@@ -4,6 +4,9 @@
 
 
 
+mod border_radius;
+pub use border_radius::*;
+
 use bog_color::Color;
 use slotmap::Key as _;
 
@@ -23,41 +26,6 @@ pub struct BorderStyle {
     pub color: Color,
     pub width: Unit,
     pub radius: BorderRadius,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum BorderRadius {
-    Uniform(f32),
-    Corners {
-        top_left_bottom_right: f32,
-        top_right_bottom_left: f32,
-    },
-    Discrete {
-        top_left: f32,
-        top_right: f32,
-        bottom_right: f32,
-        bottom_left: f32,
-    },
-}
-
-impl BorderRadius {
-    pub fn to_absolute(&self) -> [f32; 4] {
-        match self {
-            Self::Uniform(n) => [*n; 4],
-            Self::Corners { top_left_bottom_right, top_right_bottom_left } => [
-                *top_left_bottom_right,
-                *top_right_bottom_left,
-                *top_left_bottom_right,
-                *top_right_bottom_left,
-            ],
-            Self::Discrete { top_left, top_right, bottom_right, bottom_left } => [
-                *top_left,
-                *top_right,
-                *bottom_right,
-                *bottom_left,
-            ],
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
