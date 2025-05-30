@@ -70,6 +70,16 @@ impl View for App {
             },
             17.0,
         );
+        let left_panel_class = StyleClass::base(&mut theme, Styling {
+            bg_color: Some(GRAY_1),
+            border_width: Some(Unit::Px(0.0)),
+            ..Default::default()
+        });
+        let right_panel_class = StyleClass::base(&mut theme, Styling {
+            bg_color: Some(GRAY_2),
+            border_width: Some(Unit::Px(0.0)),
+            ..Default::default()
+        });
         let large_text_class = StyleClass::base(&mut theme, Styling {
             fg_color: Some(GRAY_6),
             text_height: Some(Unit::Em(1.7)),
@@ -98,8 +108,8 @@ impl View for App {
                 .height(720.0)
                 .gap_x(11.0)
                 .padding(11.0))
-            .child(Element::new()
-                .object(LeftPanel { color: GRAY_2 })
+            .child(panel()
+                .style(left_panel_class)
                 .layout(Layout::default()
                     .flex_initial()
                     .flex_column()
@@ -140,8 +150,8 @@ impl View for App {
                         test_paragraph(),
                         test_paragraph(),
                     ])))
-            .child(Element::new()
-                .object(RightPanel { color: GRAY_3, border_color: GRAY_6 })
+            .child(panel()
+                .style(right_panel_class)
                 .layout(Layout::default()
                     .flex_auto()
                     .flex_wrap()
@@ -162,73 +172,6 @@ impl AppHandler for App {
             inner_size: Vec2::new(1280.0, 720.0),
             ..Default::default()
         }
-    }
-}
-
-
-
-struct LeftPanel {
-    color: Color,
-}
-
-impl Object for LeftPanel {
-    type View = App;
-
-    fn render(&mut self, cx: bog::view::RenderContext<Self::View>) {
-        cx.layer_stack.fill_quad(Quad {
-            bounds: cx.placement.rect(),
-            bg_color: self.color,
-            ..Default::default()
-        });
-    }
-}
-
-struct RightPanel {
-    color: Color,
-    border_color: Color,
-}
-
-impl Object for RightPanel {
-    type View = App;
-
-    fn render(&mut self, cx: RenderContext<Self::View>) {
-        cx.layer_stack.fill_quad(Quad {
-            bounds: cx.placement.rect(),
-            bg_color: self.color,
-            border: Border {
-                color: self.border_color,
-                width: 2.0,
-                radius: [0.0; 4],
-            },
-            ..Default::default()
-        });
-    }
-
-    fn pre_render(&mut self, cx: RenderContext<Self::View>) {
-        cx.layer_stack.start_layer(cx.placement.rect());
-    }
-
-    fn post_render(&mut self, cx: RenderContext<Self::View>) {
-        if let Some(drag_indicator) = &cx.view.drag_indicator {
-            cx.layer_stack.fill_quad(*drag_indicator);
-        }
-        cx.layer_stack.end_layer();
-    }
-
-    fn on_key_down(&mut self, cx: EventContext<Self::View>) {
-        println!("KEYDOWN: {:?}", cx.model.latest_key_update());
-    }
-
-    fn on_key_up(&mut self, cx: EventContext<Self::View>) {
-        println!("KEYUP: {:?}", cx.model.latest_key_update());
-    }
-
-    fn on_mouse_enter(&mut self, _cx: crate::EventContext<Self::View>) {
-        self.border_color = GRAY_7;
-    }
-
-    fn on_mouse_leave(&mut self, _cx: crate::EventContext<Self::View>) {
-        self.border_color = GRAY_6;
     }
 }
 

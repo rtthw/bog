@@ -114,6 +114,7 @@ pub mod prelude {
     pub use bog_view::elements::{
         Button,
         horizontal_rule,
+        panel,
         Paragraph,
         Scrollable,
         static_paragraph,
