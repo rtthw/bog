@@ -70,21 +70,25 @@ impl View for App {
             },
             17.0,
         );
-        let large_text_class = StyleClass::new(&mut theme, Styling {
+        let large_text_class = StyleClass::base(&mut theme, Styling {
             fg_color: Some(GRAY_6),
             text_height: Some(Unit::Em(1.7)),
             ..Default::default()
         });
-        let small_text_class = StyleClass::new(&mut theme, Styling {
+        let small_text_class = StyleClass::base(&mut theme, Styling {
             fg_color: Some(GRAY_7),
             text_height: Some(Unit::Em(0.7)),
             text_slant: Some(TextSlant::Italic),
             ..Default::default()
         });
-        let hrule_class = StyleClass::new(&mut theme, Styling {
+        let hrule_class = StyleClass::base(&mut theme, Styling {
             bg_color: Some(GRAY_7.with_alpha(155)),
             border_width: Some(Unit::Px(0.0)),
             border_radius: Some(BorderRadius::Uniform(3.0)),
+            ..Default::default()
+        });
+        hrule_class.with_hover(&mut theme, Styling {
+            bg_color: Some(GRAY_8),
             ..Default::default()
         });
 

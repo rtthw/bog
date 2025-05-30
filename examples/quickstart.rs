@@ -23,7 +23,7 @@ impl AppHandler for QuickstartApp {
 impl View for QuickstartApp {
     fn build(&mut self, layout_map: &mut LayoutMap) -> Model<Self> {
         let mut theme = Theme::default();
-        let style = StyleClass::new(&mut theme, Styling {
+        let style = StyleClass::base(&mut theme, Styling {
             bg_color: Some(Color::new(43, 43, 53, 255)),
             text_height: Some(Unit::Em(4.0)),
             text_slant: Some(TextSlant::Italic),

@@ -304,10 +304,22 @@ impl core::hash::Hash for StyleClass {
 }
 
 impl StyleClass {
-    pub fn new(theme: &mut Theme, styling: Styling) -> Self {
+    /// The default styling to use by objects with this class.
+    pub fn base(theme: &mut Theme, styling: Styling) -> Self {
         Self(theme.class_defaults.insert(styling))
     }
 
+    /// The styling to use when the object identified by this class is hovered.
+    pub fn with_hover(&self, theme: &mut Theme, styling: Styling) {
+        theme.hover_classes.insert(self.0, styling);
+    }
+
+    /// The styling to use when the object identified by this class is in focus.
+    pub fn with_focus(&self, theme: &mut Theme, styling: Styling) {
+        theme.hover_classes.insert(self.0, styling);
+    }
+
+    /// The null style class. This is useful if you want to enforce the [`Theme`]'s defaults.
     #[inline]
     pub fn null() -> Self {
         Self(slotmap::DefaultKey::null())
