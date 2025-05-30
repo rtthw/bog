@@ -491,8 +491,11 @@ impl<'a, V: View> LayoutContext for ModelProxyContext<'a, V> {
     fn measure_node(&mut self, node: u64, available_space: Vec2) -> Vec2 {
         let mut size = Vec2::ZERO;
         if let Some(Some(obj)) = self.model.elements.get_mut(&node) {
+            let hovered = self.model.state.hovered.contains(&node);
+
             let class = self.model.styles.get(&node).copied().unwrap_or(StyleClass::null());
-            let style = self.model.theme.resolve(class, self.model.theme.root_em());
+            let style = self.model.theme.resolve(class, self.model.theme.root_em(), hovered);
+
             size = obj.measure(available_space, self.renderer, style);
         }
 
@@ -681,10 +684,12 @@ fn render_placement<'a, 'b: 'a, V: View + 'b>(
     parent_style: &ResolvedStyle,
 ) {
     for child_placement in placement.children() {
+        let hovered = model.state.hovered.contains(&child_placement.node());
         let class = model.styles.get(&child_placement.node())
             .copied()
             .unwrap_or(StyleClass::null());
-        let style = model.theme.resolve(class, parent_style.em);
+        let style = model.theme.resolve(class, parent_style.em, hovered);
+
         if let Some(Some(obj)) = model.elements.get_mut(&child_placement.node()) {
             obj.pre_render(RenderContext {
                 view,

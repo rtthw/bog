@@ -235,10 +235,16 @@ impl Theme {
         self.root_em
     }
 
-    pub fn resolve(&self, class: StyleClass, parent_em: f32) -> ResolvedStyle {
-        let style = self.class_defaults.get(class.0)
+    pub fn resolve(&self, class: StyleClass, parent_em: f32, hovered: bool) -> ResolvedStyle {
+        let mut style = self.class_defaults.get(class.0)
             .and_then(|styling| Some(self.base_style + styling))
             .unwrap_or(self.base_style);
+
+        if hovered {
+            if let Some(styling) = self.hover_classes.get(class.0) {
+                style = styling.apply(style);
+            }
+        }
 
         // TODO: Actually calculate an accurate `em` size here.
         let em = style.text.height.to_absolute(self.root_em, parent_em);
