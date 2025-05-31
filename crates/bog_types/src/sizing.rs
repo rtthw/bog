@@ -26,6 +26,16 @@ pub const fn lh(value: f32) -> Length {
     Length::Lh(value)
 }
 
+#[inline]
+pub const fn rem(value: f32) -> Length {
+    Length::Rem(value)
+}
+
+#[inline]
+pub const fn rlh(value: f32) -> Length {
+    Length::Rlh(value)
+}
+
 impl Length {
     pub fn to_absolute(self, sizing: SizingContext) -> f32 {
         match self {
@@ -40,11 +50,55 @@ impl Length {
 
 
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+pub struct Percent(pub f32);
+
+impl From<f32> for Percent {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Portion> for Percent {
+    fn from(value: Portion) -> Self {
+        match value {
+            Portion::Full => Self(1.0),
+            Portion::Half => Self(0.5),
+            Portion::OneThird => Self(0.33), // TODO: More specificity here?
+            Portion::OneFourth => Self(0.25),
+            Portion::OneFifth => Self(0.2),
+            Portion::OneTenth => Self(0.1),
+        }
+    }
+}
+
+impl Percent {
+    pub fn to_absolute(self, length_absolute: f32) -> f32 {
+        self.0 * length_absolute
+    }
+}
+
+
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum Portion {
+    Full,
+    Half,
+    OneThird,
+    OneFourth,
+    OneFifth,
+    OneTenth,
+}
+
+
+
 pub struct SizingContext {
     pub font: FontMetrics,
     pub root_font: FontMetrics,
     pub scale: f32,
     pub global_scale: f32,
+    pub ancestor_padding_box_width: f32,
+    pub ancestor_padding_box_height: f32,
 }
 
 impl SizingContext {
