@@ -4,6 +4,7 @@
 
 #[cfg(feature = "builtin-elements")]
 pub mod elements;
+pub mod style;
 
 use std::collections::HashSet;
 
@@ -217,31 +218,6 @@ impl<'a, V: View> ModelProxy<'a, V> {
                 renderer: self.renderer,
             },
         );
-
-        // Call `Object::on_placement` for all elements.
-        // fn update_placements<'a, V: View>(
-        //     placement: Placement,
-        //     view: &'a mut V,
-        //     model: &'a mut Model<V>,
-        //     // window: &'a Window,
-        //     renderer: &'a mut Renderer,
-        // ) {
-        //     if let Some(mut obj) = model.grab(placement.node()) {
-        //         obj.on_placement(RenderContext {
-        //             view,
-        //             // model,
-        //             // window,
-        //             renderer,
-        //             placement,
-        //         });
-        //         model.place(placement.node(), obj);
-        //     }
-        //     for placement in placement.children() {
-        //         update_placements(placement, view, model, renderer);
-        //     }
-        // }
-        // let root_placement = self.layout_map.placement(self.model.root_node, Vec2::ZERO);
-        // update_placements(root_placement, self.view, self.model, self.renderer);
     }
 
     pub fn handle_mouse_move(&mut self, new_pos: Vec2) -> bool {
@@ -254,9 +230,6 @@ impl<'a, V: View> ModelProxy<'a, V> {
         let mut hovered = Vec::with_capacity(5);
 
         fn find_hovered(placement: Placement<'_>, hovered: &mut Vec<u64>, pos: Vec2) {
-            // if !placement.parent_rect().contains(pos) {
-            //     return;
-            // }
             if !placement.offset_rect().contains(pos) {
                 return;
             }
