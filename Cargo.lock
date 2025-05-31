@@ -188,6 +188,7 @@ dependencies = [
  "bog_math",
  "bog_render",
  "bog_style",
+ "bog_types",
  "bog_view",
  "bog_window",
  "bytemuck",
@@ -260,6 +261,10 @@ dependencies = [
  "bog_color",
  "slotmap",
 ]
+
+[[package]]
+name = "bog_types"
+version = "0.1.0"
 
 [[package]]
 name = "bog_view"
