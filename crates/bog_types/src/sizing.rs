@@ -102,30 +102,53 @@ pub struct SizingContext {
 }
 
 impl SizingContext {
+    /// The `font_size` of this element's font.
     #[inline]
     pub const fn em(&self) -> f32 {
         self.font.em
     }
 
+    /// The `line_height` of this element's font.
     #[inline]
     pub const fn lh(&self) -> f32 {
         self.font.lh
     }
 
+    /// The `advance_measure` (width) of the glyph `0` for this element's font.
+    #[inline]
+    pub const fn ch(&self) -> f32 {
+        self.font.ch
+    }
+
+    /// The `font_size` of the root font.
     #[inline]
     pub const fn rem(&self) -> f32 {
         self.root_font.em
     }
 
+    /// The `line_height` of the root font.
     #[inline]
     pub const fn rlh(&self) -> f32 {
         self.root_font.lh
+    }
+
+    /// The `advance_measure` (width) of the glyph `0` for the root font.
+    #[inline]
+    pub const fn rch(&self) -> f32 {
+        self.root_font.ch
     }
 }
 
 
 
 pub struct FontMetrics {
+    /// The `font_size` of this font.
     pub em: f32,
+    /// The `line_height` for this font.
     pub lh: f32,
+    /// The `advance_measure` (width) of the glyph `0` for this font.
+    ///
+    /// For monospaced fonts, this is synonymous with the width of all single-width (normal)
+    /// characters.
+    pub ch: f32,
 }
