@@ -262,6 +262,7 @@ dependencies = [
  "bog_color",
  "bog_math",
  "slotmap",
+ "taffy",
 ]
 
 [[package]]

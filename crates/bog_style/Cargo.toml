@@ -8,3 +8,9 @@ bog_alloc.workspace = true
 bog_color.workspace = true
 bog_math.workspace = true
 slotmap = "1"
+taffy = { version = "0.7", default-features = false, features = [
+    "block_layout",
+    "flexbox",
+    "grid",
+    "content_size",
+] }
