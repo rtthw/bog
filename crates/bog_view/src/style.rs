@@ -3,6 +3,7 @@
 
 use bog_color::Color;
 use bog_style::{LineWeight, TextSlant, Unit};
+use bog_types::{Length, LengthPercent, LengthPercentAuto, Percent};
 use bog_window::CursorIcon;
 
 
@@ -20,26 +21,26 @@ pub struct ElementStyle {
     pub min_height: Option<Unit>,
     pub max_width: Option<Unit>,
     pub max_height: Option<Unit>,
-    pub scale: Option<Unit>,
-    pub gap_x: Option<Unit>,
-    pub gap_y: Option<Unit>,
+    pub scale: Option<Percent>,
+    pub gap_x: Option<LengthPercent>,
+    pub gap_y: Option<LengthPercent>,
 
-    pub inset_left: Option<Unit>,
-    pub inset_right: Option<Unit>,
-    pub inset_top: Option<Unit>,
-    pub inset_bottom: Option<Unit>,
-    pub margin_left: Option<Unit>,
-    pub margin_right: Option<Unit>,
-    pub margin_top: Option<Unit>,
-    pub margin_bottom: Option<Unit>,
-    pub padding_left: Option<Unit>,
-    pub padding_right: Option<Unit>,
-    pub padding_top: Option<Unit>,
-    pub padding_bottom: Option<Unit>,
-    pub border_left: Option<Unit>,
-    pub border_right: Option<Unit>,
-    pub border_top: Option<Unit>,
-    pub border_bottom: Option<Unit>,
+    pub inset_left: Option<LengthPercentAuto>,
+    pub inset_right: Option<LengthPercentAuto>,
+    pub inset_top: Option<LengthPercentAuto>,
+    pub inset_bottom: Option<LengthPercentAuto>,
+    pub margin_left: Option<LengthPercentAuto>,
+    pub margin_right: Option<LengthPercentAuto>,
+    pub margin_top: Option<LengthPercentAuto>,
+    pub margin_bottom: Option<LengthPercentAuto>,
+    pub padding_left: Option<LengthPercent>,
+    pub padding_right: Option<LengthPercent>,
+    pub padding_top: Option<LengthPercent>,
+    pub padding_bottom: Option<LengthPercent>,
+    pub border_left: Option<Length>,
+    pub border_right: Option<Length>,
+    pub border_top: Option<Length>,
+    pub border_bottom: Option<Length>,
 
     pub font_size: Option<FontSize>,
     pub font_style: Option<TextSlant>,

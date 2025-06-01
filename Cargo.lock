@@ -277,6 +277,7 @@ dependencies = [
  "bog_math",
  "bog_render",
  "bog_style",
+ "bog_types",
  "bog_window",
 ]
 

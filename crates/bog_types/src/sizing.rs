@@ -2,6 +2,68 @@
 
 
 
+/// A [`Length`] or [`Percent`] value.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LengthPercent {
+    Length(Length),
+    Percent(Percent),
+}
+
+impl From<Length> for LengthPercent {
+    fn from(value: Length) -> Self {
+        Self::Length(value)
+    }
+}
+
+impl From<Percent> for LengthPercent {
+    fn from(value: Percent) -> Self {
+        Self::Percent(value)
+    }
+}
+
+
+
+/// A [`Length`], [`Percent`], or automatically computed value.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LengthPercentAuto {
+    Length(Length),
+    Percent(Percent),
+    Auto,
+}
+
+impl From<Length> for LengthPercentAuto {
+    fn from(value: Length) -> Self {
+        Self::Length(value)
+    }
+}
+
+impl From<Percent> for LengthPercentAuto {
+    fn from(value: Percent) -> Self {
+        Self::Percent(value)
+    }
+}
+
+impl From<LengthPercent> for LengthPercentAuto {
+    fn from(value: LengthPercent) -> Self {
+        match value {
+            LengthPercent::Length(len) => Self::Length(len),
+            LengthPercent::Percent(perc) => Self::Percent(perc),
+        }
+    }
+}
+
+impl From<Option<LengthPercent>> for LengthPercentAuto {
+    fn from(value: Option<LengthPercent>) -> Self {
+        match value {
+            Some(LengthPercent::Length(len)) => Self::Length(len),
+            Some(LengthPercent::Percent(perc)) => Self::Percent(perc),
+            None => Self::Auto,
+        }
+    }
+}
+
+
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Length {
     Px(f32),
