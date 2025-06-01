@@ -258,7 +258,9 @@ dependencies = [
 name = "bog_style"
 version = "0.1.0"
 dependencies = [
+ "bog_alloc",
  "bog_color",
+ "bog_math",
  "slotmap",
 ]
 
