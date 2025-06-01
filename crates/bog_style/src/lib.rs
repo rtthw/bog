@@ -17,11 +17,21 @@ use slotmap::Key as _;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Style {
+    pub display: DisplayStyle,
     pub text: TextStyle,
     pub border: BorderStyle,
     pub shadow: ShadowStyle,
     pub fg_color: Color,
     pub bg_color: Color,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum DisplayStyle {
+    Block,
+    Flex,
+    Grid,
+    #[default]
+    None,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -160,6 +170,7 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             base_style: Style {
+                display: DisplayStyle::Flex,
                 text: TextStyle {
                     family: FontFamily::SansSerif,
                     slant: TextSlant::Normal,
@@ -317,6 +328,7 @@ impl Styling {
     /// Apply this set of changes to the given [`Style`].
     pub fn apply(&self, style: Style) -> Style {
         Style {
+            display: style.display,
             text: TextStyle {
                 slant: self.text_slant.unwrap_or(style.text.slant),
                 weight: self.text_weight.unwrap_or(style.text.weight),

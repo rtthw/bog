@@ -48,6 +48,7 @@ impl View for App {
 
         let mut theme = Theme::new(
             Style {
+                display: DisplayStyle::Flex,
                 text: TextStyle {
                     family: FontFamily::SansSerif,
                     slant: TextSlant::Normal,

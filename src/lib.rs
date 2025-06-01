@@ -87,6 +87,7 @@ pub mod prelude {
     pub use bog_style::{
         BorderRadius,
         BorderStyle,
+        DisplayStyle,
         FontFamily,
         LineWeight,
         ResolvedStyle,

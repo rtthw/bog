@@ -5,7 +5,7 @@
 use bog_alloc::alloc::vec::Vec;
 use bog_math::{vec2, Vec2};
 
-use crate::Style;
+use crate::{DisplayStyle, Style};
 
 
 
@@ -84,7 +84,7 @@ struct NodeInfo {
 
 impl NodeTree {
     #[inline(always)]
-    pub(crate) fn node_info(&self, node_id: taffy::NodeId) -> &NodeInfo {
+    fn node_info(&self, node_id: taffy::NodeId) -> &NodeInfo {
         &self.nodes[slotmap::KeyData::from_ffi(node_id.into()).into()]
     }
 
@@ -150,10 +150,10 @@ impl<'a, T: LayoutContext> taffy::LayoutPartialTree for NodeTreeProxy<'a, T> {
                 .len() > 0;
 
             match (display_mode, has_children) {
-                (taffy::Display::None, _) => taffy::compute_hidden_layout(tree, id),
-                (taffy::Display::Block, true) => taffy::compute_block_layout(tree, id, inputs),
-                (taffy::Display::Flex, true) => taffy::compute_flexbox_layout(tree, id, inputs),
-                (taffy::Display::Grid, true) => taffy::compute_grid_layout(tree, id, inputs),
+                (DisplayStyle::None, _) => taffy::compute_hidden_layout(tree, id),
+                (DisplayStyle::Block, true) => taffy::compute_block_layout(tree, id, inputs),
+                (DisplayStyle::Flex, true) => taffy::compute_flexbox_layout(tree, id, inputs),
+                (DisplayStyle::Grid, true) => todo!(), // taffy::compute_grid_layout(tree, id, inputs),
                 (_, false) => {
                     let style = &tree.tree.node_info(node_id).style;
                     taffy::compute_leaf_layout(inputs, style, |_dimensions, available_space| {
@@ -228,18 +228,18 @@ impl<'a, T: LayoutContext> taffy::LayoutFlexboxContainer for NodeTreeProxy<'a, T
     }
 }
 
-impl<'a, T: LayoutContext> taffy::LayoutGridContainer for NodeTreeProxy<'a, T> {
-    type GridContainerStyle<'b> = &'b Style where Self: 'b;
-    type GridItemStyle<'b> = &'b Style where Self: 'b;
+// impl<'a, T: LayoutContext> taffy::LayoutGridContainer for NodeTreeProxy<'a, T> {
+//     type GridContainerStyle<'b> = &'b Style where Self: 'b;
+//     type GridItemStyle<'b> = &'b Style where Self: 'b;
 
-    fn get_grid_container_style(&self, node_id: taffy::NodeId) -> Self::GridContainerStyle<'_> {
-        &self.tree.node_info(node_id).style
-    }
+//     fn get_grid_container_style(&self, node_id: taffy::NodeId) -> Self::GridContainerStyle<'_> {
+//         &self.tree.node_info(node_id).style
+//     }
 
-    fn get_grid_child_style(&self, child_node_id: taffy::NodeId) -> Self::GridItemStyle<'_> {
-        &self.tree.node_info(child_node_id).style
-    }
-}
+//     fn get_grid_child_style(&self, child_node_id: taffy::NodeId) -> Self::GridItemStyle<'_> {
+//         &self.tree.node_info(child_node_id).style
+//     }
+// }
 
 
 
