@@ -7,8 +7,8 @@
 mod border_radius;
 pub use border_radius::*;
 
-mod map;
-pub use map::*;
+mod tree;
+pub use tree::*;
 
 use bog_color::Color;
 use slotmap::Key as _;

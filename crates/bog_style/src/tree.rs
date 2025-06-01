@@ -1,4 +1,4 @@
-//! Style map
+//! Node tree
 
 
 
@@ -8,7 +8,7 @@ use crate::Style;
 
 
 
-pub struct StyleMap {
+pub struct NodeTree {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
     children: slotmap::SlotMap<slotmap::DefaultKey, Vec<u64>>,
     parents: slotmap::SlotMap<slotmap::DefaultKey, Option<u64>>,
