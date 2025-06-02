@@ -5,5 +5,4 @@ edition = "2024"
 
 [dependencies]
 bog = { path = ".." }
-cosmic-text = { version = "0.14", features = ["syntect"] }
 syntect = "5"

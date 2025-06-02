@@ -458,7 +458,6 @@ dependencies = [
  "self_cell",
  "smol_str",
  "swash",
- "syntect",
  "sys-locale",
  "ttf-parser 0.21.1",
  "unicode-bidi",
@@ -1874,7 +1873,6 @@ name = "showcase"
 version = "0.1.0"
 dependencies = [
  "bog",
- "cosmic-text",
  "syntect",
 ]
 
