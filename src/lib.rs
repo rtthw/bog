@@ -34,6 +34,7 @@ pub enum Error {
 pub mod prelude {
     pub use crate::{
         app::{
+            AppContext,
             AppHandler,
             run_app,
         },

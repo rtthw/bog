@@ -34,15 +34,21 @@ pub fn run_app<A: AppHandler>(app: A) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
-    fn render(&mut self, renderer: &mut Renderer, layers: &mut LayerStack);
-    fn on_mouse_move(&mut self, mouse_pos: Vec2) {}
-    fn on_primary_mouse_down(&mut self) {}
-    fn on_primary_mouse_up(&mut self) {}
-    fn on_wheel_movement(&mut self, movement: WheelMovement) {}
-    fn on_key_down(&mut self, code: KeyCode, repeat: bool) {}
-    fn on_key_up(&mut self, code: KeyCode) {}
-    fn on_close(&mut self) {}
+    fn render(&mut self, cx: AppContext, layers: &mut LayerStack);
+    fn on_resize(&mut self, cx: AppContext, size: Vec2) {}
+    fn on_mouse_move(&mut self, cx: AppContext, mouse_pos: Vec2) {}
+    fn on_primary_mouse_down(&mut self, cx: AppContext) {}
+    fn on_primary_mouse_up(&mut self, cx: AppContext) {}
+    fn on_wheel_movement(&mut self, cx: AppContext, movement: WheelMovement) {}
+    fn on_key_down(&mut self, cx: AppContext, code: KeyCode, repeat: bool) {}
+    fn on_key_up(&mut self, cx: AppContext, code: KeyCode) {}
+    fn on_close(&mut self, cx: AppContext) {}
     fn window_desc(&self) -> WindowDescriptor;
+}
+
+pub struct AppContext<'a> {
+    pub window: &'a Window,
+    pub renderer: &'a mut Renderer,
 }
 
 struct AppRunner<A: AppHandler> {
@@ -86,12 +92,12 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
 
         match event {
             WindowEvent::CloseRequest => {
-                self.app.on_close();
+                self.app.on_close(AppContext { window, renderer });
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
                 let mut layer_stack = LayerStack::new();
-                self.app.render(renderer, &mut layer_stack);
+                self.app.render(AppContext { window, renderer }, &mut layer_stack);
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
                 renderer.render(&mut layer_stack, &target, &viewport);
@@ -102,32 +108,33 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 graphics.resize(renderer.device(), physical_size);
                 viewport.resize(physical_size);
                 renderer.resize(physical_size);
+                self.app.on_resize(AppContext { window, renderer }, physical_size);
                 window.request_redraw();
             }
             WindowEvent::KeyDown { code, repeat } => {
-                self.app.on_key_down(code, repeat);
+                self.app.on_key_down(AppContext { window, renderer }, code, repeat);
             }
             WindowEvent::KeyUp { code } => {
-                self.app.on_key_up(code);
+                self.app.on_key_up(AppContext { window, renderer }, code);
             }
             WindowEvent::MouseMove { x, y } => {
-                self.app.on_mouse_move(vec2(x, y));
+                self.app.on_mouse_move(AppContext { window, renderer }, vec2(x, y));
                 window.request_redraw();
             }
             WindowEvent::MouseDown { code } => {
                 if code == 0 {
-                    self.app.on_primary_mouse_down();
+                    self.app.on_primary_mouse_down(AppContext { window, renderer });
                     window.request_redraw();
                 }
             }
             WindowEvent::MouseUp { code } => {
                 if code == 0 {
-                    self.app.on_primary_mouse_up();
+                    self.app.on_primary_mouse_up(AppContext { window, renderer });
                     window.request_redraw();
                 }
             }
             WindowEvent::WheelMove(movement) => {
-                self.app.on_wheel_movement(movement);
+                self.app.on_wheel_movement(AppContext { window, renderer }, movement);
                 window.request_redraw();
             }
             _ => {}

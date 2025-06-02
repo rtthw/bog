@@ -33,17 +33,17 @@ struct App {
 }
 
 impl AppHandler for App {
-    fn render(&mut self, renderer: &mut Renderer, layers: &mut LayerStack) {
-        layers.start_layer(renderer.viewport_rect());
+    fn render(&mut self, cx: AppContext, layers: &mut LayerStack) {
+        layers.start_layer(cx.renderer.viewport_rect());
         layers.fill_quad(Quad {
-            bounds: renderer.viewport_rect(),
+            bounds: cx.renderer.viewport_rect(),
             bg_color: GRAY_1,
             ..Default::default()
         });
         layers.end_layer();
     }
 
-    fn on_wheel_movement(&mut self, movement: WheelMovement) {
+    fn on_wheel_movement(&mut self, _cx: AppContext, movement: WheelMovement) {
         match movement {
             WheelMovement::Lines { y, .. } => {
                 self.scroll_offset += y * 20.0;
