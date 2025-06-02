@@ -4,17 +4,13 @@
 
 pub mod app;
 pub mod graphics;
-pub mod simple_app;
 
 pub use bog_alloc as alloc;
 pub use bog_collections as collections;
 pub use bog_color as color;
 pub use bog_event as event;
-pub use bog_layout as layout;
 pub use bog_math as math;
 pub use bog_render as render;
-pub use bog_style as style;
-pub use bog_view as view;
 pub use bog_window as window;
 
 
@@ -48,21 +44,12 @@ pub mod prelude {
             WindowGraphics,
         },
         Result,
-        simple_app::{
-            run_simple_app,
-            SimpleAppHandler,
-        },
     };
 
     pub use bog_color::Color;
     pub use bog_event::{
         EventMask,
         WindowEvent,
-    };
-    pub use bog_layout::{
-        Layout,
-        LayoutMap,
-        Placement,
     };
     pub use bog_math::{
         Mat3,
@@ -83,41 +70,6 @@ pub mod prelude {
         Shadow,
         Text,
         Viewport,
-    };
-    pub use bog_style::{
-        BorderRadius,
-        BorderStyle,
-        DisplayStyle,
-        FontFamily,
-        LineWeight,
-        ResolvedStyle,
-        ShadowStyle,
-        Style,
-        StyleClass,
-        Styling,
-        TextSlant,
-        TextStretch,
-        TextStyle,
-        Theme,
-        Unit,
-    };
-    pub use bog_view::{
-        Element,
-        EventContext,
-        Model,
-        ModelProxy,
-        Object,
-        render_view,
-        RenderContext,
-        View,
-    };
-    #[cfg(feature = "builtin-elements")]
-    pub use bog_view::elements::{
-        Button,
-        horizontal_rule,
-        panel,
-        Scrollable,
-        static_label,
     };
     pub use bog_window::{
         CursorIcon,

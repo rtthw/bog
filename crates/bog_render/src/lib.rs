@@ -10,7 +10,6 @@ mod text;
 mod types;
 mod viewport;
 
-use bog_style::ResolvedStyle;
 pub use layer::*;
 use quad::*;
 use text::*;
@@ -27,7 +26,6 @@ pub trait Render<'a> {
     fn start_transform(&mut self, transform: Mat4);
     fn end_transform(&mut self);
     fn fill_quad(&mut self, quad: Quad);
-    fn fill_styled_quad(&mut self, bounds: Rect, style: &ResolvedStyle);
     fn fill_text(&mut self, text: Text<'a>);
     fn clear(&mut self);
 }
@@ -258,26 +256,6 @@ impl<'a> Render<'a> for LayerStack<'a> {
         };
 
         layer.quads.push(QuadSolid { color, quad });
-    }
-
-    fn fill_styled_quad(&mut self, bounds: Rect, style: &ResolvedStyle) {
-        let (layer, transform) = self.current_mut();
-        let bounds = bounds * transform;
-        let quad = QuadPrimitive {
-            position: [bounds.x, bounds.y],
-            size: [bounds.w, bounds.h],
-            border_color: style.border_color.to_u32(),
-            border_radius: style.border_radius,
-            border_width: style.border_width,
-            shadow_color: style.shadow_color.to_u32(),
-            shadow_offset: [
-                style.shadow_offset_x,
-                style.shadow_offset_y,
-            ],
-            shadow_blur_radius: style.shadow_spread,
-        };
-
-        layer.quads.push(QuadSolid { color: style.bg_color.to_u32(), quad });
     }
 
     fn fill_text(&mut self, text: Text<'a>) {

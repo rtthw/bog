@@ -184,12 +184,8 @@ dependencies = [
  "bog_collections",
  "bog_color",
  "bog_event",
- "bog_layout",
  "bog_math",
  "bog_render",
- "bog_style",
- "bog_types",
- "bog_view",
  "bog_window",
  "bytemuck",
  "glutin",
@@ -224,16 +220,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_layout"
-version = "0.1.0"
-dependencies = [
- "bog_alloc",
- "bog_math",
- "slotmap",
- "taffy",
-]
-
-[[package]]
 name = "bog_math"
 version = "0.1.0"
 dependencies = [
@@ -247,41 +233,10 @@ dependencies = [
  "bog_collections",
  "bog_color",
  "bog_math",
- "bog_style",
  "bytemuck",
  "glyphon",
  "rustc-hash 2.1.1",
  "wgpu",
-]
-
-[[package]]
-name = "bog_style"
-version = "0.1.0"
-dependencies = [
- "bog_alloc",
- "bog_color",
- "bog_math",
- "slotmap",
- "taffy",
-]
-
-[[package]]
-name = "bog_types"
-version = "0.1.0"
-
-[[package]]
-name = "bog_view"
-version = "0.1.0"
-dependencies = [
- "bog_collections",
- "bog_color",
- "bog_event",
- "bog_layout",
- "bog_math",
- "bog_render",
- "bog_style",
- "bog_types",
- "bog_window",
 ]
 
 [[package]]
@@ -922,12 +877,6 @@ checksum = "fdf242682df893b86f33a73828fb09ca4b2d3bb6cc95249707fc684d27484b91"
 dependencies = [
  "bitflags 2.9.0",
 ]
-
-[[package]]
-name = "grid"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36119f3a540b086b4e436bb2b588cf98a68863470e0e880f4d0842f112a3183a"
 
 [[package]]
 name = "half"
@@ -2012,17 +1961,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eab9a99a024a169fe8a903cf9d4a3b3601109bcc13bd9e3c6fff259138626c4"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "taffy"
-version = "0.7.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab4f4d046dd956a47a7e1a2947083d7ac3e6aa3cfaaead36173ceaa5ab11878c"
-dependencies = [
- "arrayvec",
- "grid",
- "serde",
 ]
 
 [[package]]

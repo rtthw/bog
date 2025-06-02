@@ -5,9 +5,8 @@
 use core::hash::Hash as _;
 
 use bog_math::{Rect, Vec2};
-use bog_style::{FontFamily, TextSlant};
 
-use crate::Text;
+use crate::{FontFamily, Text, TextSlant};
 
 
 
