@@ -221,6 +221,10 @@ impl Renderer {
 
         entry.min_bounds
     }
+
+    pub fn text_pipeline(&mut self) -> &mut TextPipeline {
+        &mut self.text_pipeline
+    }
 }
 
 impl<'a> Render<'a> for LayerStack<'a> {
