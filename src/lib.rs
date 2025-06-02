@@ -69,7 +69,6 @@ pub mod prelude {
         Layer,
         LayerStack,
         Quad,
-        Render as _,
         Renderer,
         Shadow,
         Text,

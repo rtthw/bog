@@ -20,18 +20,6 @@ use bog_math::{vec2, Mat4, Rect, Vec2};
 
 
 
-pub trait Render<'a> {
-    fn start_layer(&mut self, bounds: Rect);
-    fn end_layer(&mut self);
-    fn start_transform(&mut self, transform: Mat4);
-    fn end_transform(&mut self);
-    fn fill_quad(&mut self, quad: Quad);
-    fn fill_text(&mut self, text: Text<'a>);
-    fn clear(&mut self);
-}
-
-
-
 pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -227,24 +215,24 @@ impl Renderer {
     }
 }
 
-impl<'a> Render<'a> for LayerStack<'a> {
-    fn start_layer(&mut self, bounds: Rect) {
+impl<'a> LayerStack<'a> {
+    pub fn start_layer(&mut self, bounds: Rect) {
         self.push_clip(bounds);
     }
 
-    fn end_layer(&mut self) {
+    pub fn end_layer(&mut self) {
         self.pop_clip();
     }
 
-    fn start_transform(&mut self, transform: Mat4) {
+    pub fn start_transform(&mut self, transform: Mat4) {
         self.push_transformation(transform);
     }
 
-    fn end_transform(&mut self) {
+    pub fn end_transform(&mut self) {
         self.pop_transformation();
     }
 
-    fn fill_quad(&mut self, quad: Quad) {
+    pub fn fill_quad(&mut self, quad: Quad) {
         let (layer, transform) = self.current_mut();
         let bounds = quad.bounds * transform;
         let color = quad.bg_color.to_u32();
@@ -262,7 +250,7 @@ impl<'a> Render<'a> for LayerStack<'a> {
         layer.quads.push(QuadSolid { color, quad });
     }
 
-    fn fill_text(&mut self, text: Text<'a>) {
+    pub fn fill_text(&mut self, text: Text<'a>) {
         let (layer, transform) = self.current_mut();
         let rect = Rect::new(text.pos, text.bounds) * transform;
 
@@ -271,9 +259,5 @@ impl<'a> Render<'a> for LayerStack<'a> {
             bounds: rect.size(),
             ..text
         });
-    }
-
-    fn clear(&mut self) {
-        self.clear();
     }
 }
