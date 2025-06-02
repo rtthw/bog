@@ -49,6 +49,9 @@ pub mod prelude {
     pub use bog_color::Color;
     pub use bog_event::{
         EventMask,
+        KeyCode,
+        KeyUpdate,
+        WheelMovement,
         WindowEvent,
     };
     pub use bog_math::{

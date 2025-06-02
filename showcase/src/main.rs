@@ -19,16 +19,41 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 fn main() -> Result<()> {
-    run_app(App {})?;
+    run_app(App {
+        scroll_offset: 0.0,
+    })?;
 
     Ok(())
 }
 
 
 
-struct App {}
+struct App {
+    scroll_offset: f32,
+}
 
 impl AppHandler for App {
+    fn render(&mut self, renderer: &mut Renderer, layers: &mut LayerStack) {
+        layers.start_layer(renderer.viewport_rect());
+        layers.fill_quad(Quad {
+            bounds: renderer.viewport_rect(),
+            bg_color: GRAY_1,
+            ..Default::default()
+        });
+        layers.end_layer();
+    }
+
+    fn on_wheel_movement(&mut self, movement: WheelMovement) {
+        match movement {
+            WheelMovement::Lines { y, .. } => {
+                self.scroll_offset += y * 20.0;
+            }
+            WheelMovement::Pixels { y, .. } => {
+                self.scroll_offset += y;
+            }
+        }
+    }
+
     fn window_desc(&self) -> WindowDescriptor {
         WindowDescriptor {
             title: "Bog Showcase",
