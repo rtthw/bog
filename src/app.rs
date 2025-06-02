@@ -35,7 +35,7 @@ pub fn run_app<A: AppHandler>(app: A) -> Result<()> {
 #[allow(unused_variables)]
 pub trait AppHandler {
     fn startup(&mut self, cx: AppContext) {}
-    fn render(&mut self, cx: AppContext, layers: &mut LayerStack);
+    fn render<'pass>(&'pass mut self, cx: AppContext, layers: &mut LayerStack<'pass>);
     fn on_resize(&mut self, cx: AppContext, size: Vec2) {}
     fn on_mouse_move(&mut self, cx: AppContext, mouse_pos: Vec2) {}
     fn on_primary_mouse_down(&mut self, cx: AppContext) {}
