@@ -34,6 +34,7 @@ pub fn run_app<A: AppHandler>(app: A) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait AppHandler {
+    fn startup(&mut self, cx: AppContext) {}
     fn render(&mut self, cx: AppContext, layers: &mut LayerStack);
     fn on_resize(&mut self, cx: AppContext, size: Vec2) {}
     fn on_mouse_move(&mut self, cx: AppContext, mouse_pos: Vec2) {}
@@ -69,7 +70,9 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
         let (graphics, device, queue, format) = pollster::block_on(async {
             WindowGraphics::from_window(window.clone()).await
         }).unwrap();
-        let renderer = Renderer::new(device, queue, format);
+        let mut renderer = Renderer::new(device, queue, format);
+
+        self.app.startup(AppContext { window: &window, renderer: &mut renderer });
 
         self.state = AppState::Active {
             window,
