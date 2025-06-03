@@ -16,22 +16,22 @@ const MAX_WRITE_SIZE_U64: NonZeroU64 = NonZeroU64::new(MAX_WRITE_SIZE as u64)
 pub struct Buffer<T> {
     label: &'static str,
     size: u64,
-    usage: wgpu::BufferUsages,
-    raw: wgpu::Buffer,
-    offsets: Vec<wgpu::BufferAddress>,
+    usage: gpu::BufferUsages,
+    raw: gpu::Buffer,
+    offsets: Vec<gpu::BufferAddress>,
     type_: core::marker::PhantomData<T>,
 }
 
 impl<T: bytemuck::Pod> Buffer<T> {
     pub fn new(
-        device: &wgpu::Device,
+        device: &gpu::Device,
         label: &'static str,
         amount: usize,
-        usage: wgpu::BufferUsages,
+        usage: gpu::BufferUsages,
     ) -> Self {
         let size = next_copy_size::<T>(amount);
 
-        let raw = device.create_buffer(&wgpu::BufferDescriptor {
+        let raw = device.create_buffer(&gpu::BufferDescriptor {
             label: Some(label),
             size,
             usage,
@@ -48,12 +48,12 @@ impl<T: bytemuck::Pod> Buffer<T> {
         }
     }
 
-    pub fn resize(&mut self, device: &wgpu::Device, new_count: usize) -> bool {
+    pub fn resize(&mut self, device: &gpu::Device, new_count: usize) -> bool {
         let new_size = (std::mem::size_of::<T>() * new_count) as u64;
 
         if self.size < new_size {
             self.offsets.clear();
-            self.raw = device.create_buffer(&wgpu::BufferDescriptor {
+            self.raw = device.create_buffer(&gpu::BufferDescriptor {
                 label: Some(self.label),
                 size: new_size,
                 usage: self.usage,
@@ -70,9 +70,9 @@ impl<T: bytemuck::Pod> Buffer<T> {
     /// Returns the size of the written bytes.
     pub fn write(
         &mut self,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        belt: &mut wgpu::util::StagingBelt,
+        device: &gpu::Device,
+        encoder: &mut gpu::CommandEncoder,
+        belt: &mut gpu::util::StagingBelt,
         offset: usize,
         contents: &[T],
     ) -> usize {
@@ -116,13 +116,13 @@ impl<T: bytemuck::Pod> Buffer<T> {
 
     pub fn slice(
         &self,
-        bounds: impl core::ops::RangeBounds<wgpu::BufferAddress>,
-    ) -> wgpu::BufferSlice<'_> {
+        bounds: impl core::ops::RangeBounds<gpu::BufferAddress>,
+    ) -> gpu::BufferSlice<'_> {
         self.raw.slice(bounds)
     }
 
     /// Returns the slice calculated from the offset stored at `index`.
-    pub fn slice_from_index(&self, index: usize) -> wgpu::BufferSlice<'_> {
+    pub fn slice_from_index(&self, index: usize) -> gpu::BufferSlice<'_> {
         self.raw.slice(self.offset_at(index)..)
     }
 
@@ -132,17 +132,17 @@ impl<T: bytemuck::Pod> Buffer<T> {
     }
 
     /// Returns the offset at `index`.
-    fn offset_at(&self, index: usize) -> &wgpu::BufferAddress {
+    fn offset_at(&self, index: usize) -> &gpu::BufferAddress {
         self.offsets.get(index)
             .expect("no offset at index")
     }
 }
 
 fn next_copy_size<T>(amount: usize) -> u64 {
-    let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
+    let align_mask = gpu::COPY_BUFFER_ALIGNMENT - 1;
 
     (((core::mem::size_of::<T>() * amount).next_power_of_two() as u64
         + align_mask)
         & !align_mask)
-        .max(wgpu::COPY_BUFFER_ALIGNMENT)
+        .max(gpu::COPY_BUFFER_ALIGNMENT)
 }

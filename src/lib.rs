@@ -41,7 +41,6 @@ pub mod prelude {
         Error,
         graphics::{
             GraphicsError,
-            wgpu,
             WindowGraphics,
         },
         Result,

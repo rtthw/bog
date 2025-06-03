@@ -2,10 +2,9 @@
 
 
 
-use crate::{math::Vec2, window::rwh};
+use crate::{math::Vec2, render::gpu, window::rwh};
 
 pub use bytemuck;
-pub use wgpu;
 
 
 
@@ -18,24 +17,24 @@ type Result<T> = core::result::Result<T, GraphicsError>;
 #[derive(thiserror::Error, Debug)]
 pub enum GraphicsError {
     #[error("create surface error")]
-    CreateSurfaceError(#[from] wgpu::CreateSurfaceError),
+    CreateSurfaceError(#[from] gpu::CreateSurfaceError),
     #[error("request device error")]
-    RequestDeviceError(#[from] wgpu::RequestDeviceError),
+    RequestDeviceError(#[from] gpu::RequestDeviceError),
 }
 
 
 
 // NOTE: Window must be dropped after the other surface fields.
 pub struct WindowGraphics<'w> {
-    surface: wgpu::Surface<'w>,
-    config: wgpu::SurfaceConfiguration,
+    surface: gpu::Surface<'w>,
+    config: gpu::SurfaceConfiguration,
 }
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
     pub async fn from_window<W>(
         window: W,
-    ) -> Result<(Self, wgpu::Device, wgpu::Queue, wgpu::TextureFormat)>
+    ) -> Result<(Self, gpu::Device, gpu::Queue, gpu::TextureFormat)>
     where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
         let backends = {
@@ -43,15 +42,15 @@ impl<'w> WindowGraphics<'w> {
             {
                 #[cfg(target_os = "linux")]
                 {
-                    wgpu::Backends::GL
+                    gpu::Backends::GL
                 }
                 #[cfg(not(target_os = "linux"))]
-                wgpu::Backends::PRIMARY
+                gpu::Backends::PRIMARY
             }
             #[cfg(target_arch = "wasm32")]
-            wgpu::Backends::GL
+            gpu::Backends::GL
         };
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = gpu::Instance::new(&gpu::InstanceDescriptor {
             backends,
             ..Default::default()
         });
@@ -59,8 +58,8 @@ impl<'w> WindowGraphics<'w> {
         let surface = instance.create_surface(window)?;
 
         let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
+            .request_adapter(&gpu::RequestAdapterOptions {
+                power_preference: gpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -69,16 +68,16 @@ impl<'w> WindowGraphics<'w> {
 
         let (device, queue) = adapter
             .request_device(
-                &wgpu::DeviceDescriptor {
+                &gpu::DeviceDescriptor {
                     label: None,
-                    required_features: wgpu::Features::empty(),
+                    required_features: gpu::Features::empty(),
                     required_limits: if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
+                        gpu::Limits::downlevel_webgl2_defaults()
                     } else {
-                        wgpu::Limits::default()
+                        gpu::Limits::default()
                     },
                     memory_hints: Default::default(),
-                    trace: wgpu::Trace::Off,
+                    trace: gpu::Trace::Off,
                 },
             )
             .await?;
@@ -90,8 +89,8 @@ impl<'w> WindowGraphics<'w> {
             .copied()
             .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        let config = gpu::SurfaceConfiguration {
+            usage: gpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: 0,
             height: 0,
@@ -115,15 +114,15 @@ impl<'w> WindowGraphics<'w> {
 
 // Getters.
 impl<'w> WindowGraphics<'w> {
-    pub fn surface(&self) -> &wgpu::Surface {
+    pub fn surface(&self) -> &gpu::Surface {
         &self.surface
     }
 
-    pub fn surface_config(&self) -> &wgpu::SurfaceConfiguration {
+    pub fn surface_config(&self) -> &gpu::SurfaceConfiguration {
         &self.config
     }
 
-    pub fn surface_config_mut(&mut self) -> &mut wgpu::SurfaceConfiguration {
+    pub fn surface_config_mut(&mut self) -> &mut gpu::SurfaceConfiguration {
         &mut self.config
     }
 
@@ -133,11 +132,11 @@ impl<'w> WindowGraphics<'w> {
 }
 
 impl<'w> WindowGraphics<'w> {
-    pub fn get_current_texture(&self) -> wgpu::SurfaceTexture {
+    pub fn get_current_texture(&self) -> gpu::SurfaceTexture {
         self.surface.get_current_texture().unwrap()
     }
 
-    pub fn resize(&mut self, device: &wgpu::Device, new_size: Vec2) {
+    pub fn resize(&mut self, device: &gpu::Device, new_size: Vec2) {
         self.config.width = new_size.x as _;
         self.config.height = new_size.y as _;
         self.surface.configure(device, &self.config);

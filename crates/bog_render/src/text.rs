@@ -28,8 +28,8 @@ impl TextManager {
     pub fn prepare(
         &mut self,
         pipeline: &mut TextPipeline,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        device: &gpu::Device,
+        queue: &gpu::Queue,
         texts: &[Text],
         // transform: Mat4,
     ) {
@@ -38,7 +38,7 @@ impl TextManager {
                 renderer: glyphon::TextRenderer::new(
                     &mut pipeline.atlas,
                     device,
-                    wgpu::MultisampleState::default(),
+                    gpu::MultisampleState::default(),
                     None,
                 ),
             });
@@ -91,7 +91,7 @@ impl TextManager {
         pipeline: &'a TextPipeline,
         layer: usize,
         bounds: Rect<u32>,
-        render_pass: &mut wgpu::RenderPass<'a>,
+        render_pass: &mut gpu::RenderPass<'a>,
     ) {
         if let Some(layer) = self.layers.get(layer) {
             render_pass.set_scissor_rect(bounds.x, bounds.y, bounds.w, bounds.h);
@@ -119,7 +119,7 @@ pub struct TextPipeline {
 }
 
 impl TextPipeline {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, format: wgpu::TextureFormat) -> Self {
+    pub fn new(device: &gpu::Device, queue: &gpu::Queue, format: gpu::TextureFormat) -> Self {
         let cache = glyphon::Cache::new(device);
 
         Self {

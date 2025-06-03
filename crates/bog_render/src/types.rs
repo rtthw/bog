@@ -101,7 +101,7 @@ pub enum TextSlant {
 
 
 
-/// A renderable rectangle that can have a [`Border`] and [`Shadow`].
+/// A renderable rectangle that can have a fill [`Color`], [`Border`], and [`Shadow`].
 #[derive(Clone, Copy, Debug)]
 pub struct Quad {
     /// The size and position of the quad.
@@ -163,7 +163,8 @@ impl Border {
         radius: [0.0; 4],
     };
 
-    /// Create a new border with the given color, width, and radius on all 4 corners.
+    /// Create a new border with the given [`Color`], width, and radius on all 4 corners.
+    #[inline]
     pub const fn new(color: Color, width: f32, radius: f32) -> Self {
         Self {
             color,
@@ -200,7 +201,8 @@ impl Shadow {
         blur_radius: 0.0,
     };
 
-    /// Create a new shadow with the given color, offset, and blur radius.
+    /// Create a new shadow with the given [`Color`], offset, and blur radius.
+    #[inline]
     pub const fn new(color: Color, offset: Vec2, blur_radius: f32) -> Self {
         Self {
             color,

@@ -4,7 +4,7 @@
 
 use bog_event::{KeyCode, WheelMovement, WindowEvent};
 use bog_math::{vec2, Vec2};
-use bog_render::{LayerStack, Renderer, Viewport};
+use bog_render::{gpu, LayerStack, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
 };
@@ -102,7 +102,7 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 let mut layer_stack = LayerStack::new();
                 self.app.render(AppContext { window, renderer }, &mut layer_stack);
                 let texture = graphics.get_current_texture();
-                let target = texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
+                let target = texture.texture.create_view(&gpu::TextureViewDescriptor::default());
                 renderer.render(&mut layer_stack, &target, &viewport);
                 texture.present();
             }

@@ -2,6 +2,8 @@
 
 
 
+pub extern crate wgpu as gpu;
+
 pub mod buffer;
 mod layer;
 pub mod primitive;
@@ -21,9 +23,9 @@ use bog_math::{vec2, Mat4, Rect, Vec2};
 
 
 pub struct Renderer {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    staging_belt: wgpu::util::StagingBelt,
+    device: gpu::Device,
+    queue: gpu::Queue,
+    staging_belt: gpu::util::StagingBelt,
 
     quad_pipeline: QuadPipeline,
     quad_manager: QuadManager,
@@ -33,14 +35,14 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(device: wgpu::Device, queue: wgpu::Queue, format: wgpu::TextureFormat) -> Self {
+    pub fn new(device: gpu::Device, queue: gpu::Queue, format: gpu::TextureFormat) -> Self {
         let quad_pipeline = QuadPipeline::new(&device, format);
         let text_pipeline = TextPipeline::new(&device, &queue, format);
 
         Self {
             device,
             queue,
-            staging_belt: wgpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
+            staging_belt: gpu::util::StagingBelt::new(buffer::MAX_WRITE_SIZE as u64),
 
             quad_pipeline,
             quad_manager: QuadManager::new(),
@@ -53,14 +55,14 @@ impl Renderer {
     pub fn render(
         &mut self,
         layer_stack: &mut LayerStack,
-        target: &wgpu::TextureView,
+        target: &gpu::TextureView,
         viewport: &Viewport,
-    ) -> wgpu::SubmissionIndex {
+    ) -> gpu::SubmissionIndex {
         // 1. Prepare.
         // let start = std::time::Instant::now();
         let scale_factor = viewport.scale_factor as f32;
         let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor {
+            &gpu::CommandEncoderDescriptor {
                 label: Some("bog::encoder"),
             },
         );
@@ -89,14 +91,14 @@ impl Renderer {
 
         // 2. Render.
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&gpu::RenderPassDescriptor {
                 label: Some("bog::render_pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(gpu::RenderPassColorAttachment {
                     view: target,
                     resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
+                    ops: gpu::Operations {
+                        load: gpu::LoadOp::Clear(gpu::Color::BLACK),
+                        store: gpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
@@ -158,7 +160,7 @@ impl Renderer {
         submission
     }
 
-    pub fn device(&self) -> &wgpu::Device {
+    pub fn device(&self) -> &gpu::Device {
         &self.device
     }
 

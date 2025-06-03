@@ -12,9 +12,9 @@ use crate::Viewport;
 pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
     fn prepare(
         &self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        format: wgpu::TextureFormat,
+        device: &gpu::Device,
+        queue: &gpu::Queue,
+        format: gpu::TextureFormat,
         storage: &mut UnitMap,
         bounds: &Rect,
         viewport: &Viewport,
@@ -22,9 +22,9 @@ pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
 
     fn render(
         &self,
-        encoder: &mut wgpu::CommandEncoder,
+        encoder: &mut gpu::CommandEncoder,
         storage: &UnitMap,
-        target: &wgpu::TextureView,
+        target: &gpu::TextureView,
         clip_bounds: &Rect<u32>,
     );
 }
