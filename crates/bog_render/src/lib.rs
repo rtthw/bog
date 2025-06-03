@@ -252,11 +252,10 @@ impl<'a> LayerStack<'a> {
 
     pub fn fill_text(&mut self, text: Text<'a>) {
         let (layer, transform) = self.current_mut();
-        let rect = Rect::new(text.pos, text.bounds) * transform;
+        let bounds = text.bounds * transform;
 
         layer.texts.push(Text {
-            pos: rect.position(),
-            bounds: rect.size(),
+            bounds,
             ..text
         });
     }

@@ -91,8 +91,7 @@ impl AppHandler for App {
 
                 layers.fill_text(Text {
                     content: (*text).into(),
-                    pos: rect.position(),
-                    bounds: rect.size(),
+                    bounds: rect,
                     size: 19.0,
                     color: Color {
                         r: style.foreground.r,

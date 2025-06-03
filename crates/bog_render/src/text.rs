@@ -59,14 +59,14 @@ impl TextManager {
 
             glyphon::TextArea {
                 buffer: &entry.buffer,
-                left: t.pos.x,
-                top: t.pos.y,
+                left: t.bounds.x,
+                top: t.bounds.y,
                 scale: 1.0, // TODO: Scaling?
                 bounds: glyphon::TextBounds {
-                    left: t.pos.x as i32,
-                    top: t.pos.y as i32,
-                    right: (t.pos.x + entry.min_bounds.x) as i32,
-                    bottom: (t.pos.y + entry.min_bounds.y) as i32,
+                    left: t.bounds.x as i32,
+                    top: t.bounds.y as i32,
+                    right: (t.bounds.x + entry.min_bounds.x) as i32,
+                    bottom: (t.bounds.y + entry.min_bounds.y) as i32,
                 },
                 default_color: glyphon::Color::rgba(r, g, b, a),
                 custom_glyphs: &[],
@@ -144,6 +144,8 @@ pub(crate) struct TextCacheKey<'a> {
     line_height: f32, // 0.0 == "use font line height"
     font_family: FontFamily<'a>,
     text_slant: TextSlant,
+    // NOTE: If the position of a piece of text changes, but it's size doesn't, then the rendering
+    //       remains unaffected. That's why we don't store position here.
     bounds: Vec2,
 }
 
@@ -169,7 +171,7 @@ impl<'a> From<&'a Text<'a>> for TextCacheKey<'a> {
             line_height: value.line_height,
             font_family: value.font_family,
             text_slant: value.text_slant,
-            bounds: value.bounds,
+            bounds: value.bounds.size(),
         }
     }
 }

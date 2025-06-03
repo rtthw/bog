@@ -16,27 +16,25 @@ use bog_math::{Rect, Vec2};
 #[derive(Clone, Debug)]
 pub struct Text<'a> {
     pub content: TextContent<'a>,
-    pub pos: Vec2,
+    pub bounds: Rect,
     pub size: f32,
     pub color: Color,
     /// Set this to `0.0` if you just want to use the font's default line height.
     pub line_height: f32,
     pub font_family: FontFamily<'static>,
     pub text_slant: TextSlant,
-    pub bounds: Vec2,
 }
 
 impl Default for Text<'_> {
     fn default() -> Self {
         Self {
             content: "".into(),
-            pos: Vec2::ZERO,
+            bounds: Rect::INFINITE,
             size: 20.0,
             color: Color::default(),
             line_height: 20.0 * 1.2,
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
-            bounds: Vec2::INFINITY,
         }
     }
 }
