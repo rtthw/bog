@@ -25,10 +25,7 @@ bog_math.workspace = true
 bog_render.workspace = true
 bog_window.workspace = true
 
-bytemuck = { version = "1", features = ["derive"] }
-glutin = "0.30"
 pollster = "0.4"
-raw-window-handle = "0.5"
 thiserror = "2"
 
 [workspace.dependencies]

@@ -4,9 +4,6 @@
 
 
 
-
-use std::ops::Deref;
-
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
 
@@ -57,7 +54,7 @@ impl<'a> From<String> for TextContent<'a> {
     }
 }
 
-impl<'a> Deref for TextContent<'a> {
+impl<'a> core::ops::Deref for TextContent<'a> {
     type Target = str;
     fn deref(&self) -> &Self::Target {
         match self {
