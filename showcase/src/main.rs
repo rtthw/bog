@@ -57,7 +57,7 @@ struct App {
 impl AppHandler for App {
     fn startup(&mut self, cx: AppContext) {
         self.cell_bounds = cx.renderer.measure_text(&Text {
-            content: "█",
+            content: "█".into(),
             size: 19.0,
             line_height: 0.0,
             font_family: FontFamily::Monospace,
@@ -90,7 +90,7 @@ impl AppHandler for App {
                 }
 
                 layers.fill_text(Text {
-                    content: text,
+                    content: (*text).into(),
                     pos: rect.position(),
                     bounds: rect.size(),
                     size: 19.0,

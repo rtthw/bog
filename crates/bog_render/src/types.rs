@@ -4,6 +4,9 @@
 
 
 
+
+use std::ops::Deref;
+
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
 
@@ -12,7 +15,7 @@ use bog_math::{Rect, Vec2};
 /// A renderable piece of text.
 #[derive(Clone, Debug)]
 pub struct Text<'a> {
-    pub content: &'a str,
+    pub content: TextContent<'a>,
     pub pos: Vec2,
     pub size: f32,
     pub color: Color,
@@ -26,7 +29,7 @@ pub struct Text<'a> {
 impl Default for Text<'_> {
     fn default() -> Self {
         Self {
-            content: "",
+            content: "".into(),
             pos: Vec2::ZERO,
             size: 20.0,
             color: Color::default(),
@@ -34,6 +37,34 @@ impl Default for Text<'_> {
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
             bounds: Vec2::INFINITY,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum TextContent<'a> {
+    Owned(String),
+    Borrowed(&'a str),
+}
+
+impl<'a> From<&'a str> for TextContent<'a> {
+    fn from(value: &'a str) -> Self {
+        Self::Borrowed(value)
+    }
+}
+
+impl<'a> From<String> for TextContent<'a> {
+    fn from(value: String) -> Self {
+        Self::Owned(value)
+    }
+}
+
+impl<'a> Deref for TextContent<'a> {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Owned(s) => &s,
+            Self::Borrowed(s) => s,
         }
     }
 }
