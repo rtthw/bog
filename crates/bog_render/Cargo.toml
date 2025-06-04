@@ -11,6 +11,9 @@ bog_math.workspace = true
 bytemuck = { version = "1", features = ["derive"] }
 glyphon = "0.9"
 guillotiere = "0.6"
-image = { version = "0.25", default-features = false }
+image = { version = "0.25", default-features = false, features = [
+    "jpeg",
+    "png",
+] }
 rustc-hash = "2"
 wgpu = "25"

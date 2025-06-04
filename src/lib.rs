@@ -66,9 +66,13 @@ pub mod prelude {
     pub use bog_render::{
         Border,
         FontFamily,
+        Image,
+        ImageFilterMethod,
+        ImageHandle,
         Layer,
         LayerStack,
         Quad,
+        RasterImage,
         Renderer,
         Shadow,
         Text,

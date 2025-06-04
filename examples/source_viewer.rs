@@ -54,12 +54,18 @@ impl AppHandler for App {
 
     fn render(&mut self, cx: AppContext, layers: &mut LayerStack) {
         layers.start_layer(cx.renderer.viewport_rect());
+        // layers.fill_raster_image(
+        //     ImageHandle::from_path("...").into(),
+        //     cx.renderer.viewport_rect(),
+        // );
         layers.fill_quad(Quad {
             bounds: cx.renderer.viewport_rect(),
             bg_color: Color::new(43, 43, 53, 255),
             ..Default::default()
         });
+        layers.end_layer();
 
+        layers.start_layer(cx.renderer.viewport_rect());
         let height = cx.renderer.viewport_rect().h / self.cell_bounds.y;
         let mut y_offset = 0.0;
         for line_ranges in self.lines.iter().skip(self.scroll_offset).take(height.ceil() as _) {

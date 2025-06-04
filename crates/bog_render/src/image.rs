@@ -1073,6 +1073,7 @@ impl AtlasLayer {
     // }
 }
 
+#[derive(Debug)]
 enum AtlasEntry {
     Contiguous(Allocation),
     Fragmented {
@@ -1090,11 +1091,13 @@ impl AtlasEntry {
     }
 }
 
+#[derive(Debug)]
 struct Fragment {
     position: (u32, u32),
     allocation: Allocation,
 }
 
+#[derive(Debug)]
 enum Allocation {
     Partial {
         layer: usize,
@@ -1169,6 +1172,7 @@ impl Allocator {
     // }
 }
 
+#[derive(Debug)]
 struct Region {
     allocation: guillotiere::Allocation,
 }
@@ -1283,6 +1287,7 @@ impl RasterCache {
 
 
 
+#[derive(Debug)]
 enum RasterImageMemory {
     Host(::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>),
     Device(AtlasEntry),
@@ -1314,7 +1319,7 @@ fn load_image(
 {
     let (width, height, pixels) = match handle {
         ImageHandle::Path(_, path) => {
-            let image = ::image::open(path)?;
+            let image = ::image::open(path).unwrap();
             let rgba = image.into_rgba8();
 
             (

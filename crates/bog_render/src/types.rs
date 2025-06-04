@@ -228,6 +228,18 @@ pub struct RasterImage {
     pub snap: bool,
 }
 
+impl From<ImageHandle> for RasterImage {
+    fn from(value: ImageHandle) -> Self {
+        Self {
+            handle: value,
+            filter_method: ImageFilterMethod::default(),
+            rotation: 0.0,
+            opacity: 1.0,
+            snap: true,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImageHandle {
     Path(u64, PathBuf),
