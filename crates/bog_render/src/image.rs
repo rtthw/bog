@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use bog_math::{Mat4, Vec2};
+use bog_math::{Mat4, Rect, Vec2};
 
 use crate::buffer::Buffer;
 
@@ -50,10 +50,10 @@ impl ImageManager {
                             image.snap,
                             atlas_entry,
                             match image.filter_method {
-                                crate::core::image::FilterMethod::Nearest => {
+                                ImageFilterMethod::Nearest => {
                                     nearest_instances
                                 }
-                                crate::core::image::FilterMethod::Linear => {
+                                ImageFilterMethod::Linear => {
                                     linear_instances
                                 }
                             },
@@ -69,7 +69,7 @@ impl ImageManager {
         }
 
         if self.layers.len() <= self.prepare_layer {
-            self.layers.push(Layer::new(
+            self.layers.push(ImageLayer::new(
                 device,
                 &pipeline.constant_layout,
                 &pipeline.nearest_sampler,
@@ -85,7 +85,7 @@ impl ImageManager {
             belt,
             nearest_instances,
             linear_instances,
-            transformation,
+            transform,
             scale,
         );
 
@@ -97,7 +97,7 @@ impl ImageManager {
         pipeline: &'a ImagePipeline,
         cache: &'a ImageCache,
         layer: usize,
-        bounds: Rectangle<u32>,
+        bounds: Rect<u32>,
         render_pass: &mut wgpu::RenderPass<'a>,
     ) {
         if let Some(layer) = self.layers.get(layer) {
@@ -106,8 +106,8 @@ impl ImageManager {
             render_pass.set_scissor_rect(
                 bounds.x,
                 bounds.y,
-                bounds.width,
-                bounds.height,
+                bounds.w,
+                bounds.h,
             );
 
             render_pass.set_bind_group(1, cache.bind_group(), &[]);
@@ -474,8 +474,8 @@ impl ImagePipeline {
         }
     }
 
-    pub fn create_cache(&self, device: &wgpu::Device) -> ImageCache {
-        ImageCache::new(device, self.texture_layout.clone())
+    pub fn create_cache(&self, device: &wgpu::Device, backend: wgpu::Backend) -> ImageCache {
+        ImageCache::new(device, backend, self.texture_layout.clone())
     }
 }
 
@@ -489,10 +489,11 @@ pub struct ImageCache {
 impl ImageCache {
     pub fn new(
         device: &wgpu::Device,
+        backend: wgpu::Backend,
         layout: Arc<wgpu::BindGroupLayout>,
     ) -> Self {
         Self {
-            atlas: Atlas::new(device, layout),
+            atlas: ImageAtlas::new(device, backend, layout),
             raster: RasterCache::default(),
         }
     }
@@ -520,5 +521,586 @@ impl ImageCache {
 
     pub fn trim(&mut self) {
         self.raster.trim(&mut self.atlas);
+    }
+}
+
+
+
+// ---
+
+
+
+const SIZE: u32 = 2048;
+
+struct ImageAtlas {
+    backend: wgpu::Backend,
+    texture: wgpu::Texture,
+    texture_view: wgpu::TextureView,
+    texture_bind_group: wgpu::BindGroup,
+    texture_layout: Arc<wgpu::BindGroupLayout>,
+    layers: Vec<AtlasLayer>,
+}
+
+impl ImageAtlas {
+    fn new(
+        device: &wgpu::Device,
+        backend: wgpu::Backend,
+        texture_layout: Arc<wgpu::BindGroupLayout>,
+    ) -> Self {
+        let layers = match backend {
+            // NOTE: On the GL backend we start with 2 layers, to help wgpu figure
+            //       out that this texture is `GL_TEXTURE_2D_ARRAY` rather than `GL_TEXTURE_2D`
+            // https://github.com/gfx-rs/wgpu/blob/004e3efe84a320d9331371ed31fa50baa2414911/wgpu-hal/src/gles/mod.rs#L371
+            wgpu::Backend::Gl => vec![AtlasLayer::Empty, AtlasLayer::Empty],
+            _ => vec![AtlasLayer::Empty],
+        };
+
+        let extent = wgpu::Extent3d {
+            width: SIZE,
+            height: SIZE,
+            depth_or_array_layers: layers.len() as u32,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("iced_wgpu::image texture atlas"),
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: if color::GAMMA_CORRECTION {
+                wgpu::TextureFormat::Rgba8UnormSrgb
+            } else {
+                wgpu::TextureFormat::Rgba8Unorm
+            },
+            usage: wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            dimension: Some(wgpu::TextureViewDimension::D2Array),
+            ..Default::default()
+        });
+
+        let texture_bind_group =
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("iced_wgpu::image texture atlas bind group"),
+                layout: &texture_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                }],
+            });
+
+        ImageAtlas {
+            backend,
+            texture,
+            texture_view,
+            texture_bind_group,
+            texture_layout,
+            layers,
+        }
+    }
+
+    fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.texture_bind_group
+    }
+
+    fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
+    fn upload(
+        &mut self,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        width: u32,
+        height: u32,
+        data: &[u8],
+    ) -> Option<AtlasEntry> {
+        let entry = {
+            let current_size = self.layers.len();
+            let entry = self.allocate(width, height)?;
+
+            // We grow the internal texture after allocating if necessary
+            let new_layers = self.layers.len() - current_size;
+            self.grow(new_layers, device, encoder);
+
+            entry
+        };
+
+        // println!("Allocated atlas entry: {entry:?}");
+
+        // NOTE: It is a webgpu requirement that:
+        //          BufferCopyView.layout.bytes_per_row % wgpu::COPY_BYTES_PER_ROW_ALIGNMENT == 0
+        //       So we calculate padded_width by rounding width up to the next multiple of
+        //       wgpu::COPY_BYTES_PER_ROW_ALIGNMENT.
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+        let padding = (align - (4 * width) % align) % align;
+        let padded_width = (4 * width + padding) as usize;
+        let padded_data_size = padded_width * height as usize;
+
+        let mut padded_data = vec![0; padded_data_size];
+
+        for row in 0..height as usize {
+            let offset = row * padded_width;
+
+            padded_data[offset..offset + 4 * width as usize].copy_from_slice(
+                &data[row * 4 * width as usize..(row + 1) * 4 * width as usize],
+            );
+        }
+
+        match &entry {
+            AtlasEntry::Contiguous(allocation) => {
+                self.upload_allocation(
+                    &padded_data,
+                    width,
+                    height,
+                    padding,
+                    0,
+                    allocation,
+                    device,
+                    encoder,
+                );
+            }
+            AtlasEntry::Fragmented { fragments, .. } => {
+                for fragment in fragments {
+                    let (x, y) = fragment.position;
+                    let offset = (y * padded_width as u32 + 4 * x) as usize;
+
+                    self.upload_allocation(
+                        &padded_data,
+                        width,
+                        height,
+                        padding,
+                        offset,
+                        &fragment.allocation,
+                        device,
+                        encoder,
+                    );
+                }
+            }
+        }
+
+        Some(entry)
+    }
+
+    fn remove(&mut self, entry: &AtlasEntry) {
+        // println!("Removing atlas entry: {entry:?}");
+
+        match entry {
+            AtlasEntry::Contiguous(allocation) => {
+                self.deallocate(allocation);
+            }
+            AtlasEntry::Fragmented { fragments, .. } => {
+                for fragment in fragments {
+                    self.deallocate(&fragment.allocation);
+                }
+            }
+        }
+    }
+
+    fn allocate(&mut self, width: u32, height: u32) -> Option<AtlasEntry> {
+        // Allocate one layer if texture fits perfectly
+        if width == SIZE && height == SIZE {
+            let mut empty_layers = self
+                .layers
+                .iter_mut()
+                .enumerate()
+                .filter(|(_, layer)| layer.is_empty());
+
+            if let Some((i, layer)) = empty_layers.next() {
+                *layer = AtlasLayer::Full;
+
+                return Some(AtlasEntry::Contiguous(Allocation::Full { layer: i }));
+            }
+
+            self.layers.push(AtlasLayer::Full);
+
+            return Some(AtlasEntry::Contiguous(Allocation::Full {
+                layer: self.layers.len() - 1,
+            }));
+        }
+
+        // Split big textures across multiple layers
+        if width > SIZE || height > SIZE {
+            let mut fragments = Vec::new();
+            let mut y = 0;
+
+            while y < height {
+                let height = std::cmp::min(height - y, SIZE);
+                let mut x = 0;
+
+                while x < width {
+                    let width = std::cmp::min(width - x, SIZE);
+
+                    let allocation = self.allocate(width, height)?;
+
+                    if let AtlasEntry::Contiguous(allocation) = allocation {
+                        fragments.push(Fragment {
+                            position: (x, y),
+                            allocation,
+                        });
+                    }
+
+                    x += width;
+                }
+
+                y += height;
+            }
+
+            return Some(AtlasEntry::Fragmented {
+                size: (width, height),
+                fragments,
+            });
+        }
+
+        // Try allocating on an existing layer
+        for (i, layer) in self.layers.iter_mut().enumerate() {
+            match layer {
+                AtlasLayer::Empty => {
+                    let mut allocator = Allocator::new(SIZE);
+
+                    if let Some(region) = allocator.allocate(width, height) {
+                        *layer = AtlasLayer::Busy(allocator);
+
+                        return Some(AtlasEntry::Contiguous(Allocation::Partial {
+                            region,
+                            layer: i,
+                        }));
+                    }
+                }
+                AtlasLayer::Busy(allocator) => {
+                    if let Some(region) = allocator.allocate(width, height) {
+                        return Some(AtlasEntry::Contiguous(Allocation::Partial {
+                            region,
+                            layer: i,
+                        }));
+                    }
+                }
+                AtlasLayer::Full => {}
+            }
+        }
+
+        // Create new layer with atlas allocator
+        let mut allocator = Allocator::new(SIZE);
+
+        if let Some(region) = allocator.allocate(width, height) {
+            self.layers.push(AtlasLayer::Busy(allocator));
+
+            return Some(AtlasEntry::Contiguous(Allocation::Partial {
+                region,
+                layer: self.layers.len() - 1,
+            }));
+        }
+
+        // We ran out of memory (?)
+        None
+    }
+
+    fn deallocate(&mut self, allocation: &Allocation) {
+        // println!("Deallocating atlas: {allocation:?}");
+
+        match allocation {
+            Allocation::Full { layer } => {
+                self.layers[*layer] = AtlasLayer::Empty;
+            }
+            Allocation::Partial { layer, region } => {
+                let layer = &mut self.layers[*layer];
+
+                if let AtlasLayer::Busy(allocator) = layer {
+                    allocator.deallocate(region);
+
+                    if allocator.is_empty() {
+                        *layer = AtlasLayer::Empty;
+                    }
+                }
+            }
+        }
+    }
+
+    fn upload_allocation(
+        &mut self,
+        data: &[u8],
+        image_width: u32,
+        image_height: u32,
+        padding: u32,
+        offset: usize,
+        allocation: &Allocation,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+    ) {
+        use wgpu::util::DeviceExt;
+
+        let (x, y) = allocation.position();
+        let (width, height) = allocation.size();
+        let layer = allocation.layer();
+
+        let extent = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("bog::upload_buffer::image"),
+            contents: data,
+            usage: wgpu::BufferUsages::COPY_SRC,
+        });
+
+        encoder.copy_buffer_to_texture(
+            wgpu::TexelCopyBufferInfo {
+                buffer: &buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: offset as u64,
+                    bytes_per_row: Some(4 * image_width + padding),
+                    rows_per_image: Some(image_height),
+                },
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d {
+                    x,
+                    y,
+                    z: layer as u32,
+                },
+                aspect: wgpu::TextureAspect::default(),
+            },
+            extent,
+        );
+    }
+
+    fn grow(
+        &mut self,
+        amount: usize,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+    ) {
+        if amount == 0 {
+            return;
+        }
+
+        // On the GL backend if layers.len() == 6 we need to help wgpu figure out that this texture
+        // is still a `GL_TEXTURE_2D_ARRAY` rather than `GL_TEXTURE_CUBE_MAP`.
+        //
+        // This will over-allocate some unused memory on GL, but it's better than not being able to
+        // grow the atlas past a depth of 6.
+        //
+        // See: https://github.com/gfx-rs/wgpu/blob/004e3efe84a320d9331371ed31fa50baa2414911/wgpu-hal/src/gles/mod.rs#L371
+        let depth_or_array_layers = match self.backend {
+            wgpu::Backend::Gl if self.layers.len() == 6 => 7,
+            _ => self.layers.len() as u32,
+        };
+
+        let new_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("bog::texture_atlas::image"),
+            size: wgpu::Extent3d {
+                width: SIZE,
+                height: SIZE,
+                depth_or_array_layers,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: if color::GAMMA_CORRECTION {
+                wgpu::TextureFormat::Rgba8UnormSrgb
+            } else {
+                wgpu::TextureFormat::Rgba8Unorm
+            },
+            usage: wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let amount_to_copy = self.layers.len() - amount;
+
+        for (i, layer) in self.layers.iter_mut().take(amount_to_copy).enumerate() {
+            if layer.is_empty() {
+                continue;
+            }
+
+            encoder.copy_texture_to_texture(
+                wgpu::TexelCopyTextureInfo {
+                    texture: &self.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i as u32,
+                    },
+                    aspect: wgpu::TextureAspect::default(),
+                },
+                wgpu::TexelCopyTextureInfo {
+                    texture: &new_texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d {
+                        x: 0,
+                        y: 0,
+                        z: i as u32,
+                    },
+                    aspect: wgpu::TextureAspect::default(),
+                },
+                wgpu::Extent3d {
+                    width: SIZE,
+                    height: SIZE,
+                    depth_or_array_layers: 1,
+                },
+            );
+        }
+
+        self.texture = new_texture;
+        self.texture_view = self.texture.create_view(&wgpu::TextureViewDescriptor {
+            dimension: Some(wgpu::TextureViewDimension::D2Array),
+            ..Default::default()
+        });
+        self.texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bog_texture_atlas_bind_group::image"),
+            layout: &self.texture_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(
+                    &self.texture_view,
+                ),
+            }],
+        });
+    }
+}
+
+
+
+enum AtlasLayer {
+    Empty,
+    Busy(Allocator),
+    Full,
+}
+
+impl AtlasLayer {
+    fn is_empty(&self) -> bool {
+        matches!(self, AtlasLayer::Empty)
+    }
+
+    fn allocations(&self) -> usize {
+        match self {
+            AtlasLayer::Empty => 0,
+            AtlasLayer::Busy(allocator) => allocator.allocations(),
+            AtlasLayer::Full => 1,
+        }
+    }
+}
+
+enum AtlasEntry {
+    Contiguous(Allocation),
+    Fragmented {
+        size: (u32, u32),
+        fragments: Vec<Fragment>,
+    },
+}
+
+impl AtlasEntry {
+    fn size(&self) -> (u32, u32) {
+        match self {
+            AtlasEntry::Contiguous(allocation) => allocation.size(),
+            AtlasEntry::Fragmented { size, .. } => *size,
+        }
+    }
+}
+
+struct Fragment {
+    position: (u32, u32),
+    allocation: Allocation,
+}
+
+enum Allocation {
+    Partial {
+        layer: usize,
+        region: Region,
+    },
+    Full {
+        layer: usize,
+    },
+}
+
+impl Allocation {
+    fn position(&self) -> (u32, u32) {
+        match self {
+            Allocation::Partial { region, .. } => region.position(),
+            Allocation::Full { .. } => (0, 0),
+        }
+    }
+
+    fn size(&self) -> (u32, u32) {
+        match self {
+            Allocation::Partial { region, .. } => region.size(),
+            Allocation::Full { .. } => (SIZE, SIZE),
+        }
+    }
+
+    fn layer(&self) -> usize {
+        match self {
+            Allocation::Partial { layer, .. } => *layer,
+            Allocation::Full { layer } => *layer,
+        }
+    }
+}
+
+struct Allocator {
+    raw: guillotiere::AtlasAllocator,
+    allocations: usize,
+}
+
+impl Allocator {
+    fn new(size: u32) -> Allocator {
+        let raw = guillotiere::AtlasAllocator::new(
+            guillotiere::Size::new(size as i32, size as i32),
+        );
+
+        Allocator {
+            raw,
+            allocations: 0,
+        }
+    }
+
+    fn allocate(&mut self, width: u32, height: u32) -> Option<Region> {
+        let allocation =
+            self.raw.allocate(guillotiere::Size::new(width as i32, height as i32))?;
+
+        self.allocations += 1;
+
+        Some(Region { allocation })
+    }
+
+    fn deallocate(&mut self, region: &Region) {
+        self.raw.deallocate(region.allocation.id);
+
+        self.allocations = self.allocations.saturating_sub(1);
+    }
+
+    fn is_empty(&self) -> bool {
+        self.allocations == 0
+    }
+
+    fn allocations(&self) -> usize {
+        self.allocations
+    }
+}
+
+struct Region {
+    allocation: guillotiere::Allocation,
+}
+
+impl Region {
+    fn position(&self) -> (u32, u32) {
+        let rectangle = &self.allocation.rectangle;
+
+        (rectangle.min.x as u32, rectangle.min.y as u32)
+    }
+
+    fn size(&self) -> (u32, u32) {
+        let size = self.allocation.rectangle.size();
+
+        (size.width as u32, size.height as u32)
     }
 }

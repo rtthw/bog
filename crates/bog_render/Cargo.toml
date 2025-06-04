@@ -10,5 +10,6 @@ bog_math.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
 glyphon = "0.9"
+guillotiere = "0.6"
 rustc-hash = "2"
 wgpu = "25"
