@@ -5,6 +5,7 @@
 pub extern crate wgpu as gpu;
 
 pub mod buffer;
+mod image;
 mod layer;
 pub mod primitive;
 mod quad;
@@ -13,6 +14,7 @@ mod types;
 mod viewport;
 
 pub use layer::*;
+use image::*;
 use quad::*;
 use text::*;
 pub use types::*;
@@ -32,12 +34,16 @@ pub struct Renderer {
 
     text_pipeline: TextPipeline,
     text_manager: TextManager,
+
+    image_pipeline: ImagePipeline,
+    image_manager: ImageManager,
 }
 
 impl Renderer {
     pub fn new(device: gpu::Device, queue: gpu::Queue, format: gpu::TextureFormat) -> Self {
         let quad_pipeline = QuadPipeline::new(&device, format);
         let text_pipeline = TextPipeline::new(&device, &queue, format);
+        let image_pipeline = ImagePipeline::new(&device, format);
 
         Self {
             device,
@@ -49,6 +55,9 @@ impl Renderer {
 
             text_pipeline,
             text_manager: TextManager::new(),
+
+            image_pipeline,
+            image_manager: ImageManager::new(),
         }
     }
 
