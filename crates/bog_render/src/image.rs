@@ -123,7 +123,7 @@ impl ImageManager {
 
 
 
-struct ImageLayer {
+pub struct ImageLayer {
     uniforms: wgpu::Buffer,
     nearest: Data,
     linear: Data,
@@ -404,6 +404,7 @@ struct Uniforms {
 #[derive(Debug, Clone)]
 pub struct ImagePipeline {
     raw: wgpu::RenderPipeline,
+    backend: wgpu::Backend,
     nearest_sampler: wgpu::Sampler,
     linear_sampler: wgpu::Sampler,
     texture_layout: Arc<wgpu::BindGroupLayout>,
@@ -414,6 +415,7 @@ impl ImagePipeline {
     pub fn new(
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
+        backend: wgpu::Backend,
     ) -> Self {
         let nearest_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -562,6 +564,7 @@ impl ImagePipeline {
 
         ImagePipeline {
             raw: pipeline,
+            backend,
             nearest_sampler,
             linear_sampler,
             texture_layout: Arc::new(texture_layout),
@@ -569,8 +572,8 @@ impl ImagePipeline {
         }
     }
 
-    pub fn create_cache(&self, device: &wgpu::Device, backend: wgpu::Backend) -> ImageCache {
-        ImageCache::new(device, backend, self.texture_layout.clone())
+    pub fn create_cache(&self, device: &wgpu::Device) -> ImageCache {
+        ImageCache::new(device, self.backend, self.texture_layout.clone())
     }
 }
 
@@ -605,7 +608,7 @@ impl ImageCache {
         self.raster.load(handle).dimensions()
     }
 
-    pub fn upload_raster(
+    fn upload_raster(
         &mut self,
         device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,

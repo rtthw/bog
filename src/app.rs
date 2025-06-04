@@ -67,10 +67,10 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
         let window = window.take().unwrap_or_else(|| {
             wm.create_window(self.app.window_desc()).unwrap()
         });
-        let (graphics, device, queue, format) = pollster::block_on(async {
+        let (graphics, device, queue, format, backend) = pollster::block_on(async {
             WindowGraphics::from_window(window.clone()).await
         }).unwrap();
-        let mut renderer = Renderer::new(device, queue, format);
+        let mut renderer = Renderer::new(device, queue, format, backend);
 
         self.app.startup(AppContext { window: &window, renderer: &mut renderer });
 

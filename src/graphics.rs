@@ -28,7 +28,7 @@ pub struct WindowGraphics<'w> {
 impl<'w> WindowGraphics<'w> {
     pub async fn from_window<W>(
         window: W,
-    ) -> Result<(Self, gpu::Device, gpu::Queue, gpu::TextureFormat)>
+    ) -> Result<(Self, gpu::Device, gpu::Queue, gpu::TextureFormat, gpu::Backend)>
     where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
         let backends = {
@@ -59,6 +59,8 @@ impl<'w> WindowGraphics<'w> {
             })
             .await
             .unwrap(); // TODO: Remove unwrap.
+
+        let backend = adapter.get_info().backend;
 
         let (device, queue) = adapter
             .request_device(
@@ -102,6 +104,7 @@ impl<'w> WindowGraphics<'w> {
             device,
             queue,
             surface_format,
+            backend,
         ))
     }
 }

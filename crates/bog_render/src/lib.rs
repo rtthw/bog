@@ -37,13 +37,20 @@ pub struct Renderer {
 
     image_pipeline: ImagePipeline,
     image_manager: ImageManager,
+    image_cache: std::cell::RefCell<ImageCache>,
 }
 
 impl Renderer {
-    pub fn new(device: gpu::Device, queue: gpu::Queue, format: gpu::TextureFormat) -> Self {
+    pub fn new(
+        device: gpu::Device,
+        queue: gpu::Queue,
+        format: gpu::TextureFormat,
+        backend: gpu::Backend,
+    ) -> Self {
         let quad_pipeline = QuadPipeline::new(&device, format);
         let text_pipeline = TextPipeline::new(&device, &queue, format);
-        let image_pipeline = ImagePipeline::new(&device, format);
+        let image_pipeline = ImagePipeline::new(&device, format, backend);
+        let image_cache = std::cell::RefCell::new(image_pipeline.create_cache(&device));
 
         Self {
             device,
@@ -58,6 +65,7 @@ impl Renderer {
 
             image_pipeline,
             image_manager: ImageManager::new(),
+            image_cache,
         }
     }
 
@@ -96,9 +104,22 @@ impl Renderer {
                     // viewport.projection,
                 );
             }
+            if !layer.images.is_empty() {
+                self.image_manager.prepare(
+                    &mut self.image_pipeline,
+                    &self.device,
+                    &mut self.staging_belt,
+                    &mut encoder,
+                    &mut self.image_cache.borrow_mut(),
+                    &layer.images,
+                    viewport.projection,
+                    scale_factor,
+                );
+            }
         }
 
         // 2. Render.
+        let image_cache = self.image_cache.borrow();
         {
             let mut render_pass = encoder.begin_render_pass(&gpu::RenderPassDescriptor {
                 label: Some("bog::render_pass"),
@@ -122,6 +143,7 @@ impl Renderer {
             };
             let mut quad_layer = 0;
             let mut text_layer = 0;
+            let mut image_layer = 0;
             for layer in layer_stack.iter() {
                 let Some(physical_bounds) =
                     physical_bounds.intersection(&(layer.bounds * scale_factor))
@@ -153,6 +175,17 @@ impl Renderer {
                     );
 
                     text_layer += 1;
+                }
+                if !layer.images.is_empty() {
+                    self.image_manager.render(
+                        &self.image_pipeline,
+                        &image_cache,
+                        image_layer,
+                        scissor_rect,
+                        &mut render_pass,
+                    );
+
+                    image_layer += 1;
                 }
             }
         }
@@ -269,6 +302,11 @@ impl<'a> LayerStack<'a> {
             bounds,
             ..text
         });
+    }
+
+    pub fn fill_raster_image(&mut self, image: RasterImage, bounds: Rect) {
+        let (layer, transform) = self.current_mut();
+        layer.images.push(Image::Raster(image, bounds * transform));
     }
 }
 
