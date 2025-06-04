@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use bog_math::{Mat4, Rect, Vec2};
+use bog_math::{Mat4, Rect};
 
 use crate::{buffer::Buffer, Image, ImageFilterMethod, ImageHandle};
 
@@ -269,6 +269,101 @@ impl Data {
 
 
 
+fn add_instances(
+    image_position: [f32; 2],
+    image_size: [f32; 2],
+    rotation: f32,
+    opacity: f32,
+    snap: bool,
+    entry: &AtlasEntry,
+    instances: &mut Vec<Instance>,
+) {
+    let center = [
+        image_position[0] + image_size[0] / 2.0,
+        image_position[1] + image_size[1] / 2.0,
+    ];
+
+    match entry {
+        AtlasEntry::Contiguous(allocation) => {
+            add_instance(
+                image_position,
+                center,
+                image_size,
+                rotation,
+                opacity,
+                snap,
+                allocation,
+                instances,
+            );
+        }
+        AtlasEntry::Fragmented { fragments, size } => {
+            let scaling_x = image_size[0] / size.0 as f32;
+            let scaling_y = image_size[1] / size.1 as f32;
+
+            for fragment in fragments {
+                let allocation = &fragment.allocation;
+
+                let [x, y] = image_position;
+                let (fragment_x, fragment_y) = fragment.position;
+                let (fragment_width, fragment_height) = allocation.size();
+
+                let position = [
+                    x + fragment_x as f32 * scaling_x,
+                    y + fragment_y as f32 * scaling_y,
+                ];
+
+                let size = [
+                    fragment_width as f32 * scaling_x,
+                    fragment_height as f32 * scaling_y,
+                ];
+
+                add_instance(
+                    position, center, size, rotation, opacity, snap,
+                    allocation, instances,
+                );
+            }
+        }
+    }
+}
+
+#[inline]
+fn add_instance(
+    position: [f32; 2],
+    center: [f32; 2],
+    size: [f32; 2],
+    rotation: f32,
+    opacity: f32,
+    snap: bool,
+    allocation: &Allocation,
+    instances: &mut Vec<Instance>,
+) {
+    let (x, y) = allocation.position();
+    let (width, height) = allocation.size();
+    let layer = allocation.layer();
+
+    let instance = Instance {
+        _position: position,
+        _center: center,
+        _size: size,
+        _rotation: rotation,
+        _opacity: opacity,
+        _position_in_atlas: [
+            (x as f32 + 0.5) / ATLAS_SIZE as f32,
+            (y as f32 + 0.5) / ATLAS_SIZE as f32,
+        ],
+        _size_in_atlas: [
+            (width as f32 - 1.0) / ATLAS_SIZE as f32,
+            (height as f32 - 1.0) / ATLAS_SIZE as f32,
+        ],
+        _layer: layer as u32,
+        _snap: snap as u32,
+    };
+
+    instances.push(instance);
+}
+
+
+
 // ---
 
 
@@ -506,7 +601,7 @@ impl ImageCache {
         self.atlas.layer_count()
     }
 
-    pub fn measure_image(&mut self, handle: &ImageHandle) -> Vec2 {
+    pub fn measure_image(&mut self, handle: &ImageHandle) -> (u32, u32) {
         self.raster.load(handle).dimensions()
     }
 
@@ -530,7 +625,7 @@ impl ImageCache {
 
 
 
-const SIZE: u32 = 2048;
+const ATLAS_SIZE: u32 = 2048;
 
 struct ImageAtlas {
     backend: wgpu::Backend,
@@ -556,8 +651,8 @@ impl ImageAtlas {
         };
 
         let extent = wgpu::Extent3d {
-            width: SIZE,
-            height: SIZE,
+            width: ATLAS_SIZE,
+            height: ATLAS_SIZE,
             depth_or_array_layers: layers.len() as u32,
         };
 
@@ -567,11 +662,7 @@ impl ImageAtlas {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: if color::GAMMA_CORRECTION {
-                wgpu::TextureFormat::Rgba8UnormSrgb
-            } else {
-                wgpu::TextureFormat::Rgba8Unorm
-            },
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC
                 | wgpu::TextureUsages::TEXTURE_BINDING,
@@ -703,7 +794,7 @@ impl ImageAtlas {
 
     fn allocate(&mut self, width: u32, height: u32) -> Option<AtlasEntry> {
         // Allocate one layer if texture fits perfectly
-        if width == SIZE && height == SIZE {
+        if width == ATLAS_SIZE && height == ATLAS_SIZE {
             let mut empty_layers = self
                 .layers
                 .iter_mut()
@@ -724,16 +815,16 @@ impl ImageAtlas {
         }
 
         // Split big textures across multiple layers
-        if width > SIZE || height > SIZE {
+        if width > ATLAS_SIZE || height > ATLAS_SIZE {
             let mut fragments = Vec::new();
             let mut y = 0;
 
             while y < height {
-                let height = std::cmp::min(height - y, SIZE);
+                let height = std::cmp::min(height - y, ATLAS_SIZE);
                 let mut x = 0;
 
                 while x < width {
-                    let width = std::cmp::min(width - x, SIZE);
+                    let width = std::cmp::min(width - x, ATLAS_SIZE);
 
                     let allocation = self.allocate(width, height)?;
 
@@ -760,7 +851,7 @@ impl ImageAtlas {
         for (i, layer) in self.layers.iter_mut().enumerate() {
             match layer {
                 AtlasLayer::Empty => {
-                    let mut allocator = Allocator::new(SIZE);
+                    let mut allocator = Allocator::new(ATLAS_SIZE);
 
                     if let Some(region) = allocator.allocate(width, height) {
                         *layer = AtlasLayer::Busy(allocator);
@@ -784,7 +875,7 @@ impl ImageAtlas {
         }
 
         // Create new layer with atlas allocator
-        let mut allocator = Allocator::new(SIZE);
+        let mut allocator = Allocator::new(ATLAS_SIZE);
 
         if let Some(region) = allocator.allocate(width, height) {
             self.layers.push(AtlasLayer::Busy(allocator));
@@ -897,18 +988,14 @@ impl ImageAtlas {
         let new_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("bog::texture_atlas::image"),
             size: wgpu::Extent3d {
-                width: SIZE,
-                height: SIZE,
+                width: ATLAS_SIZE,
+                height: ATLAS_SIZE,
                 depth_or_array_layers,
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: if color::GAMMA_CORRECTION {
-                wgpu::TextureFormat::Rgba8UnormSrgb
-            } else {
-                wgpu::TextureFormat::Rgba8Unorm
-            },
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_DST
                 | wgpu::TextureUsages::COPY_SRC
                 | wgpu::TextureUsages::TEXTURE_BINDING,
@@ -944,8 +1031,8 @@ impl ImageAtlas {
                     aspect: wgpu::TextureAspect::default(),
                 },
                 wgpu::Extent3d {
-                    width: SIZE,
-                    height: SIZE,
+                    width: ATLAS_SIZE,
+                    height: ATLAS_SIZE,
                     depth_or_array_layers: 1,
                 },
             );
@@ -1034,7 +1121,7 @@ impl Allocation {
     fn size(&self) -> (u32, u32) {
         match self {
             Allocation::Partial { region, .. } => region.size(),
-            Allocation::Full { .. } => (SIZE, SIZE),
+            Allocation::Full { .. } => (ATLAS_SIZE, ATLAS_SIZE),
         }
     }
 
@@ -1102,5 +1189,119 @@ impl Region {
         let size = self.allocation.rectangle.size();
 
         (size.width as u32, size.height as u32)
+    }
+}
+
+
+
+// ---
+
+
+
+#[derive(Default)]
+struct RasterCache {
+    map: rustc_hash::FxHashMap<u64, RasterImageMemory>,
+    hits: rustc_hash::FxHashSet<u64>,
+    should_trim: bool,
+}
+
+impl RasterCache {
+    fn load(&mut self, handle: &ImageHandle) -> &mut RasterImageMemory {
+        if self.contains(handle) {
+            return self.get(handle).unwrap();
+        }
+
+        let memory = match crate::load_image(handle) {
+            Ok(image) => RasterImageMemory::Host(image),
+            Err(::image::error::ImageError::IoError(_)) => RasterImageMemory::NotFound,
+            Err(_) => RasterImageMemory::Invalid,
+        };
+
+        self.should_trim = true;
+
+        self.insert(handle, memory);
+        self.get(handle).unwrap()
+    }
+
+    fn upload(
+        &mut self,
+        device: &wgpu::Device,
+        encoder: &mut wgpu::CommandEncoder,
+        handle: &ImageHandle,
+        atlas: &mut ImageAtlas,
+    ) -> Option<&AtlasEntry> {
+        let memory = self.load(handle);
+
+        if let RasterImageMemory::Host(image) = memory {
+            let (width, height) = image.dimensions();
+
+            let entry = atlas.upload(device, encoder, width, height, image)?;
+
+            *memory = RasterImageMemory::Device(entry);
+        }
+
+        if let RasterImageMemory::Device(allocation) = memory {
+            Some(allocation)
+        } else {
+            None
+        }
+    }
+
+    fn trim(&mut self, atlas: &mut ImageAtlas) {
+        // Only trim if new entries have landed in the `Cache`
+        if !self.should_trim {
+            return;
+        }
+
+        let hits = &self.hits;
+
+        self.map.retain(|k, memory| {
+            let retain = hits.contains(k);
+
+            if !retain {
+                if let RasterImageMemory::Device(entry) = memory {
+                    atlas.remove(entry);
+                }
+            }
+
+            retain
+        });
+
+        self.hits.clear();
+        self.should_trim = false;
+    }
+
+    fn get(&mut self, handle: &ImageHandle) -> Option<&mut RasterImageMemory> {
+        let _ = self.hits.insert(handle.id());
+
+        self.map.get_mut(&handle.id())
+    }
+
+    fn insert(&mut self, handle: &ImageHandle, memory: RasterImageMemory) {
+        let _ = self.map.insert(handle.id(), memory);
+    }
+
+    fn contains(&self, handle: &ImageHandle) -> bool {
+        self.map.contains_key(&handle.id())
+    }
+}
+
+
+
+enum RasterImageMemory {
+    Host(::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>),
+    Device(AtlasEntry),
+    NotFound,
+    Invalid,
+}
+
+impl RasterImageMemory {
+    fn dimensions(&self) -> (u32, u32) {
+        match self {
+            RasterImageMemory::Host(image) => image.dimensions(),
+            RasterImageMemory::Device(entry) => entry.size(),
+            RasterImageMemory::NotFound => (1, 1),
+            RasterImageMemory::Invalid => (1, 1),
+        }
     }
 }

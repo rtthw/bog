@@ -4,7 +4,7 @@
 
 
 
-use std::path::PathBuf;
+use std::{hash::{Hash as _, Hasher as _}, path::{Path, PathBuf}};
 
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
@@ -230,13 +230,32 @@ pub struct RasterImage {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImageHandle {
-    Path(PathBuf),
+    Path(u64, PathBuf),
     // Bytes(Bytes),
     // Rgba {
     //     width: u32,
     //     height: u32,
     //     pixels: Bytes,
     // },
+}
+
+impl ImageHandle {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+        let hash = {
+            let mut hasher = rustc_hash::FxHasher::default();
+            path.as_ref().hash(&mut hasher);
+
+            hasher.finish()
+        };
+
+        Self::Path(hash, path.as_ref().to_path_buf())
+    }
+
+    pub const fn id(&self) -> u64 {
+        match self {
+            Self::Path(id, _) => *id,
+        }
+    }
 }
 
 /// Image filtering strategy.

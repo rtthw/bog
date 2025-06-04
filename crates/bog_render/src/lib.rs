@@ -271,3 +271,34 @@ impl<'a> LayerStack<'a> {
         });
     }
 }
+
+
+
+// TODO: Handle EXIF orientation.
+pub fn load_image(
+    handle: &ImageHandle,
+) -> ::image::ImageResult<::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>>
+{
+    let (width, height, pixels) = match handle {
+        ImageHandle::Path(_, path) => {
+            let image = ::image::open(path)?;
+            let rgba = image.into_rgba8();
+
+            (
+                rgba.width(),
+                rgba.height(),
+                rgba.into_raw(),
+            )
+        }
+    };
+
+    if let Some(image) = ::image::ImageBuffer::from_raw(width, height, pixels) {
+        Ok(image)
+    } else {
+        Err(::image::error::ImageError::Limits(
+            ::image::error::LimitError::from_kind(
+                ::image::error::LimitErrorKind::DimensionError,
+            ),
+        ))
+    }
+}
