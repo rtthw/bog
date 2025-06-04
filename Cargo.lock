@@ -190,6 +190,7 @@ dependencies = [
  "bog_render",
  "bog_window",
  "pollster",
+ "syntect",
  "thiserror 2.0.12",
 ]
 
@@ -1735,7 +1736,6 @@ name = "showcase"
 version = "0.1.0"
 dependencies = [
  "bog",
- "syntect",
 ]
 
 [[package]]

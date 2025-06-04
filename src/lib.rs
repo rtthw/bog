@@ -65,6 +65,7 @@ pub mod prelude {
     };
     pub use bog_render::{
         Border,
+        FontFamily,
         Layer,
         LayerStack,
         Quad,

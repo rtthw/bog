@@ -36,3 +36,10 @@ bog_event = { path = "crates/bog_event" }
 bog_math = { path = "crates/bog_math" }
 bog_render = { path = "crates/bog_render" }
 bog_window = { path = "crates/bog_window" }
+
+
+[[example]]
+name = "source_viewer"
+
+[dev-dependencies]
+syntect = "5"
