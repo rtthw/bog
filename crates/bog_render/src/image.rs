@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use bog_math::{Mat4, Rect, Vec2};
 
-use crate::buffer::Buffer;
+use crate::{buffer::Buffer, Image, ImageFilterMethod, ImageHandle};
 
 
 
@@ -44,8 +44,8 @@ impl ImageManager {
                     {
                         add_instances(
                             [bounds.x, bounds.y],
-                            [bounds.width, bounds.height],
-                            f32::from(image.rotation),
+                            [bounds.w, bounds.h],
+                            image.rotation,
                             image.opacity,
                             image.snap,
                             atlas_entry,

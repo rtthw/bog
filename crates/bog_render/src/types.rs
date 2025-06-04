@@ -4,6 +4,8 @@
 
 
 
+use std::path::PathBuf;
+
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
 
@@ -207,4 +209,42 @@ impl Shadow {
             blur_radius,
         }
     }
+}
+
+
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Image {
+    Raster(RasterImage, Rect),
+    // Vector(VectorImage, Rect),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RasterImage {
+    pub handle: ImageHandle,
+    pub filter_method: ImageFilterMethod,
+    pub rotation: f32,
+    pub opacity: f32,
+    pub snap: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ImageHandle {
+    Path(PathBuf),
+    // Bytes(Bytes),
+    // Rgba {
+    //     width: u32,
+    //     height: u32,
+    //     pixels: Bytes,
+    // },
+}
+
+/// Image filtering strategy.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub enum ImageFilterMethod {
+    /// Bilinear interpolation.
+    #[default]
+    Linear,
+    /// Nearest neighbor.
+    Nearest,
 }
