@@ -1319,7 +1319,17 @@ fn load_image(
 {
     let (width, height, pixels) = match handle {
         ImageHandle::Path(_, path) => {
-            let image = ::image::open(path).unwrap();
+            let image = ::image::open(path)?;
+            let rgba = image.into_rgba8();
+
+            (
+                rgba.width(),
+                rgba.height(),
+                rgba.into_raw(),
+            )
+        }
+        ImageHandle::Bytes(_, bytes) => {
+            let image = ::image::load_from_memory(bytes)?;
             let rgba = image.into_rgba8();
 
             (

@@ -9,6 +9,7 @@ bog_color.workspace = true
 bog_math.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
+bytes = "1"
 glyphon = "0.9"
 guillotiere = "0.6"
 image = { version = "0.25", default-features = false, features = [

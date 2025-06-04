@@ -8,6 +8,7 @@ use std::{hash::{Hash as _, Hasher as _}, path::{Path, PathBuf}};
 
 use bog_color::Color;
 use bog_math::{Rect, Vec2};
+pub use bytes::Bytes;
 
 
 
@@ -243,7 +244,7 @@ impl From<ImageHandle> for RasterImage {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ImageHandle {
     Path(u64, PathBuf),
-    // Bytes(Bytes),
+    Bytes(u64, Bytes),
     // Rgba {
     //     width: u32,
     //     height: u32,
@@ -263,11 +264,24 @@ impl ImageHandle {
         Self::Path(hash, path.as_ref().to_path_buf())
     }
 
+    pub fn from_bytes<B: Into<Bytes>>(bytes: B) -> Self {
+        Self::Bytes(unique_image_handle_id(), bytes.into())
+    }
+
     pub const fn id(&self) -> u64 {
         match self {
             Self::Path(id, _) => *id,
+            Self::Bytes(id, _) => *id,
         }
     }
+}
+
+fn unique_image_handle_id() -> u64 {
+    use std::sync::atomic::{self, AtomicU64};
+
+    static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+
+    NEXT_ID.fetch_add(1, atomic::Ordering::Relaxed)
 }
 
 /// Image filtering strategy.

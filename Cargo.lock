@@ -233,6 +233,7 @@ dependencies = [
  "bog_color",
  "bog_math",
  "bytemuck",
+ "bytes",
  "glyphon",
  "guillotiere",
  "image",
