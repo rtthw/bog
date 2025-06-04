@@ -76,7 +76,6 @@ impl Renderer {
         viewport: &Viewport,
     ) -> gpu::SubmissionIndex {
         // 1. Prepare.
-        // let start = std::time::Instant::now();
         let scale_factor = viewport.scale_factor as f32;
         let mut encoder = self.device.create_command_encoder(
             &gpu::CommandEncoderDescriptor {
@@ -119,8 +118,8 @@ impl Renderer {
         }
 
         // 2. Render.
-        let image_cache = self.image_cache.borrow();
         {
+            let image_cache = self.image_cache.borrow();
             let mut render_pass = encoder.begin_render_pass(&gpu::RenderPassDescriptor {
                 label: Some("bog::render_pass"),
                 color_attachments: &[Some(gpu::RenderPassColorAttachment {
@@ -193,8 +192,11 @@ impl Renderer {
         // 3. Finalize.
         self.quad_manager.cleanup();
         self.text_manager.cleanup();
+        self.image_manager.cleanup();
+        self.image_cache.borrow_mut().trim();
+
         self.staging_belt.finish();
-        let submission = self.queue.submit(std::iter::once(encoder.finish()));
+        let submission = self.queue.submit(core::iter::once(encoder.finish()));
         self.staging_belt.recall();
 
         // println!("render : {}us", std::time::Instant::now().duration_since(start).as_micros());
@@ -254,6 +256,13 @@ impl Renderer {
         entry.min_bounds
     }
 
+    /// Returns the size of the given [`ImageHandle`].
+    pub fn measure_image(&mut self, image_handle: &ImageHandle) -> Vec2 {
+        let (width, height) = self.image_cache.borrow_mut().measure_image(image_handle);
+
+        vec2(width as _, height as _)
+    }
+
     pub fn text_pipeline(&mut self) -> &mut TextPipeline {
         &mut self.text_pipeline
     }
@@ -307,36 +316,5 @@ impl<'a> LayerStack<'a> {
     pub fn fill_raster_image(&mut self, image: RasterImage, bounds: Rect) {
         let (layer, transform) = self.current_mut();
         layer.images.push(Image::Raster(image, bounds * transform));
-    }
-}
-
-
-
-// TODO: Handle EXIF orientation.
-pub fn load_image(
-    handle: &ImageHandle,
-) -> ::image::ImageResult<::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>>
-{
-    let (width, height, pixels) = match handle {
-        ImageHandle::Path(_, path) => {
-            let image = ::image::open(path)?;
-            let rgba = image.into_rgba8();
-
-            (
-                rgba.width(),
-                rgba.height(),
-                rgba.into_raw(),
-            )
-        }
-    };
-
-    if let Some(image) = ::image::ImageBuffer::from_raw(width, height, pixels) {
-        Ok(image)
-    } else {
-        Err(::image::error::ImageError::Limits(
-            ::image::error::LimitError::from_kind(
-                ::image::error::LimitErrorKind::DimensionError,
-            ),
-        ))
     }
 }

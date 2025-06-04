@@ -116,7 +116,7 @@ impl ImageManager {
         }
     }
 
-    pub fn trim(&mut self) {
+    pub fn cleanup(&mut self) {
         self.prepare_layer = 0;
     }
 }
@@ -600,10 +600,6 @@ impl ImageCache {
         self.atlas.bind_group()
     }
 
-    pub fn layer_count(&self) -> usize {
-        self.atlas.layer_count()
-    }
-
     pub fn measure_image(&mut self, handle: &ImageHandle) -> (u32, u32) {
         self.raster.load(handle).dimensions()
     }
@@ -699,10 +695,6 @@ impl ImageAtlas {
 
     fn bind_group(&self) -> &wgpu::BindGroup {
         &self.texture_bind_group
-    }
-
-    fn layer_count(&self) -> usize {
-        self.layers.len()
     }
 
     fn upload(
@@ -1072,13 +1064,13 @@ impl AtlasLayer {
         matches!(self, AtlasLayer::Empty)
     }
 
-    fn allocations(&self) -> usize {
-        match self {
-            AtlasLayer::Empty => 0,
-            AtlasLayer::Busy(allocator) => allocator.allocations(),
-            AtlasLayer::Full => 1,
-        }
-    }
+    // fn allocations(&self) -> usize {
+    //     match self {
+    //         AtlasLayer::Empty => 0,
+    //         AtlasLayer::Busy(allocator) => allocator.allocations(),
+    //         AtlasLayer::Full => 1,
+    //     }
+    // }
 }
 
 enum AtlasEntry {
@@ -1172,9 +1164,9 @@ impl Allocator {
         self.allocations == 0
     }
 
-    fn allocations(&self) -> usize {
-        self.allocations
-    }
+    // fn allocations(&self) -> usize {
+    //     self.allocations
+    // }
 }
 
 struct Region {
@@ -1214,7 +1206,7 @@ impl RasterCache {
             return self.get(handle).unwrap();
         }
 
-        let memory = match crate::load_image(handle) {
+        let memory = match load_image(handle) {
             Ok(image) => RasterImageMemory::Host(image),
             Err(::image::error::ImageError::IoError(_)) => RasterImageMemory::NotFound,
             Err(_) => RasterImageMemory::Invalid,
@@ -1306,5 +1298,40 @@ impl RasterImageMemory {
             RasterImageMemory::NotFound => (1, 1),
             RasterImageMemory::Invalid => (1, 1),
         }
+    }
+}
+
+
+
+// ---
+
+
+
+// TODO: Handle EXIF orientation.
+fn load_image(
+    handle: &ImageHandle,
+) -> ::image::ImageResult<::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>>
+{
+    let (width, height, pixels) = match handle {
+        ImageHandle::Path(_, path) => {
+            let image = ::image::open(path)?;
+            let rgba = image.into_rgba8();
+
+            (
+                rgba.width(),
+                rgba.height(),
+                rgba.into_raw(),
+            )
+        }
+    };
+
+    if let Some(image) = ::image::ImageBuffer::from_raw(width, height, pixels) {
+        Ok(image)
+    } else {
+        Err(::image::error::ImageError::Limits(
+            ::image::error::LimitError::from_kind(
+                ::image::error::LimitErrorKind::DimensionError,
+            ),
+        ))
     }
 }
