@@ -1,6 +1,4 @@
-//! Bog Color
-
-#![no_std]
+//! Color type
 
 
 

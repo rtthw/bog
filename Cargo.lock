@@ -184,7 +184,6 @@ version = "0.1.0"
 dependencies = [
  "bog-core",
  "bog_collections",
- "bog_color",
  "bog_event",
  "bog_math",
  "bog_render",
@@ -208,10 +207,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_color"
-version = "0.1.0"
-
-[[package]]
 name = "bog_event"
 version = "0.1.0"
 dependencies = [
@@ -229,8 +224,8 @@ dependencies = [
 name = "bog_render"
 version = "0.1.0"
 dependencies = [
+ "bog-core",
  "bog_collections",
- "bog_color",
  "bog_math",
  "bytemuck",
  "bytes",

@@ -4,6 +4,8 @@
 
 
 
+pub mod color;
+
 pub extern crate alloc;
 
 pub use alloc::{
@@ -13,3 +15,4 @@ pub use alloc::{
     sync::*,
     vec::Vec,
 };
+pub use color::Color;

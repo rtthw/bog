@@ -6,7 +6,6 @@ pub mod app;
 pub mod graphics;
 
 pub use bog_collections as collections;
-pub use bog_color as color;
 pub use bog_event as event;
 pub use bog_math as math;
 pub use bog_render as render;
@@ -45,7 +44,7 @@ pub mod prelude {
         Result,
     };
 
-    pub use bog_color::Color;
+    pub use bog_core::Color;
     pub use bog_event::{
         EventMask,
         KeyCode,
