@@ -71,7 +71,7 @@ impl Renderer {
 
     pub fn render(
         &mut self,
-        layer_stack: &mut LayerStack,
+        render_pass: &mut RenderPass,
         target: &gpu::TextureView,
         viewport: &Viewport,
     ) -> gpu::SubmissionIndex {
@@ -82,7 +82,7 @@ impl Renderer {
                 label: Some("bog::encoder"),
             },
         );
-        for layer in layer_stack.iter_mut() {
+        for layer in render_pass.iter_mut() {
             if !layer.quads.is_empty() {
                 self.quad_manager.prepare(
                     &self.quad_pipeline,
@@ -120,8 +120,8 @@ impl Renderer {
         // 2. Render.
         {
             let image_cache = self.image_cache.borrow();
-            let mut render_pass = encoder.begin_render_pass(&gpu::RenderPassDescriptor {
-                label: Some("bog::render_pass"),
+            let mut gpu_pass = encoder.begin_render_pass(&gpu::RenderPassDescriptor {
+                label: Some("bog::gpu_render_pass"),
                 color_attachments: &[Some(gpu::RenderPassColorAttachment {
                     view: target,
                     resolve_target: None,
@@ -143,7 +143,7 @@ impl Renderer {
             let mut quad_layer = 0;
             let mut text_layer = 0;
             let mut image_layer = 0;
-            for layer in layer_stack.iter() {
+            for layer in render_pass.iter() {
                 let Some(physical_bounds) =
                     physical_bounds.intersection(&(layer.bounds * scale_factor))
                 else {
@@ -160,7 +160,7 @@ impl Renderer {
                         quad_layer,
                         scissor_rect,
                         &layer.quads,
-                        &mut render_pass,
+                        &mut gpu_pass,
                     );
 
                     quad_layer += 1;
@@ -170,7 +170,7 @@ impl Renderer {
                         &self.text_pipeline,
                         text_layer,
                         scissor_rect,
-                        &mut render_pass,
+                        &mut gpu_pass,
                     );
 
                     text_layer += 1;
@@ -181,7 +181,7 @@ impl Renderer {
                         &image_cache,
                         image_layer,
                         scissor_rect,
-                        &mut render_pass,
+                        &mut gpu_pass,
                     );
 
                     image_layer += 1;
@@ -268,7 +268,7 @@ impl Renderer {
     }
 }
 
-impl<'a> LayerStack<'a> {
+impl<'a> RenderPass<'a> {
     pub fn start_layer(&mut self, bounds: Rect) {
         self.push_clip(bounds);
     }

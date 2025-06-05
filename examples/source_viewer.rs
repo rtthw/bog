@@ -52,20 +52,20 @@ impl AppHandler for App {
         });
     }
 
-    fn render(&mut self, cx: AppContext, layers: &mut LayerStack) {
-        layers.start_layer(cx.renderer.viewport_rect());
+    fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
+        pass.start_layer(cx.renderer.viewport_rect());
         // layers.fill_raster_image(
         //     ImageHandle::from_path("...").into(),
         //     cx.renderer.viewport_rect(),
         // );
-        layers.fill_quad(Quad {
+        pass.fill_quad(Quad {
             bounds: cx.renderer.viewport_rect(),
             bg_color: Color::new(43, 43, 53, 255),
             ..Default::default()
         });
-        layers.end_layer();
+        pass.end_layer();
 
-        layers.start_layer(cx.renderer.viewport_rect());
+        pass.start_layer(cx.renderer.viewport_rect());
         let height = cx.renderer.viewport_rect().h / self.cell_bounds.y;
         let mut y_offset = 0.0;
         for line_ranges in self.lines.iter().skip(self.scroll_offset).take(height.ceil() as _) {
@@ -75,14 +75,14 @@ impl AppHandler for App {
                 let rect = Rect::new(vec2(x_offset, y_offset), vec2(width, self.cell_bounds.y));
 
                 if rect.contains(self.mouse_pos) {
-                    layers.fill_quad(Quad {
+                    pass.fill_quad(Quad {
                         bounds: rect,
                         bg_color: Color::new(59, 59, 67, 255),
                         ..Default::default()
                     });
                 }
 
-                layers.fill_text(Text {
+                pass.fill_text(Text {
                     content: (*text).into(),
                     bounds: rect,
                     size: 19.0,
@@ -101,7 +101,7 @@ impl AppHandler for App {
             y_offset += self.cell_bounds.y;
         }
 
-        layers.end_layer();
+        pass.end_layer();
     }
 
     fn on_mouse_move(&mut self, _cx: AppContext, mouse_pos: Vec2) {

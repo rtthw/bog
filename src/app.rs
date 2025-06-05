@@ -4,7 +4,7 @@
 
 use bog_event::{KeyCode, WheelMovement, WindowEvent};
 use bog_math::{vec2, Vec2};
-use bog_render::{gpu, LayerStack, Renderer, Viewport};
+use bog_render::{gpu, RenderPass, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
 };
@@ -35,7 +35,7 @@ pub fn run_app<A: AppHandler>(app: A) -> Result<()> {
 #[allow(unused_variables)]
 pub trait AppHandler {
     fn startup(&mut self, cx: AppContext) {}
-    fn render<'pass>(&'pass mut self, cx: AppContext, layers: &mut LayerStack<'pass>);
+    fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>);
     fn on_resize(&mut self, cx: AppContext, size: Vec2) {}
     fn on_mouse_move(&mut self, cx: AppContext, mouse_pos: Vec2) {}
     fn on_primary_mouse_down(&mut self, cx: AppContext) {}
@@ -99,11 +99,11 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 wm.exit();
             }
             WindowEvent::RedrawRequest => {
-                let mut layer_stack = LayerStack::new();
-                self.app.render(AppContext { window, renderer }, &mut layer_stack);
+                let mut pass = RenderPass::new();
+                self.app.render(AppContext { window, renderer }, &mut pass);
                 let texture = graphics.get_current_texture();
                 let target = texture.texture.create_view(&gpu::TextureViewDescriptor::default());
-                renderer.render(&mut layer_stack, &target, &viewport);
+                renderer.render(&mut pass, &target, &viewport);
                 texture.present();
             }
             WindowEvent::Resize { width, height } => {

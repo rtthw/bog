@@ -49,7 +49,7 @@ impl<'a> Layer<'a> {
     }
 }
 
-pub struct LayerStack<'a> {
+pub struct RenderPass<'a> {
     layers: Vec<Layer<'a>>,
     transformations: Vec<Mat4>,
     previous: Vec<usize>,
@@ -57,7 +57,7 @@ pub struct LayerStack<'a> {
     active_count: usize,
 }
 
-impl<'a> LayerStack<'a> {
+impl<'a> RenderPass<'a> {
     pub fn new() -> Self {
         Self {
             layers: vec![Layer::default()],
