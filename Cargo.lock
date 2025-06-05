@@ -183,7 +183,6 @@ name = "bog"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog_collections",
  "bog_event",
  "bog_render",
  "bog_window",
@@ -197,13 +196,6 @@ name = "bog-core"
 version = "0.1.0"
 dependencies = [
  "glam",
-]
-
-[[package]]
-name = "bog_collections"
-version = "0.1.0"
-dependencies = [
- "bog-core",
  "hashbrown",
  "rustc-hash 2.1.1",
 ]
@@ -220,7 +212,6 @@ name = "bog_render"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog_collections",
  "bytemuck",
  "bytes",
  "glyphon",

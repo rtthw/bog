@@ -2,8 +2,7 @@
 
 
 
-use bog_collections::UnitMap;
-use bog_core::Rect;
+use bog_core::{Rect, UnitMap};
 
 use crate::Viewport;
 

@@ -18,7 +18,6 @@ app = []
 
 [dependencies]
 bog-core.workspace = true
-bog_collections.workspace = true
 bog_event.workspace = true
 bog_render.workspace = true
 bog_window.workspace = true
@@ -28,7 +27,6 @@ thiserror = "2"
 
 [workspace.dependencies]
 bog-core = { path = "crates/bog-core" }
-bog_collections = { path = "crates/bog_collections" }
 bog_event = { path = "crates/bog_event" }
 bog_render = { path = "crates/bog_render" }
 bog_window = { path = "crates/bog_window" }

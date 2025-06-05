@@ -5,7 +5,6 @@
 pub mod app;
 pub mod graphics;
 
-pub use bog_collections as collections;
 pub use bog_event as event;
 pub use bog_render as render;
 pub use bog_window as window;
@@ -54,6 +53,7 @@ pub mod prelude {
         Color,
         Mat3,
         Mat4,
+        NoHashMap,
         Rect,
         vec2,
         Vec2,

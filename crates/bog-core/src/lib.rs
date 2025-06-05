@@ -1,11 +1,14 @@
-//! Bog Alloc
+//! Bog core types
 
 #![no_std]
 
 
 
 mod color;
+mod nohash_map;
 mod rect;
+mod unit_map;
+
 
 pub extern crate alloc;
 
@@ -16,8 +19,11 @@ pub use alloc::{
     sync::*,
     vec::Vec,
 };
+
 pub use color::Color;
+pub use nohash_map::NoHashMap;
 pub use rect::Rect;
+pub use unit_map::UnitMap;
 
 
 // ---

@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 bog-core.workspace = true
-bog_collections.workspace = true
 
 bytemuck = { version = "1", features = ["derive"] }
 bytes = "1"

@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 # Required for #![no_std].
 glam = { version = "0.30", default-features = false, features = ["libm"] }
+hashbrown = "0.15"
+rustc-hash = "2"
