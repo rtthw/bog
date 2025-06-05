@@ -8,7 +8,7 @@ default = ["x11"]
 x11 = ["dep:x11rb"]
 
 [dependencies]
-bog_alloc.workspace = true
+bog-core.workspace = true
 bog_event.workspace = true
 bog_math.workspace = true
 winit = "0.30"

@@ -5,7 +5,6 @@
 pub mod app;
 pub mod graphics;
 
-pub use bog_alloc as alloc;
 pub use bog_collections as collections;
 pub use bog_color as color;
 pub use bog_event as event;

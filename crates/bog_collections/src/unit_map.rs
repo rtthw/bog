@@ -4,7 +4,7 @@
 
 use core::any::{Any, TypeId};
 
-use bog_alloc::Box;
+use bog_core::Box;
 
 
 

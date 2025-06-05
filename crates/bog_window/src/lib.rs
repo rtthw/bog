@@ -9,8 +9,8 @@
 #[cfg(feature = "x11")]
 pub mod x11;
 
-use bog_alloc::alloc::string::String;
-use bog_alloc::Arc;
+use bog_core::alloc::string::String;
+use bog_core::Arc;
 use bog_event::{KeyCode, WheelMovement, WindowEvent};
 use bog_math::{vec2, Vec2};
 

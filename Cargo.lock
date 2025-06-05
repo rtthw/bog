@@ -182,7 +182,7 @@ dependencies = [
 name = "bog"
 version = "0.1.0"
 dependencies = [
- "bog_alloc",
+ "bog-core",
  "bog_collections",
  "bog_color",
  "bog_event",
@@ -195,14 +195,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_alloc"
+name = "bog-core"
 version = "0.1.0"
 
 [[package]]
 name = "bog_collections"
 version = "0.1.0"
 dependencies = [
- "bog_alloc",
+ "bog-core",
  "hashbrown",
  "rustc-hash 2.1.1",
 ]
@@ -245,7 +245,7 @@ dependencies = [
 name = "bog_window"
 version = "0.1.0"
 dependencies = [
- "bog_alloc",
+ "bog-core",
  "bog_event",
  "bog_math",
  "winit",

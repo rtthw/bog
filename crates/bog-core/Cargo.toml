@@ -1,5 +1,5 @@
 [package]
-name = "bog_alloc"
+name = "bog-core"
 version = "0.1.0"
 edition = "2024"
 
