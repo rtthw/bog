@@ -183,9 +183,9 @@ name = "bog"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog_event",
- "bog_render",
- "bog_window",
+ "bog-event",
+ "bog-render",
+ "bog-window",
  "pollster",
  "syntect",
  "thiserror 2.0.12",
@@ -201,14 +201,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_event"
+name = "bog-event"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.9.0",
 ]
 
 [[package]]
-name = "bog_render"
+name = "bog-render"
 version = "0.1.0"
 dependencies = [
  "bog-core",
@@ -222,11 +222,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_window"
+name = "bog-window"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog_event",
+ "bog-event",
  "winit",
  "x11rb",
 ]

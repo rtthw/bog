@@ -18,18 +18,18 @@ app = []
 
 [dependencies]
 bog-core.workspace = true
-bog_event.workspace = true
-bog_render.workspace = true
-bog_window.workspace = true
+bog-event.workspace = true
+bog-render.workspace = true
+bog-window.workspace = true
 
 pollster = "0.4"
 thiserror = "2"
 
 [workspace.dependencies]
 bog-core = { path = "crates/bog-core" }
-bog_event = { path = "crates/bog_event" }
-bog_render = { path = "crates/bog_render" }
-bog_window = { path = "crates/bog_window" }
+bog-event = { path = "crates/bog-event" }
+bog-render = { path = "crates/bog-render" }
+bog-window = { path = "crates/bog-window" }
 
 
 [[example]]

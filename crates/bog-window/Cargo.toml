@@ -1,5 +1,5 @@
 [package]
-name = "bog_window"
+name = "bog-window"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,6 +9,6 @@ x11 = ["dep:x11rb"]
 
 [dependencies]
 bog-core.workspace = true
-bog_event.workspace = true
+bog-event.workspace = true
 winit = "0.30"
 x11rb = { version = "0.13", features = ["allow-unsafe-code"], optional = true }
