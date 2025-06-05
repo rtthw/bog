@@ -24,7 +24,7 @@ pub struct VisualStyle {
 }
 
 /// Styling that affects placement.
-pub struct LayoutStyle(taffy::Style);
+pub struct LayoutStyle(pub(crate) taffy::Style);
 
 
 

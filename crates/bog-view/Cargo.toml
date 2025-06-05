@@ -5,10 +5,10 @@ edition = "2024"
 
 [dependencies]
 bog-core.workspace = true
+slotmap = "1"
 taffy = { version = "0.8", default-features = false, features = [
     "block_layout",
     "flexbox",
     "grid",
-    "calc",
     "content_size",
 ] }
