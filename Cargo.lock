@@ -185,6 +185,7 @@ dependencies = [
  "bog-core",
  "bog-event",
  "bog-render",
+ "bog-view",
  "bog-window",
  "pollster",
  "syntect",
@@ -219,6 +220,13 @@ dependencies = [
  "image",
  "rustc-hash 2.1.1",
  "wgpu",
+]
+
+[[package]]
+name = "bog-view"
+version = "0.1.0"
+dependencies = [
+ "bog-core",
 ]
 
 [[package]]

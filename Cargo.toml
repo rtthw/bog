@@ -20,6 +20,7 @@ app = []
 bog-core.workspace = true
 bog-event.workspace = true
 bog-render.workspace = true
+bog-view.workspace = true
 bog-window.workspace = true
 
 pollster = "0.4"
@@ -29,6 +30,7 @@ thiserror = "2"
 bog-core = { path = "crates/bog-core" }
 bog-event = { path = "crates/bog-event" }
 bog-render = { path = "crates/bog-render" }
+bog-view = { path = "crates/bog-view" }
 bog-window = { path = "crates/bog-window" }
 
 
