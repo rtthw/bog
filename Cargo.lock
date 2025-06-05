@@ -185,7 +185,6 @@ dependencies = [
  "bog-core",
  "bog_collections",
  "bog_event",
- "bog_math",
  "bog_render",
  "bog_window",
  "pollster",
@@ -196,6 +195,9 @@ dependencies = [
 [[package]]
 name = "bog-core"
 version = "0.1.0"
+dependencies = [
+ "glam",
+]
 
 [[package]]
 name = "bog_collections"
@@ -214,19 +216,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "bog_math"
-version = "0.1.0"
-dependencies = [
- "glam",
-]
-
-[[package]]
 name = "bog_render"
 version = "0.1.0"
 dependencies = [
  "bog-core",
  "bog_collections",
- "bog_math",
  "bytemuck",
  "bytes",
  "glyphon",
@@ -242,7 +236,6 @@ version = "0.1.0"
 dependencies = [
  "bog-core",
  "bog_event",
- "bog_math",
  "winit",
  "x11rb",
 ]

@@ -2,7 +2,9 @@
 
 
 
-use crate::{math::Vec2, render::gpu, window::rwh};
+use bog_core::Vec2;
+
+use crate::{render::gpu, window::rwh};
 
 
 

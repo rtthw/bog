@@ -6,8 +6,7 @@
 
 use std::{hash::{Hash as _, Hasher as _}, path::{Path, PathBuf}};
 
-use bog_core::Color;
-use bog_math::{Rect, Vec2};
+use bog_core::{Color, Rect, Vec2};
 pub use bytes::Bytes;
 
 

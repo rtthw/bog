@@ -2,7 +2,7 @@
 
 
 
-use bog_math::{Mat4, Rect, Vec2};
+use bog_core::{Mat4, Rect, Vec2};
 
 
 

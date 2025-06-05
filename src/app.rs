@@ -3,7 +3,7 @@
 
 
 use bog_event::{KeyCode, WheelMovement, WindowEvent};
-use bog_math::{vec2, Vec2};
+use bog_core::{vec2, Vec2};
 use bog_render::{gpu, RenderPass, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,

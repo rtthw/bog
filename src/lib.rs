@@ -7,7 +7,6 @@ pub mod graphics;
 
 pub use bog_collections as collections;
 pub use bog_event as event;
-pub use bog_math as math;
 pub use bog_render as render;
 pub use bog_window as window;
 
@@ -44,7 +43,6 @@ pub mod prelude {
         Result,
     };
 
-    pub use bog_core::Color;
     pub use bog_event::{
         EventMask,
         KeyCode,
@@ -52,7 +50,8 @@ pub mod prelude {
         WheelMovement,
         WindowEvent,
     };
-    pub use bog_math::{
+    pub use bog_core::{
+        Color,
         Mat3,
         Mat4,
         Rect,

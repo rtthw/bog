@@ -20,7 +20,7 @@ use text::*;
 pub use types::*;
 pub use viewport::*;
 
-use bog_math::{vec2, Mat4, Rect, Vec2};
+use bog_core::{vec2, Mat4, Rect, Vec2};
 
 
 

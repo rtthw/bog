@@ -3,7 +3,7 @@
 
 
 use bog_collections::UnitMap;
-use bog_math::Rect;
+use bog_core::Rect;
 
 use crate::Viewport;
 

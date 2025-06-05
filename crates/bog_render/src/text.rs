@@ -4,7 +4,7 @@
 
 use core::hash::Hash as _;
 
-use bog_math::{Rect, Vec2};
+use bog_core::{Rect, Vec2};
 
 use crate::{FontFamily, Text, TextSlant};
 
