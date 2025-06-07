@@ -258,6 +258,12 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
                 y: position.y as _,
             }))
         }
+        winit::event::WindowEvent::CursorEntered { .. } => {
+            Some(WindowEvent::Input(InputEvent::MouseEnter))
+        }
+        winit::event::WindowEvent::CursorLeft { .. } => {
+            Some(WindowEvent::Input(InputEvent::MouseLeave))
+        }
         winit::event::WindowEvent::MouseInput { state, button, .. } => {
             let button = translate_winit_mousebutton(button);
             Some(if state.is_pressed() {

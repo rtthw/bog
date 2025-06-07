@@ -52,6 +52,10 @@ pub enum InputEvent {
     MouseUp {
         button: MouseButton,
     },
+    /// The user's mouse pointer entered this area.
+    MouseEnter,
+    /// The user's mouse pointer left this area.
+    MouseLeave,
     /// The user's wheel device moved in some way.
     ///
     /// The type of movement (lines or pixels) depends on the type of wheel device used. For a
