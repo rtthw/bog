@@ -43,7 +43,6 @@ pub mod prelude {
     };
 
     pub use bog_event::{
-        EventMask,
         InputEvent,
         KeyCode,
         KeyUpdate,
