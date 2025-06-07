@@ -2,7 +2,7 @@
 
 
 
-use bog_core::{vec2, Vec2};
+use bog_core::{vec2, TypeMap, Vec2};
 use slotmap::Key as _;
 
 use crate::style::{LayoutStyle, Style, VisualStyle};
@@ -13,6 +13,7 @@ pub struct ViewTree {
     nodes: slotmap::SlotMap<slotmap::DefaultKey, NodeInfo>,
     children: slotmap::SlotMap<slotmap::DefaultKey, Vec<u64>>,
     parents: slotmap::SlotMap<slotmap::DefaultKey, Option<u64>>,
+    types: TypeMap<Vec<u64>>,
 }
 
 impl ViewTree {
@@ -27,6 +28,7 @@ impl ViewTree {
             nodes: slotmap::SlotMap::with_capacity(capacity),
             children: slotmap::SlotMap::with_capacity(capacity),
             parents: slotmap::SlotMap::with_capacity(capacity),
+            types: TypeMap::default(),
         }
     }
 
@@ -35,20 +37,27 @@ impl ViewTree {
         self.nodes.clear();
         self.children.clear();
         self.parents.clear();
+        self.types.clear();
     }
 
-    /// Get the children of the given node.
+    /// Returns the children of the given node.
     pub fn children(&self, node: u64) -> &[u64] {
         &self.children[slotmap::KeyData::from_ffi(node).into()]
     }
 
-    /// Get the parent of the given node, if there is one.
+    /// Returns the parent of the given node, if there is one.
     pub fn parent(&self, node: u64) -> Option<u64> {
         self.parents[slotmap::KeyData::from_ffi(node).into()]
     }
 
+    /// Returns all nodes for the given generic type `T`.
+    pub fn get_all<T: 'static>(&self) -> &[u64] {
+        let Some(nodes) = self.types.get::<T>() else { return &[]; };
+        nodes
+    }
+
     /// Add a node with the given [`Style`] to the tree, returning the newly created node ID.
-    pub fn add_node(&mut self, style: Style) -> u64 {
+    pub fn add_node<T: 'static>(&mut self, style: Style) -> u64 {
         let id = self.nodes.insert(NodeInfo {
             style,
             layout: taffy::Layout::with_order(0),
@@ -56,6 +65,12 @@ impl ViewTree {
         });
         let _ = self.children.insert(Vec::with_capacity(0));
         let _ = self.parents.insert(None);
+
+        if let Some(nodes) = self.types.get_mut::<T>() {
+            nodes.push(id.data().as_ffi());
+        } else {
+            self.types.insert::<T>(vec![id.data().as_ffi()]);
+        }
 
         id.data().as_ffi()
     }
