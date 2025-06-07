@@ -9,6 +9,7 @@ mod event;
 mod key;
 mod nohash_map;
 mod rect;
+mod type_map;
 mod unit_map;
 
 
@@ -27,6 +28,7 @@ pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};
 pub use key::{KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
+pub use type_map::TypeMap;
 pub use unit_map::UnitMap;
 
 
