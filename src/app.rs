@@ -43,7 +43,7 @@ pub trait AppHandler {
     fn on_wheel_movement(&mut self, cx: AppContext, movement: WheelMovement) {}
     fn on_key_down(&mut self, cx: AppContext, code: KeyCode, repeat: bool) {}
     fn on_key_up(&mut self, cx: AppContext, code: KeyCode) {}
-    fn on_close(&mut self, cx: AppContext) {}
+    fn on_close(&mut self, cx: AppContext) -> bool { true }
     fn window_desc(&self) -> WindowDescriptor;
 }
 
@@ -95,8 +95,9 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
 
         match event {
             WindowEvent::CloseRequest => {
-                self.app.on_close(AppContext { window, renderer });
-                wm.exit();
+                if self.app.on_close(AppContext { window, renderer }) {
+                    wm.exit();
+                }
             }
             WindowEvent::RedrawRequest => {
                 let mut pass = RenderPass::new();
