@@ -99,7 +99,10 @@ pub trait EventTarget {
 pub enum WindowEvent {
     CloseRequest,
     RedrawRequest,
+    Input(InputEvent),
+}
 
+pub enum InputEvent {
     Resize {
         width: u32,
         height: u32,

@@ -2,8 +2,8 @@
 
 
 
-use bog_event::{KeyCode, WheelMovement, WindowEvent};
-use bog_core::{vec2, Vec2};
+use bog_event::{InputEvent, WindowEvent};
+use bog_core::vec2;
 use bog_render::{gpu, RenderPass, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,
@@ -36,13 +36,7 @@ pub fn run_app<A: AppHandler>(app: A) -> Result<()> {
 pub trait AppHandler {
     fn startup(&mut self, cx: AppContext) {}
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>);
-    fn on_resize(&mut self, cx: AppContext, size: Vec2) {}
-    fn on_mouse_move(&mut self, cx: AppContext, mouse_pos: Vec2) {}
-    fn on_primary_mouse_down(&mut self, cx: AppContext) {}
-    fn on_primary_mouse_up(&mut self, cx: AppContext) {}
-    fn on_wheel_movement(&mut self, cx: AppContext, movement: WheelMovement) {}
-    fn on_key_down(&mut self, cx: AppContext, code: KeyCode, repeat: bool) {}
-    fn on_key_up(&mut self, cx: AppContext, code: KeyCode) {}
+    fn input(&mut self, cx: AppContext, input: InputEvent) {}
     fn on_close(&mut self, cx: AppContext) -> bool { true }
     fn window_desc(&self) -> WindowDescriptor;
 }
@@ -107,41 +101,22 @@ impl<A: AppHandler> WindowingClient for AppRunner<A> {
                 renderer.render(&mut pass, &target, &viewport);
                 texture.present();
             }
-            WindowEvent::Resize { width, height } => {
-                let physical_size = vec2(width as f32, height as f32);
-                graphics.resize(renderer.device(), physical_size);
-                viewport.resize(physical_size);
-                renderer.resize(physical_size);
-                self.app.on_resize(AppContext { window, renderer }, physical_size);
-                window.request_redraw();
-            }
-            WindowEvent::KeyDown { code, repeat } => {
-                self.app.on_key_down(AppContext { window, renderer }, code, repeat);
-            }
-            WindowEvent::KeyUp { code } => {
-                self.app.on_key_up(AppContext { window, renderer }, code);
-            }
-            WindowEvent::MouseMove { x, y } => {
-                self.app.on_mouse_move(AppContext { window, renderer }, vec2(x, y));
-                window.request_redraw();
-            }
-            WindowEvent::MouseDown { code } => {
-                if code == 0 {
-                    self.app.on_primary_mouse_down(AppContext { window, renderer });
+            WindowEvent::Input(input) => match input {
+                InputEvent::Resize { width, height } => {
+                    let physical_size = vec2(width as f32, height as f32);
+                    graphics.resize(renderer.device(), physical_size);
+                    viewport.resize(physical_size);
+                    renderer.resize(physical_size);
+                    self.app.input(
+                        AppContext { window, renderer },
+                        InputEvent::Resize { width, height },
+                    );
                     window.request_redraw();
                 }
-            }
-            WindowEvent::MouseUp { code } => {
-                if code == 0 {
-                    self.app.on_primary_mouse_up(AppContext { window, renderer });
-                    window.request_redraw();
+                other => {
+                    self.app.input(AppContext { window, renderer }, other);
                 }
             }
-            WindowEvent::WheelMove(movement) => {
-                self.app.on_wheel_movement(AppContext { window, renderer }, movement);
-                window.request_redraw();
-            }
-            _ => {}
         }
     }
 }

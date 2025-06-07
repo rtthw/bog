@@ -104,17 +104,17 @@ impl AppHandler for App {
         pass.end_layer();
     }
 
-    fn on_mouse_move(&mut self, _cx: AppContext, mouse_pos: Vec2) {
-        self.mouse_pos = mouse_pos;
-    }
-
-    fn on_wheel_movement(&mut self, _cx: AppContext, movement: WheelMovement) {
-        match movement {
-            WheelMovement::Lines { y, .. } => {
+    fn input(&mut self, cx: AppContext, input: InputEvent) {
+        cx.window.request_redraw();
+        match input {
+            InputEvent::MouseMove { x, y } => {
+                self.mouse_pos = vec2(x, y);
+            }
+            InputEvent::WheelMove(WheelMovement::Lines { y, .. }) => {
                 self.scroll_offset = self.scroll_offset
                     .saturating_add_signed(3 * -y.round() as isize);
             }
-            WheelMovement::Pixels { .. } => todo!(),
+            _ => {}
         }
     }
 

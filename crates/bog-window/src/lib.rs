@@ -11,7 +11,7 @@ pub mod x11;
 
 use bog_core::alloc::string::String;
 use bog_core::Arc;
-use bog_event::{KeyCode, WheelMovement, WindowEvent};
+use bog_event::{InputEvent, KeyCode, WheelMovement, WindowEvent};
 use bog_core::{vec2, Vec2};
 
 pub use winit::raw_window_handle as rwh;
@@ -211,13 +211,13 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
 
         winit::event::WindowEvent::Resized(new_size) => {
             let (width, height) = new_size.into();
-            Some(WindowEvent::Resize { width, height })
+            Some(WindowEvent::Input(InputEvent::Resize { width, height }))
         }
         winit::event::WindowEvent::Focused(focused) => {
             Some(if focused {
-                WindowEvent::FocusIn
+                WindowEvent::Input(InputEvent::FocusIn)
             } else {
-                WindowEvent::FocusOut
+                WindowEvent::Input(InputEvent::FocusOut)
             })
         }
 
@@ -233,14 +233,14 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
                     let code = translate_winit_keycode(key_code)?;
 
                     Some(if state.is_pressed() {
-                        WindowEvent::KeyDown {
+                        WindowEvent::Input(InputEvent::KeyDown {
                             code,
                             repeat,
-                        }
+                        })
                     } else {
-                        WindowEvent::KeyUp {
+                        WindowEvent::Input(InputEvent::KeyUp {
                             code,
-                        }
+                        })
                     })
                 }
                 winit::keyboard::PhysicalKey::Unidentified(_native_key_code) => {
@@ -254,14 +254,17 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
         }
 
         winit::event::WindowEvent::CursorMoved { position, .. } => {
-            Some(WindowEvent::MouseMove { x: position.x as _, y: position.y as _ })
+            Some(WindowEvent::Input(InputEvent::MouseMove {
+                x: position.x as _,
+                y: position.y as _,
+            }))
         }
         winit::event::WindowEvent::MouseInput { state, button, .. } => {
             let code = translate_winit_mousebutton(button);
             Some(if state.is_pressed() {
-                WindowEvent::MouseDown { code }
+                WindowEvent::Input(InputEvent::MouseDown { code })
             } else {
-                WindowEvent::MouseUp { code }
+                WindowEvent::Input(InputEvent::MouseUp { code })
             })
         }
         // TODO: Handle touch inputs.
@@ -274,7 +277,7 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
                     WheelMovement::Pixels { x: pos.x as _, y: pos.y as _ }
                 }
             };
-            Some(WindowEvent::WheelMove(movement))
+            Some(WindowEvent::Input(InputEvent::WheelMove(movement)))
         }
 
         _ => None,
