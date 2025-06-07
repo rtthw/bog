@@ -10,7 +10,7 @@
 pub mod x11;
 
 use bog_core::alloc::string::String;
-use bog_core::{Arc, InputEvent, KeyCode, WheelMovement, WindowEvent};
+use bog_core::{Arc, InputEvent, KeyCode, MouseButton, WheelMovement, WindowEvent};
 use bog_core::{vec2, Vec2};
 
 pub use winit::raw_window_handle as rwh;
@@ -259,11 +259,11 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
             }))
         }
         winit::event::WindowEvent::MouseInput { state, button, .. } => {
-            let code = translate_winit_mousebutton(button);
+            let button = translate_winit_mousebutton(button);
             Some(if state.is_pressed() {
-                WindowEvent::Input(InputEvent::MouseDown { code })
+                WindowEvent::Input(InputEvent::MouseDown { button })
             } else {
-                WindowEvent::Input(InputEvent::MouseUp { code })
+                WindowEvent::Input(InputEvent::MouseUp { button })
             })
         }
         // TODO: Handle touch inputs.
@@ -366,14 +366,14 @@ fn translate_winit_keycode(winit_code: winit::keyboard::KeyCode) -> Option<KeyCo
     })
 }
 
-fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) -> u8 {
+const fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) -> MouseButton {
     match winit_button {
-        winit::event::MouseButton::Left => 0,
-        winit::event::MouseButton::Right => 1,
-        winit::event::MouseButton::Middle => 2,
-        winit::event::MouseButton::Back => 3,
-        winit::event::MouseButton::Forward => 4,
-        winit::event::MouseButton::Other(n) => (n + 5) as u8,
+        winit::event::MouseButton::Left => MouseButton::Left,
+        winit::event::MouseButton::Right => MouseButton::Right,
+        winit::event::MouseButton::Middle => MouseButton::Middle,
+        winit::event::MouseButton::Back => MouseButton::Back,
+        winit::event::MouseButton::Forward => MouseButton::Forward,
+        winit::event::MouseButton::Other(n) => MouseButton::Other(n),
     }
 }
 

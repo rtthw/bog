@@ -23,7 +23,7 @@ pub use alloc::{
 };
 
 pub use color::Color;
-pub use event::{InputEvent, WindowEvent, WheelMovement};
+pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};
 pub use key::{KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
