@@ -30,10 +30,17 @@ pub struct WindowGraphics<'w> {
 impl<'w> WindowGraphics<'w> {
     pub async fn from_window<W>(
         window: W,
-    ) -> Result<(Self, gpu::Device, gpu::Queue, gpu::TextureFormat, gpu::Backend)>
+        backend_override: Option<gpu::Backends>,
+    ) -> Result<(
+        Self,
+        gpu::Device,
+        gpu::Queue,
+        gpu::TextureFormat,
+        gpu::Backend,
+    )>
     where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
-        let backends = {
+        let backends = backend_override.unwrap_or({
             #[cfg(not(target_arch = "wasm32"))]
             {
                 #[cfg(target_os = "linux")]
@@ -45,7 +52,7 @@ impl<'w> WindowGraphics<'w> {
             }
             #[cfg(target_arch = "wasm32")]
             gpu::Backends::GL
-        };
+        });
         let instance = gpu::Instance::new(&gpu::InstanceDescriptor {
             backends,
             ..Default::default()
