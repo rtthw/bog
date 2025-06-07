@@ -10,8 +10,7 @@
 pub mod x11;
 
 use bog_core::alloc::string::String;
-use bog_core::Arc;
-use bog_event::{InputEvent, KeyCode, WheelMovement, WindowEvent};
+use bog_core::{Arc, InputEvent, KeyCode, WheelMovement, WindowEvent};
 use bog_core::{vec2, Vec2};
 
 pub use winit::raw_window_handle as rwh;

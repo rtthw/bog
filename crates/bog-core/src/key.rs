@@ -1,4 +1,4 @@
-//! Key Event Types
+//! Key event types
 
 
 

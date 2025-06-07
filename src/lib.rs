@@ -5,7 +5,6 @@
 pub mod app;
 pub mod graphics;
 
-pub use bog_event as event;
 pub use bog_render as render;
 pub use bog_window as window;
 
@@ -42,15 +41,11 @@ pub mod prelude {
         Result,
     };
 
-    pub use bog_event::{
+    pub use bog_core::{
+        Color,
         InputEvent,
         KeyCode,
         KeyUpdate,
-        WheelMovement,
-        WindowEvent,
-    };
-    pub use bog_core::{
-        Color,
         Mat3,
         Mat4,
         NoHashMap,
@@ -59,6 +54,8 @@ pub mod prelude {
         Vec2,
         vec3,
         Vec3,
+        WheelMovement,
+        WindowEvent,
     };
     pub use bog_render::{
         Border,

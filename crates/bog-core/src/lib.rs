@@ -5,6 +5,8 @@
 
 
 mod color;
+mod event;
+mod key;
 mod nohash_map;
 mod rect;
 mod unit_map;
@@ -21,6 +23,8 @@ pub use alloc::{
 };
 
 pub use color::Color;
+pub use event::{InputEvent, WindowEvent, WheelMovement};
+pub use key::{KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
 pub use unit_map::UnitMap;

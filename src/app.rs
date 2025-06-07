@@ -2,8 +2,7 @@
 
 
 
-use bog_event::{InputEvent, WindowEvent};
-use bog_core::vec2;
+use bog_core::{InputEvent, vec2, WindowEvent};
 use bog_render::{gpu, RenderPass, Renderer, Viewport};
 use bog_window::{
     WindowingClient, Window, WindowDescriptor, WindowId, WindowManager, WindowingSystem,

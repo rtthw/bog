@@ -183,7 +183,6 @@ name = "bog"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog-event",
  "bog-render",
  "bog-view",
  "bog-window",
@@ -199,13 +198,6 @@ dependencies = [
  "glam",
  "hashbrown",
  "rustc-hash 2.1.1",
-]
-
-[[package]]
-name = "bog-event"
-version = "0.1.0"
-dependencies = [
- "bitflags 2.9.0",
 ]
 
 [[package]]
@@ -236,7 +228,6 @@ name = "bog-window"
 version = "0.1.0"
 dependencies = [
  "bog-core",
- "bog-event",
  "winit",
  "x11rb",
 ]

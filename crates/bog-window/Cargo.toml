@@ -9,6 +9,5 @@ x11 = ["dep:x11rb"]
 
 [dependencies]
 bog-core.workspace = true
-bog-event.workspace = true
 winit = "0.30"
 x11rb = { version = "0.13", features = ["allow-unsafe-code"], optional = true }

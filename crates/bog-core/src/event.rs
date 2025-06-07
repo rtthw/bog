@@ -1,11 +1,8 @@
-//! Bog Events
-
-#![no_std]
+//! Event types
 
 
 
-pub mod key;
-pub use key::*;
+use crate::KeyCode;
 
 
 
