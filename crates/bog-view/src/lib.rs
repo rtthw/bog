@@ -6,7 +6,7 @@ pub mod style;
 pub mod tree;
 
 
-use std::marker::PhantomData;
+use core::{any::TypeId, marker::PhantomData};
 
 use bog_core::{InputEvent, NoHashMap};
 use bog_render::RenderPass;
@@ -50,7 +50,19 @@ pub fn render_view(
 
 
 
+#[derive(PartialEq)]
 pub struct Node(InnerNode);
+
+// TODO: Better debug repr.
+impl core::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Node::{}", match &self.0 {
+            InnerNode::None => "None",
+            InnerNode::Branch(_nodes) => "Branch",
+            InnerNode::Leaf(_node) => "Leaf",
+        })
+    }
+}
 
 impl Node {
     pub fn leaf<E: Element>() -> Self {
@@ -66,6 +78,7 @@ impl Node {
     }
 }
 
+#[derive(PartialEq)]
 enum InnerNode {
     Leaf(Box<dyn ElementNode>),
     Branch(Vec<InnerNode>),
@@ -73,6 +86,10 @@ enum InnerNode {
 }
 
 impl InnerNode {
+    /// ## Panics
+    ///
+    /// If the `tree` is not in sync with this node (i.e. this node does not have the same number
+    /// of children as the `tree` believes it does in [`ViewTree::children`]).
     fn crawl(
         &self,
         id: u64,
@@ -97,7 +114,17 @@ impl InnerNode {
     }
 }
 
-trait ElementNode {}
+trait ElementNode: 'static {
+    fn type_id(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
+}
+
+impl PartialEq for Box<dyn ElementNode> {
+    fn eq(&self, other: &Self) -> bool {
+        self.type_id() == other.type_id()
+    }
+}
 
 struct ElementNodeDef<E: Element> {
     _element: PhantomData<E>,
@@ -129,7 +156,15 @@ mod tests {
 
     impl View for TestView {
         fn build(&self) -> Node {
-            Node::leaf::<TestElement>()
+            Node::branch([
+                Node::leaf::<TestElement>(),
+                Node::branch([
+                    Node::leaf::<OtherElement>(),
+                    Node::leaf::<TestElement>(),
+                ]),
+                Node::leaf::<OtherElement>(),
+                Node::leaf::<OtherElement>(),
+            ])
         }
     }
 
@@ -139,5 +174,15 @@ mod tests {
 
     impl Element for OtherElement {
         type View = TestView;
+    }
+
+    #[test]
+    fn node_equality() {
+        let a = Node::leaf::<TestElement>();
+        let b = Node::leaf::<OtherElement>();
+        let c = Node::leaf::<TestElement>();
+
+        assert_ne!(a, b);
+        assert_eq!(c, a);
     }
 }
