@@ -2,6 +2,7 @@
 
 
 
+#[cfg(feature = "app")]
 pub mod app;
 pub mod graphics;
 
@@ -27,12 +28,13 @@ pub enum Error {
 
 
 pub mod prelude {
+    #[cfg(feature = "app")]
+    pub use crate::app::{
+        AppContext,
+        AppHandler,
+        run_app,
+    };
     pub use crate::{
-        app::{
-            AppContext,
-            AppHandler,
-            run_app,
-        },
         Error,
         graphics::{
             GraphicsError,

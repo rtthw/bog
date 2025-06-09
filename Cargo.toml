@@ -13,7 +13,7 @@ repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
 
 [features]
-default = []
+default = ["app"]
 app = []
 
 [dependencies]
