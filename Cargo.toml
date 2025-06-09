@@ -19,7 +19,6 @@ app = []
 [dependencies]
 bog-core.workspace = true
 bog-render.workspace = true
-bog-view.workspace = true
 bog-window.workspace = true
 
 pollster = "0.4"
@@ -28,7 +27,6 @@ thiserror = "2"
 [workspace.dependencies]
 bog-core = { path = "crates/bog-core" }
 bog-render = { path = "crates/bog-render" }
-bog-view = { path = "crates/bog-view" }
 bog-window = { path = "crates/bog-window" }
 
 
