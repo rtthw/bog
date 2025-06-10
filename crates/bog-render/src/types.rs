@@ -42,6 +42,13 @@ impl Default for Text<'_> {
 pub enum TextContent<'a> {
     Owned(String),
     Borrowed(&'a str),
+    Cow(std::borrow::Cow<'a, str>),
+}
+
+impl<'a> From<std::borrow::Cow<'a, str>> for TextContent<'a> {
+    fn from(value: std::borrow::Cow<'a, str>) -> Self {
+        Self::Cow(value)
+    }
 }
 
 impl<'a> From<&'a str> for TextContent<'a> {
@@ -62,24 +69,10 @@ impl<'a> core::ops::Deref for TextContent<'a> {
         match self {
             Self::Owned(s) => &s,
             Self::Borrowed(s) => s,
+            Self::Cow(s) => s.as_ref(),
         }
     }
 }
-
-// impl<'a> Text<'a> {
-//     pub fn styled(content: &'a str, bounds: Rect, style: &ResolvedStyle) -> Self {
-//         Self {
-//             content,
-//             pos: bounds.position(),
-//             size: style.em,
-//             line_height: 0.0, // TODO: Maybe `Style.text_height` instead?
-//             color: style.fg_color,
-//             font_family: style.font_family,
-//             text_slant: style.text_slant,
-//             bounds: bounds.size(),
-//         }
-//     }
-// }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum FontFamily<'a> {
