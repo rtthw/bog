@@ -6,6 +6,7 @@
 
 mod color;
 mod event;
+mod input;
 mod key;
 mod nohash_map;
 mod rect;
@@ -43,6 +44,7 @@ macro_rules! vec {
 
 pub use color::Color;
 pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};
+pub use input::{Input, InputHandler};
 pub use key::{KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
