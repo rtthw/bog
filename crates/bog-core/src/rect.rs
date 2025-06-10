@@ -90,7 +90,11 @@ impl Rect<f32> {
     }
 }
 
+// Shaping.
 impl Rect<f32> {
+    /// Shrink this rectangle by the provided margins.
+    ///
+    /// The resulting rectangle will be centered inside this one.
     pub const fn shrink(self, margin_x: f32, margin_y: f32) -> Self {
         let doubled_margin_horizontal = margin_x * 2.0;
         let doubled_margin_vertical = margin_y * 2.0;
@@ -107,6 +111,9 @@ impl Rect<f32> {
         }
     }
 
+    /// Shrink this rectangle horizontally by the provided margin.
+    ///
+    /// The resulting rectangle will be centered inside this one.
     pub const fn shrink_h(self, margin: f32) -> Self {
         let doubled_margin = margin * 2.0;
 
@@ -122,6 +129,9 @@ impl Rect<f32> {
         }
     }
 
+    /// Shrink this rectangle vertically by the provided margin.
+    ///
+    /// The resulting rectangle will be centered inside this one.
     pub const fn shrink_v(self, margin: f32) -> Self {
         let doubled_margin = margin * 2.0;
 
@@ -137,26 +147,40 @@ impl Rect<f32> {
         }
     }
 
-    pub fn hsplit_len(&self, len: f32) -> (Self, Self) {
+    /// Split this rectangle horizontally at the provided length.
+    pub const fn split_len_h(&self, len: f32) -> (Self, Self) {
         (
             Self { x: self.x, y: self.y, w: len, h: self.h },
             Self { x: self.x + len, y: self.y, w: self.w - len, h: self.h },
         )
     }
 
-    pub fn hsplit_portion(&self, portion: f32) -> (Self, Self) {
-        self.hsplit_len(self.w * portion)
+    /// Split this rectangle horizontally at the provided length, starting from the right side.
+    pub const fn split_len_rev_h(&self, len: f32) -> (Self, Self) {
+        self.split_len_h(self.w - len)
     }
 
-    pub fn vsplit_len(&self, len: f32) -> (Self, Self) {
+    /// Split this rectangle horizontally at the provided portion of its width.
+    pub const fn split_portion_h(&self, portion: f32) -> (Self, Self) {
+        self.split_len_h(self.w * portion)
+    }
+
+    /// Split this rectangle vertically at the provided length.
+    pub const fn split_len_v(&self, len: f32) -> (Self, Self) {
         (
             Self { x: self.x, y: self.y, w: self.w, h: len },
             Self { x: self.x, y: self.y + len, w: self.w, h: self.h - len },
         )
     }
 
-    pub fn vsplit_portion(&self, portion: f32) -> (Self, Self) {
-        self.vsplit_len(self.h * portion)
+    /// Split this rectangle vertically at the provided length, starting from the bottom side.
+    pub const fn split_len_rev_v(&self, len: f32) -> (Self, Self) {
+        self.split_len_v(self.h - len)
+    }
+
+    /// Split this rectangle vertically at the provided portion of its height.
+    pub const fn split_portion_v(&self, portion: f32) -> (Self, Self) {
+        self.split_len_v(self.h * portion)
     }
 }
 
