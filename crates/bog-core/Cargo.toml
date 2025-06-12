@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bitflags = "2"
 # Required for #![no_std].
 glam = { version = "0.30", default-features = false, features = ["libm"] }
 hashbrown = "0.15"

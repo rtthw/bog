@@ -4,7 +4,7 @@
 
 use alloc::vec::Vec;
 
-use crate::{vec, vec2, InputEvent, KeyCode, Rect, Vec2};
+use crate::{vec, vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2};
 
 
 
@@ -31,6 +31,12 @@ impl EventParser {
             }
             InputEvent::MouseMove { x, y } => {
                 self.mouse.handle_mouse_move(vec2(x, y)).into_iter().map(Input::Mouse).collect()
+            }
+            InputEvent::MouseDown { button } => {
+                self.mouse.handle_mouse_down(button).into_iter().map(Input::Mouse).collect()
+            }
+            InputEvent::MouseUp { button } => {
+                self.mouse.handle_mouse_up(button).into_iter().map(Input::Mouse).collect()
             }
             _ => Vec::new(),
         }
@@ -70,6 +76,7 @@ impl KeyEventParser {
 pub struct MouseEventParser {
     root_area: InputArea,
     hovered: Vec<&'static str>,
+    buttons_down: MouseButtonMask,
 }
 
 impl MouseEventParser {
@@ -77,6 +84,7 @@ impl MouseEventParser {
         Self {
             root_area,
             hovered: Vec::new(),
+            buttons_down: MouseButtonMask::empty(),
         }
     }
 
@@ -99,6 +107,26 @@ impl MouseEventParser {
         }
 
         inputs
+    }
+
+    pub fn handle_mouse_down(&mut self, button: MouseButton) -> Vec<MouseInput> {
+        match button {
+            MouseButton::Left => self.buttons_down.insert(MouseButtonMask::LEFT),
+            MouseButton::Right => self.buttons_down.insert(MouseButtonMask::RIGHT),
+            MouseButton::Middle => self.buttons_down.insert(MouseButtonMask::MIDDLE),
+            _ => {}
+        }
+        Vec::new()
+    }
+
+    pub fn handle_mouse_up(&mut self, button: MouseButton) -> Vec<MouseInput> {
+        match button {
+            MouseButton::Left => self.buttons_down.remove(MouseButtonMask::LEFT),
+            MouseButton::Right => self.buttons_down.remove(MouseButtonMask::RIGHT),
+            MouseButton::Middle => self.buttons_down.remove(MouseButtonMask::MIDDLE),
+            _ => {}
+        }
+        Vec::new()
     }
 
     pub fn update_areas(&mut self, root_area: InputArea) {
@@ -132,6 +160,55 @@ pub enum MouseInput {
     Leave {
         area: &'static str,
     },
+}
+
+
+
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+pub struct MouseButtonMask(u8);
+
+bitflags::bitflags! {
+    impl MouseButtonMask: u8 {
+        /// The left mouse button (LMB).
+        const LEFT = 1 << 0;
+        /// The right mouse button (RMB).
+        const RIGHT = 1 << 1;
+        /// The middle mouse button (MMB).
+        const MIDDLE = 1 << 2;
+    }
+}
+
+impl core::fmt::Debug for MouseButtonMask {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "MouseButtonMask {{")?;
+        if self.left() {
+            write!(f, " left")?;
+        }
+        if self.right() {
+            write!(f, " right")?;
+        }
+        if self.middle() {
+            write!(f, " middle")?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl MouseButtonMask {
+    #[inline]
+    pub fn left(&self) -> bool {
+        self.contains(Self::LEFT)
+    }
+
+    #[inline]
+    pub fn right(&self) -> bool {
+        self.contains(Self::RIGHT)
+    }
+
+    #[inline]
+    pub fn middle(&self) -> bool {
+        self.contains(Self::MIDDLE)
+    }
 }
 
 
