@@ -4,15 +4,23 @@
 
 use alloc::vec::Vec;
 
-use crate::{vec, InputEvent, KeyCode, Rect, Vec2};
+use crate::{vec, vec2, InputEvent, KeyCode, Rect, Vec2};
 
 
 
 pub struct EventParser {
     key: KeyEventParser,
+    mouse: MouseEventParser,
 }
 
 impl EventParser {
+    pub fn new(root_area: InputArea) -> Self {
+        Self {
+            key: KeyEventParser::default(),
+            mouse: MouseEventParser::new(root_area),
+        }
+    }
+
     pub fn parse_event(&mut self, event: InputEvent) -> Vec<Input> {
         match event {
             InputEvent::KeyDown { code, repeat } => {
@@ -21,12 +29,20 @@ impl EventParser {
             InputEvent::KeyUp { code } => {
                 self.key.handle_key_up(code).into_iter().map(Input::Key).collect()
             }
+            InputEvent::MouseMove { x, y } => {
+                self.mouse.handle_mouse_move(vec2(x, y)).into_iter().map(Input::Mouse).collect()
+            }
             _ => Vec::new(),
         }
+    }
+
+    pub fn update_areas(&mut self, root_area: InputArea) {
+        self.mouse.update_areas(root_area)
     }
 }
 
 /// Translates raw key [`InputEvent`]s into more intuitive [`KeyInput`]s.
+#[derive(Debug, Default)]
 pub struct KeyEventParser {
     keys_down: rustc_hash::FxHashSet<KeyCode>,
 }
@@ -50,11 +66,52 @@ impl KeyEventParser {
     }
 }
 
+/// Translates raw mouse [`InputEvent`]s into more intuitive [`MouseInput`]s.
+pub struct MouseEventParser {
+    root_area: InputArea,
+    hovered: Vec<&'static str>,
+}
+
+impl MouseEventParser {
+    pub fn new(root_area: InputArea) -> Self {
+        Self {
+            root_area,
+            hovered: Vec::new(),
+        }
+    }
+
+    pub fn handle_mouse_move(&mut self, new_position: Vec2) -> Vec<MouseInput> {
+        let mut inputs = vec![];
+
+        let new_hovered = self.root_area.list_under(new_position);
+        if self.hovered != new_hovered {
+            for area in &self.hovered {
+                if !new_hovered.contains(area) {
+                    inputs.push(MouseInput::Leave { area });
+                }
+            }
+            for area in &new_hovered {
+                if !self.hovered.contains(area) {
+                    inputs.push(MouseInput::Enter { area });
+                }
+            }
+            self.hovered = new_hovered;
+        }
+
+        inputs
+    }
+
+    pub fn update_areas(&mut self, root_area: InputArea) {
+        self.root_area = root_area;
+    }
+}
+
 
 
 #[derive(Clone, Debug)]
 pub enum Input {
     Key(KeyInput),
+    Mouse(MouseInput),
 }
 
 #[derive(Clone, Debug)]
@@ -63,6 +120,16 @@ pub enum KeyInput {
     FullKeyPress(KeyCode),
     /// A repeated key down event.
     RepeatKeyPress(KeyCode),
+}
+
+#[derive(Clone, Debug)]
+pub enum MouseInput {
+    Enter {
+        area: &'static str,
+    },
+    Leave {
+        area: &'static str,
+    },
 }
 
 
