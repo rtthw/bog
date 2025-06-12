@@ -122,11 +122,13 @@ pub enum KeyInput {
     RepeatKeyPress(KeyCode),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum MouseInput {
+    /// The user's mouse just entered this area.
     Enter {
         area: &'static str,
     },
+    /// The user's mouse just left this area.
     Leave {
         area: &'static str,
     },
@@ -218,5 +220,39 @@ mod tests {
         assert!(root.list_under(vec2(20.0, 3.0)) == vec!["root", "right", "top"]);
         assert!(root.list_under(vec2(39.0, 30.0)) == vec!["root", "right", "bottom"]);
         assert!(root.list_under(vec2(40.0, 30.0)) == Vec::<&'static str>::new());
+    }
+
+    #[test]
+    fn input_area_hovering() {
+        let root = Rect::new(Vec2::ZERO, vec2(40.0, 50.0));
+        let (left, right) = root.split_portion_h(0.5);
+        let (top, bottom) = right.split_portion_v(0.5);
+
+        let root = InputArea::new(root, "root")
+            .with_children(vec![
+                InputArea::new(left, "left"),
+                InputArea::new(right, "right")
+                    .with_children(vec![
+                        InputArea::new(top, "top"),
+                        InputArea::new(bottom, "bottom"),
+                    ]),
+            ]);
+
+        let mut mouse_parser = MouseEventParser::new(root);
+        assert_eq!(
+            mouse_parser.handle_mouse_move(vec2(2.0, 30.0)),
+            vec![
+                MouseInput::Enter { area: "root" },
+                MouseInput::Enter { area: "left" },
+            ],
+        );
+        assert_eq!(
+            mouse_parser.handle_mouse_move(vec2(20.0, 3.0)),
+            vec![
+                MouseInput::Leave { area: "left" },
+                MouseInput::Enter { area: "right" },
+                MouseInput::Enter { area: "top" },
+            ],
+        );
     }
 }
