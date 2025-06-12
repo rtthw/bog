@@ -44,7 +44,7 @@ macro_rules! vec {
 
 pub use color::Color;
 pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};
-pub use input::{EventParser, Input, KeyEventParser, KeyInput};
+pub use input::{EventParser, Input, InputArea, KeyEventParser, KeyInput};
 pub use key::{KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
