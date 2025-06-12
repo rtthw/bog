@@ -19,15 +19,26 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 fn main() -> Result<()> {
+    let root_area = {
+        let area = Rect::new(vec2(0.0, 0.0), vec2(1200.0, 800.0));
+        let (side_area, main_area) = area.split_portion_h(0.2);
+
+        InputArea::new(area, "root")
+            .with_children(vec![
+                InputArea::new(side_area, "side"),
+                InputArea::new(main_area, "main"),
+            ])
+    };
+
     run_app(App {
-        mouse_pos: Vec2::ZERO,
+        event_parser: EventParser::new(root_area),
     })
 }
 
 
 
 struct App {
-    mouse_pos: Vec2,
+    event_parser: EventParser,
 }
 
 impl AppHandler for App {
@@ -44,19 +55,31 @@ impl AppHandler for App {
         pass.end_layer();
     }
 
-    fn input(&mut self, cx: AppContext, input: InputEvent) {
+    fn input(&mut self, cx: AppContext, event: InputEvent) {
         cx.window.request_redraw();
-        match input {
-            InputEvent::MouseMove { x, y } => {
-                self.mouse_pos = vec2(x, y);
+        for input in self.event_parser.parse_event(event) {
+            match input {
+                Input::Mouse(i) => match i {
+                    MouseInput::Enter { area: "side" } => {
+                        println!("(A) Works!");
+                    }
+                    MouseInput::Leave { area: "side" } => {
+                        println!("(B) Works!");
+                    }
+                    MouseInput::Enter { area: "main" } => {
+                        println!("(C) Works!");
+                    }
+                    _ => {}
+                }
+                _ => {}
             }
-            _ => {}
         }
     }
 
     fn window_desc(&self) -> WindowDescriptor {
         WindowDescriptor {
             title: "Bog - Showcase",
+            inner_size: vec2(1200.0, 800.0),
             ..Default::default()
         }
     }
