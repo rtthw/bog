@@ -18,4 +18,46 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 
-fn main() {}
+fn main() -> Result<()> {
+    run_app(App {
+        mouse_pos: Vec2::ZERO,
+    })
+}
+
+
+
+struct App {
+    mouse_pos: Vec2,
+}
+
+impl AppHandler for App {
+    fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
+        let area = cx.renderer.viewport_rect();
+        pass.start_layer(area);
+        pass.fill_quad(Quad::new_colored(area, GRAY_1));
+        pass.end_layer();
+        pass.start_layer(area);
+
+        let (_side_area, main_area) = area.split_portion_h(0.2);
+        pass.fill_quad(Quad::new_colored(main_area, GRAY_2));
+
+        pass.end_layer();
+    }
+
+    fn input(&mut self, cx: AppContext, input: InputEvent) {
+        cx.window.request_redraw();
+        match input {
+            InputEvent::MouseMove { x, y } => {
+                self.mouse_pos = vec2(x, y);
+            }
+            _ => {}
+        }
+    }
+
+    fn window_desc(&self) -> WindowDescriptor {
+        WindowDescriptor {
+            title: "Bog - Showcase",
+            ..Default::default()
+        }
+    }
+}
