@@ -116,7 +116,11 @@ impl MouseEventParser {
             MouseButton::Middle => self.buttons_down.insert(MouseButtonMask::MIDDLE),
             _ => {}
         }
-        Vec::new()
+
+        self.hovered.clone()
+            .into_iter()
+            .map(|name| MouseInput::Press { area: name, button })
+            .collect()
     }
 
     pub fn handle_mouse_up(&mut self, button: MouseButton) -> Vec<MouseInput> {
@@ -126,7 +130,11 @@ impl MouseEventParser {
             MouseButton::Middle => self.buttons_down.remove(MouseButtonMask::MIDDLE),
             _ => {}
         }
-        Vec::new()
+
+        self.hovered.clone()
+            .into_iter()
+            .map(|name| MouseInput::Release { area: name, button })
+            .collect()
     }
 
     pub fn update_areas(&mut self, root_area: InputArea) {
@@ -159,6 +167,14 @@ pub enum MouseInput {
     /// The user's mouse just left this area.
     Leave {
         area: &'static str,
+    },
+    Press {
+        area: &'static str,
+        button: MouseButton,
+    },
+    Release {
+        area: &'static str,
+        button: MouseButton,
     },
 }
 
