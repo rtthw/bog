@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         last_frame_time: Instant::now(),
         player_pos: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
         player_move: None,
-        player_speed: 1.1,
+        player_speed: 100.0,
         mouse_pos: Vec2::ZERO,
     })
 }
@@ -51,7 +51,8 @@ impl AppHandler for Game {
 
         if let Some(move_target) = self.player_move {
             if self.player_pos.distance(move_target) > 5.0 {
-                self.player_pos = self.player_pos.lerp(move_target, dt as f32 * self.player_speed);
+                self.player_pos = self.player_pos
+                    .move_towards(move_target, dt as f32 * self.player_speed);
             } else {
                 self.player_move = None;
             }
