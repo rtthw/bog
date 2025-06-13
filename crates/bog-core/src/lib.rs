@@ -1,6 +1,6 @@
 //! Bog core types
 
-#![no_std]
+// #![no_std]
 
 
 
@@ -13,34 +13,6 @@ mod rect;
 mod type_map;
 mod unit_map;
 
-
-pub extern crate alloc;
-
-pub use alloc::{
-    boxed::*,
-    str::*,
-    string::{self, String, ToString},
-    sync::*,
-    vec::Vec,
-};
-
-#[macro_export]
-macro_rules! vec {
-    () => (
-        $crate::alloc::vec::Vec::new()
-    );
-    ($elem:expr; $n:expr) => (
-        $crate::alloc::vec::from_elem($elem, $n)
-    );
-    ($($x:expr),+ $(,)?) => (
-        <[_]>::into_vec(
-            // NOTE: This doesn't use the `box_new` intrinsic because it isn't available on stable.
-            //       Using the intrinsic produces a dramatic improvement in stack usage for
-            //       unoptimized programs using this code path to construct large Vecs.
-            $crate::alloc::boxed::Box::new([$($x),+])
-        )
-    );
-}
 
 pub use color::Color;
 pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};

@@ -2,9 +2,7 @@
 
 
 
-use alloc::vec::Vec;
-
-use crate::{vec, vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2};
+use crate::{vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2};
 
 
 
@@ -336,8 +334,6 @@ impl InputArea {
 
 #[cfg(test)]
 mod tests {
-    use alloc::vec;
-
     use crate::vec2;
 
     use super::*;

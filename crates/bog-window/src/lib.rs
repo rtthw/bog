@@ -2,15 +2,16 @@
 //!
 //! A set of types and abstractions useful for managing [`Window`]s through [`WindowingSystem`]s.
 
-#![no_std]
+// #![no_std]
 
 
 
 #[cfg(feature = "x11")]
 pub mod x11;
 
-use bog_core::alloc::string::String;
-use bog_core::{Arc, InputEvent, KeyCode, MouseButton, WheelMovement, WindowEvent};
+use std::sync::Arc;
+
+use bog_core::{InputEvent, KeyCode, MouseButton, WheelMovement, WindowEvent};
 use bog_core::{vec2, Vec2};
 
 pub use winit::raw_window_handle as rwh;

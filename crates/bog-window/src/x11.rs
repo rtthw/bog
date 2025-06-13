@@ -3,8 +3,8 @@
 
 
 use core::{num::NonZeroU32, ptr::NonNull};
+use std::sync::Arc;
 
-use bog_core::Arc;
 use winit::raw_window_handle::*;
 use x11rb::xcb_ffi::XCBConnection;
 
