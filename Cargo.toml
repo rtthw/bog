@@ -33,5 +33,8 @@ bog-window = { path = "crates/bog-window" }
 [[example]]
 name = "source_viewer"
 
+[[example]]
+name = "quad_game"
+
 [dev-dependencies]
 syntect = "5"
