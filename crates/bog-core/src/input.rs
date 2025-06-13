@@ -2,6 +2,8 @@
 
 
 
+use std::time::Instant;
+
 use crate::{vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2};
 
 
@@ -79,6 +81,7 @@ pub struct MouseEventParser {
     is_dragging: bool,
     drag_start_pos: Option<Vec2>,
     drag_start_area: Option<&'static str>,
+    drag_start_time: Option<Instant>,
 }
 
 impl MouseEventParser {
@@ -91,6 +94,7 @@ impl MouseEventParser {
             is_dragging: false,
             drag_start_pos: None,
             drag_start_area: None,
+            drag_start_time: None,
         }
     }
 
@@ -117,15 +121,20 @@ impl MouseEventParser {
         if let Some(topmost_hovered_area) = self.hovered.last() {
             if self.buttons_down.left() {
                 if !self.is_dragging {
-                    self.is_dragging = true; // TODO: Wait ~0.1 seconds before starting drag.
-                    self.drag_start_pos = Some(self.mouse_pos);
-                    self.drag_start_area = Some(*topmost_hovered_area);
-                    inputs.push(MouseInput::DragStart {
-                        pos: self.mouse_pos,
-                        area: *topmost_hovered_area,
-                    });
+                    if let Some(start_time) = self.drag_start_time {
+                        let dur_since = Instant::now().duration_since(start_time);
+                        if dur_since.as_secs_f64() > 0.1 {
+                            self.is_dragging = true;
+                            self.drag_start_pos = Some(self.mouse_pos);
+                            self.drag_start_area = Some(*topmost_hovered_area);
+                            inputs.push(MouseInput::DragStart {
+                                pos: self.mouse_pos,
+                                area: *topmost_hovered_area,
+                            });
+                        }
+                    }
                 }
-                // NOTE: We check twice here because it could change in the first statement.
+                // NOTE: We check twice here because it could change in the first check.
                 if self.is_dragging {
                     inputs.push(MouseInput::DragMove {
                         delta: move_delta,
@@ -140,7 +149,10 @@ impl MouseEventParser {
 
     pub fn handle_mouse_down(&mut self, button: MouseButton) -> Vec<MouseInput> {
         match button {
-            MouseButton::Left => self.buttons_down.insert(MouseButtonMask::LEFT),
+            MouseButton::Left => {
+                self.drag_start_time = Some(Instant::now());
+                self.buttons_down.insert(MouseButtonMask::LEFT);
+            }
             MouseButton::Right => self.buttons_down.insert(MouseButtonMask::RIGHT),
             MouseButton::Middle => self.buttons_down.insert(MouseButtonMask::MIDDLE),
             _ => {}
@@ -153,17 +165,35 @@ impl MouseEventParser {
     }
 
     pub fn handle_mouse_up(&mut self, button: MouseButton) -> Vec<MouseInput> {
+        let mut inputs: Vec<MouseInput> = self.hovered.clone()
+            .into_iter()
+            .map(|name| MouseInput::Release { area: name, button })
+            .collect();
+
         match button {
-            MouseButton::Left => self.buttons_down.remove(MouseButtonMask::LEFT),
+            MouseButton::Left => {
+                // FIXME: I'm not a fan of this indentation.
+                if self.is_dragging {
+                    self.drag_start_time = None;
+                    if let Some(start_pos) = self.drag_start_pos.take() {
+                        if let Some(start_area) = self.drag_start_area.take() {
+                            inputs.push(MouseInput::Drag {
+                                start_pos,
+                                end_pos: self.mouse_pos,
+                                start_area,
+                                end_area: self.hovered.last().map(|name| *name),
+                            });
+                        }
+                    }
+                }
+                self.buttons_down.remove(MouseButtonMask::LEFT);
+            }
             MouseButton::Right => self.buttons_down.remove(MouseButtonMask::RIGHT),
             MouseButton::Middle => self.buttons_down.remove(MouseButtonMask::MIDDLE),
             _ => {}
         }
 
-        self.hovered.clone()
-            .into_iter()
-            .map(|name| MouseInput::Release { area: name, button })
-            .collect()
+        inputs
     }
 
     pub fn update_areas(&mut self, root_area: InputArea) {
@@ -214,7 +244,7 @@ pub enum MouseInput {
         start_pos: Vec2,
         end_pos: Vec2,
         start_area: &'static str,
-        end_area: &'static str,
+        end_area: Option<&'static str>,
     },
     DragStart {
         pos: Vec2,
@@ -381,6 +411,7 @@ mod tests {
         assert_eq!(
             mouse_parser.handle_mouse_move(vec2(2.0, 30.0)),
             vec![
+                MouseInput::Movement { delta: vec2(2.0, 30.0) },
                 MouseInput::Enter { area: "root" },
                 MouseInput::Enter { area: "left" },
             ],
@@ -388,6 +419,7 @@ mod tests {
         assert_eq!(
             mouse_parser.handle_mouse_move(vec2(20.0, 3.0)),
             vec![
+                MouseInput::Movement { delta: vec2(18.0, -27.0) },
                 MouseInput::Leave { area: "left" },
                 MouseInput::Enter { area: "right" },
                 MouseInput::Enter { area: "top" },
