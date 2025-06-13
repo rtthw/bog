@@ -75,21 +75,31 @@ impl KeyEventParser {
 /// Translates raw mouse [`InputEvent`]s into more intuitive [`MouseInput`]s.
 pub struct MouseEventParser {
     root_area: InputArea,
+    mouse_pos: Vec2,
     hovered: Vec<&'static str>,
     buttons_down: MouseButtonMask,
+    is_dragging: bool,
+    drag_start_pos: Option<Vec2>,
+    drag_start_area: Option<&'static str>,
 }
 
 impl MouseEventParser {
     pub fn new(root_area: InputArea) -> Self {
         Self {
             root_area,
+            mouse_pos: Vec2::ZERO,
             hovered: Vec::new(),
             buttons_down: MouseButtonMask::empty(),
+            is_dragging: false,
+            drag_start_pos: None,
+            drag_start_area: None,
         }
     }
 
     pub fn handle_mouse_move(&mut self, new_position: Vec2) -> Vec<MouseInput> {
-        let mut inputs = vec![];
+        let move_delta = new_position - self.mouse_pos;
+        self.mouse_pos = new_position;
+        let mut inputs = vec![MouseInput::Movement { delta: move_delta }];
 
         let new_hovered = self.root_area.list_under(new_position);
         if self.hovered != new_hovered {
@@ -104,6 +114,27 @@ impl MouseEventParser {
                 }
             }
             self.hovered = new_hovered;
+        }
+        // TODO: Dragging with other mouse buttons.
+        if let Some(topmost_hovered_area) = self.hovered.last() {
+            if self.buttons_down.left() {
+                if !self.is_dragging {
+                    self.is_dragging = true; // TODO: Wait ~0.1 seconds before starting drag.
+                    self.drag_start_pos = Some(self.mouse_pos);
+                    self.drag_start_area = Some(*topmost_hovered_area);
+                    inputs.push(MouseInput::DragStart {
+                        pos: self.mouse_pos,
+                        area: *topmost_hovered_area,
+                    });
+                }
+                // NOTE: We check twice here because it could change in the first statement.
+                if self.is_dragging {
+                    inputs.push(MouseInput::DragMove {
+                        delta: move_delta,
+                        area: *topmost_hovered_area,
+                    });
+                }
+            }
         }
 
         inputs
@@ -160,6 +191,11 @@ pub enum KeyInput {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum MouseInput {
+    /// The user's mouse position changed.
+    Movement {
+        /// The change from the last known mouse position to the current one.
+        delta: Vec2,
+    },
     /// The user's mouse just entered this area.
     Enter {
         area: &'static str,
@@ -175,6 +211,20 @@ pub enum MouseInput {
     Release {
         area: &'static str,
         button: MouseButton,
+    },
+    Drag {
+        start_pos: Vec2,
+        end_pos: Vec2,
+        start_area: &'static str,
+        end_area: &'static str,
+    },
+    DragStart {
+        pos: Vec2,
+        area: &'static str,
+    },
+    DragMove {
+        delta: Vec2,
+        area: &'static str,
     },
 }
 
