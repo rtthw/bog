@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use crate::{vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2};
+use crate::{vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
 
 
 
@@ -23,6 +23,17 @@ impl EventParser {
 
     pub fn parse_event(&mut self, event: InputEvent) -> Vec<Input> {
         match event {
+            InputEvent::Resize { width, height } => {
+                vec![Input::Resize {
+                    new_size: vec2(width as _, height as _),
+                }]
+            }
+            InputEvent::FocusIn => {
+                vec![Input::Focus { focus: true }]
+            }
+            InputEvent::FocusOut => {
+                vec![Input::Focus { focus: false }]
+            }
             InputEvent::KeyDown { code, repeat } => {
                 self.key.handle_key_down(code, repeat).into_iter().map(Input::Key).collect()
             }
@@ -38,7 +49,11 @@ impl EventParser {
             InputEvent::MouseUp { button } => {
                 self.mouse.handle_mouse_up(button).into_iter().map(Input::Mouse).collect()
             }
-            _ => Vec::new(),
+            InputEvent::WheelMove(movement) => {
+                self.mouse.handle_wheel_move(movement).into_iter().map(Input::Mouse).collect()
+            }
+            InputEvent::MouseEnter => { Vec::new() } // TODO
+            InputEvent::MouseLeave => { Vec::new() } // TODO
         }
     }
 
@@ -196,6 +211,21 @@ impl MouseEventParser {
         inputs
     }
 
+    pub fn handle_wheel_move(&mut self, movement: WheelMovement) -> Vec<MouseInput> {
+        match movement {
+            WheelMovement::Lines { x, y } => {
+                if y.is_sign_negative() {
+                    vec![MouseInput::ScrollDown { lines: y.abs() }]
+                } else {
+                    vec![MouseInput::ScrollUp { lines: y }]
+                }
+            }
+            WheelMovement::Pixels { x, y } => {
+                vec![MouseInput::Pan { delta: vec2(x, y) }]
+            }
+        }
+    }
+
     pub fn update_areas(&mut self, root_area: InputArea) {
         self.root_area = root_area;
     }
@@ -205,8 +235,18 @@ impl MouseEventParser {
 
 #[derive(Clone, Debug)]
 pub enum Input {
+    /// A key input occurred.
     Key(KeyInput),
+    /// A mouse input occurred.
     Mouse(MouseInput),
+    /// The root area was resized to `new_size`.
+    Resize {
+        new_size: Vec2,
+    },
+    /// The root area gained/lost focus.
+    Focus {
+        focus: bool,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -232,10 +272,12 @@ pub enum MouseInput {
     Leave {
         area: &'static str,
     },
+    /// Some mouse button was just pressed down over this area.
     Press {
         area: &'static str,
         button: MouseButton,
     },
+    /// Some mouse button was just released over this area.
     Release {
         area: &'static str,
         button: MouseButton,
@@ -253,6 +295,15 @@ pub enum MouseInput {
     DragMove {
         delta: Vec2,
         area: &'static str,
+    },
+    ScrollUp {
+        lines: f32,
+    },
+    ScrollDown {
+        lines: f32,
+    },
+    Pan {
+        delta: Vec2,
     },
 }
 
