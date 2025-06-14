@@ -20,7 +20,7 @@ pub use input::{
     EventParser, Input, InputArea, KeyEventParser, KeyInput,
     MouseButtonMask, MouseEventParser, MouseInput,
 };
-pub use key::{KeyCode, KeyUpdate};
+pub use key::{Key, KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
 pub use type_map::TypeMap;

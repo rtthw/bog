@@ -228,4 +228,57 @@ impl KeyCode {
             _ => None?,
         })
     }
+
+    #[inline]
+    pub const fn is_control(&self) -> bool {
+        matches!(self, &KeyCode::C_LCTRL | &KeyCode::C_RCTRL)
+    }
+
+    #[inline]
+    pub const fn is_shift(&self) -> bool {
+        matches!(self, &KeyCode::C_LSHIFT | &KeyCode::C_RSHIFT)
+    }
+
+    #[inline]
+    pub const fn is_alt(&self) -> bool {
+        matches!(self, &KeyCode::C_LALT | &KeyCode::C_RALT)
+    }
+
+    #[inline]
+    pub const fn is_super(&self) -> bool {
+        matches!(self, &KeyCode::C_LMETA | &KeyCode::C_RMETA)
+    }
+}
+
+
+
+/// A virtual, more easily understandable version of a [`KeyCode`].
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Key {
+    Char(char),
+
+    Control,
+    Shift,
+    Alt,
+    Super,
+
+    Unknown,
+}
+
+impl From<(KeyCode, bool)> for Key {
+    fn from((code, shifted): (KeyCode, bool)) -> Self {
+        if let Some(ch) = code.to_char(shifted) {
+            Self::Char(ch)
+        } else if code.is_control() {
+            Self::Control
+        } else if code.is_shift() {
+            Self::Shift
+        } else if code.is_alt() {
+            Self::Alt
+        } else if code.is_super() {
+            Self::Super
+        } else {
+            Self::Unknown
+        }
+    }
 }

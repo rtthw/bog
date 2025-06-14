@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use crate::{vec2, InputEvent, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
+use crate::{vec2, InputEvent, Key, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
 
 
 
@@ -73,25 +73,30 @@ impl EventParser {
 /// Translates raw key [`InputEvent`]s into more intuitive [`KeyInput`]s.
 #[derive(Debug, Default)]
 pub struct KeyEventParser {
-    keys_down: rustc_hash::FxHashSet<KeyCode>,
+    shifted: bool,
+    codes_down: rustc_hash::FxHashSet<KeyCode>,
 }
 
 impl KeyEventParser {
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) -> Vec<KeyInput> {
-        if repeat {
-            vec![KeyInput::RepeatKeyPress(code)]
-        } else {
-            let _was_actually_repeat = !self.keys_down.insert(code);
-            Vec::new()
+        if code.is_shift() {
+            self.shifted = true;
         }
+        let key = Key::from((code, self.shifted));
+        // let repeat = !self.codes_down.insert(code) || repeat;
+        let _ = self.codes_down.insert(code);
+
+        vec![KeyInput::Press { key, repeat }]
     }
 
     pub fn handle_key_up(&mut self, code: KeyCode) -> Vec<KeyInput> {
-        if self.keys_down.remove(&code) {
-            vec![KeyInput::FullKeyPress(code)]
-        } else {
-            Vec::new()
+        if code.is_shift() {
+            self.shifted = false;
         }
+        let key = Key::from((code, self.shifted));
+        let valid = self.codes_down.remove(&code);
+
+        vec![KeyInput::Release{ key, valid }]
     }
 }
 
@@ -259,10 +264,18 @@ pub enum Input {
 
 #[derive(Clone, Debug)]
 pub enum KeyInput {
+    /// A key down event.
+    Press {
+        key: Key,
+        repeat: bool,
+    },
+    /// A key up event.
+    Release{
+        key: Key,
+        valid: bool,
+    },
     /// A valid key up event after a valid key down event.
-    FullKeyPress(KeyCode),
-    /// A repeated key down event.
-    RepeatKeyPress(KeyCode),
+    FullPress(Key),
 }
 
 #[derive(Clone, Debug, PartialEq)]
