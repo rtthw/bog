@@ -60,6 +60,14 @@ impl EventParser {
     pub fn update_areas(&mut self, root_area: InputArea) {
         self.mouse.update_areas(root_area)
     }
+
+    pub fn for_each_area(&self, func: &mut impl FnMut(&InputArea)) {
+        self.mouse.root_area.crawl(func);
+    }
+
+    pub fn for_each_area_mut(&mut self, func: &mut impl FnMut(&mut InputArea)) {
+        self.mouse.root_area.crawl_mut(func);
+    }
 }
 
 /// Translates raw key [`InputEvent`]s into more intuitive [`KeyInput`]s.
@@ -213,7 +221,7 @@ impl MouseEventParser {
 
     pub fn handle_wheel_move(&mut self, movement: WheelMovement) -> Vec<MouseInput> {
         match movement {
-            WheelMovement::Lines { x, y } => {
+            WheelMovement::Lines { y, .. } => { // TODO: Horizontal mouse scrolling.
                 if y.is_sign_negative() {
                     vec![MouseInput::ScrollDown { lines: y.abs() }]
                 } else {
@@ -385,6 +393,7 @@ impl InputArea {
 }
 
 impl InputArea {
+    /// Get the names of all areas underneath the provided point.
     pub fn list_under(&self, point: Vec2) -> Vec<&'static str> {
         if !self.rect.contains(point) {
             return vec![];
@@ -408,6 +417,20 @@ impl InputArea {
         inner(self, &mut list, point);
 
         list
+    }
+
+    fn crawl(&self, func: &mut impl FnMut(&InputArea)) {
+        func(self);
+        for child in self.children.iter() {
+            child.crawl(func);
+        }
+    }
+
+    fn crawl_mut(&mut self, func: &mut impl FnMut(&mut InputArea)) {
+        func(self);
+        for child in self.children.iter_mut() {
+            child.crawl_mut(func);
+        }
     }
 }
 
@@ -476,5 +499,29 @@ mod tests {
                 MouseInput::Enter { area: "top" },
             ],
         );
+    }
+
+    #[test]
+    fn input_area_crawling() {
+        let root = Rect::new(Vec2::ZERO, vec2(40.0, 50.0));
+        let (left, right) = root.split_portion_h(0.5);
+        let (top, bottom) = right.split_portion_v(0.5);
+
+        let root = InputArea::new(root, "root")
+            .with_children(vec![
+                InputArea::new(left, "left"),
+                InputArea::new(right, "right")
+                    .with_children(vec![
+                        InputArea::new(top, "top"),
+                        InputArea::new(bottom, "bottom"),
+                    ]),
+            ]);
+
+        let mut areas = Vec::with_capacity(5);
+        root.crawl(&mut |area| {
+            areas.push(area.name);
+        });
+
+        assert_eq!(areas, vec!["root", "left", "right", "top", "bottom"])
     }
 }
