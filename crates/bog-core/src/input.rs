@@ -180,24 +180,24 @@ impl MouseEventParser {
         if let Some(topmost_hovered_area) = self.hovered.last() {
             if self.buttons_down.left() {
                 if !self.is_dragging {
-                    if let Some(start_time) = self.drag_start_time {
-                        let dur_since = Instant::now().duration_since(start_time);
-                        if dur_since.as_secs_f64() > 0.1 {
-                            self.is_dragging = true;
-                            self.drag_start_pos = Some(self.mouse_pos);
-                            self.drag_start_area = Some(*topmost_hovered_area);
-                            inputs.push(MouseInput::DragStart {
-                                pos: self.mouse_pos,
-                                area: *topmost_hovered_area,
-                            });
-                        }
-                    }
+                    self.is_dragging = true;
+                    self.drag_start_pos = Some(self.mouse_pos);
+                    self.drag_start_area = Some(*topmost_hovered_area);
+                    inputs.push(MouseInput::DragStart {
+                        pos: self.mouse_pos,
+                        area: *topmost_hovered_area,
+                    });
+                    // if let Some(start_time) = self.drag_start_time {
+                    //     let dur_since = Instant::now().duration_since(start_time);
+                    //     if dur_since.as_secs_f64() > 0.1 {
+                    //     }
+                    // }
                 }
                 // NOTE: We check twice here because it could change in the first check.
-                if self.is_dragging {
+                if let Some(start_area) = &self.drag_start_area {
                     inputs.push(MouseInput::DragMove {
                         delta: move_delta,
-                        area: *topmost_hovered_area,
+                        area: *start_area,
                     });
                 }
             }
@@ -233,6 +233,7 @@ impl MouseEventParser {
             MouseButton::Left => {
                 // FIXME: I'm not a fan of this indentation.
                 if self.is_dragging {
+                    self.is_dragging = false;
                     self.drag_start_time = None;
                     if let Some(start_pos) = self.drag_start_pos.take() {
                         if let Some(start_area) = self.drag_start_area.take() {
