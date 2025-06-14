@@ -57,8 +57,8 @@ impl EventParser {
         }
     }
 
-    pub fn update_areas(&mut self, root_area: InputArea) {
-        self.mouse.update_areas(root_area)
+    pub fn update_areas(&mut self, new_root_area: InputArea) {
+        self.mouse.update_areas(new_root_area)
     }
 
     pub fn for_each_area(&self, func: &mut impl FnMut(&InputArea)) {
@@ -68,21 +68,48 @@ impl EventParser {
     pub fn for_each_area_mut(&mut self, func: &mut impl FnMut(&mut InputArea)) {
         self.mouse.root_area.crawl_mut(func);
     }
+
+    #[inline]
+    pub const fn is_control_key_down(&self) -> bool {
+        self.key.control_down
+    }
+
+    #[inline]
+    pub const fn is_shift_key_down(&self) -> bool {
+        self.key.shift_down
+    }
+
+    #[inline]
+    pub const fn is_alt_key_down(&self) -> bool {
+        self.key.alt_down
+    }
+
+    #[inline]
+    pub const fn is_super_key_down(&self) -> bool {
+        self.key.super_down
+    }
 }
 
 /// Translates raw key [`InputEvent`]s into more intuitive [`KeyInput`]s.
 #[derive(Debug, Default)]
 pub struct KeyEventParser {
-    shifted: bool,
+    control_down: bool,
+    shift_down: bool,
+    alt_down: bool,
+    super_down: bool,
     codes_down: rustc_hash::FxHashSet<KeyCode>,
 }
 
 impl KeyEventParser {
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) -> Vec<KeyInput> {
-        if code.is_shift() {
-            self.shifted = true;
+        let key = Key::from((code, self.shift_down));
+        match key {
+            Key::Control => { self.control_down = true; }
+            Key::Shift => { self.shift_down = true; }
+            Key::Alt => { self.alt_down = true; }
+            Key::Super => { self.super_down = true; }
+            _ => {}
         }
-        let key = Key::from((code, self.shifted));
         // let repeat = !self.codes_down.insert(code) || repeat;
         let _ = self.codes_down.insert(code);
 
@@ -90,10 +117,14 @@ impl KeyEventParser {
     }
 
     pub fn handle_key_up(&mut self, code: KeyCode) -> Vec<KeyInput> {
-        if code.is_shift() {
-            self.shifted = false;
+        let key = Key::from((code, self.shift_down));
+        match key {
+            Key::Control => { self.control_down = false; }
+            Key::Shift => { self.shift_down = false; }
+            Key::Alt => { self.alt_down = false; }
+            Key::Super => { self.super_down = false; }
+            _ => {}
         }
-        let key = Key::from((code, self.shifted));
         let valid = self.codes_down.remove(&code);
 
         vec![KeyInput::Release{ key, valid }]
@@ -239,8 +270,8 @@ impl MouseEventParser {
         }
     }
 
-    pub fn update_areas(&mut self, root_area: InputArea) {
-        self.root_area = root_area;
+    pub fn update_areas(&mut self, new_root_area: InputArea) {
+        self.root_area = new_root_area;
     }
 }
 
@@ -406,6 +437,16 @@ impl InputArea {
 }
 
 impl InputArea {
+    #[inline]
+    pub const fn rect(&self) -> Rect {
+        self.rect
+    }
+
+    #[inline]
+    pub fn children(&self) -> &[InputArea] {
+        &self.children
+    }
+
     /// Get the names of all areas underneath the provided point.
     pub fn list_under(&self, point: Vec2) -> Vec<&'static str> {
         if !self.rect.contains(point) {
