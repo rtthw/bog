@@ -57,8 +57,8 @@ impl EventParser {
         }
     }
 
-    pub fn update_areas(&mut self, new_root_area: InputArea) {
-        self.mouse.update_areas(new_root_area)
+    pub fn update_areas(&mut self, new_root_area: InputArea) -> Vec<Input> {
+        self.mouse.update_areas(new_root_area).into_iter().map(Input::Mouse).collect()
     }
 
     pub fn for_each_area(&self, func: &mut impl FnMut(&InputArea)) {
@@ -271,8 +271,25 @@ impl MouseEventParser {
         }
     }
 
-    pub fn update_areas(&mut self, new_root_area: InputArea) {
+    pub fn update_areas(&mut self, new_root_area: InputArea) -> Vec<MouseInput> {
         self.root_area = new_root_area;
+        let mut inputs = vec![];
+        let new_hovered = self.root_area.list_under(self.mouse_pos);
+        if self.hovered != new_hovered {
+            for area in &self.hovered {
+                if !new_hovered.contains(area) {
+                    inputs.push(MouseInput::Leave { area });
+                }
+            }
+            for area in &new_hovered {
+                if !self.hovered.contains(area) {
+                    inputs.push(MouseInput::Enter { area });
+                }
+            }
+            self.hovered = new_hovered;
+        }
+
+        inputs
     }
 }
 
