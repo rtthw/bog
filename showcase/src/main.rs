@@ -30,7 +30,7 @@ fn main() -> Result<()> {
             ])
     };
 
-    run_app(App {
+    run_simple_app(App {
         event_parser: EventParser::new(root_area),
     })
 }
@@ -41,7 +41,7 @@ struct App {
     event_parser: EventParser,
 }
 
-impl AppHandler for App {
+impl SimpleApp for App {
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
         let area = cx.renderer.viewport_rect();
         pass.start_layer(area);

@@ -31,8 +31,8 @@ pub mod prelude {
     #[cfg(feature = "app")]
     pub use crate::app::{
         AppContext,
-        AppHandler,
-        run_app,
+        SimpleApp,
+        run_simple_app,
     };
     pub use crate::{
         Error,
@@ -88,8 +88,7 @@ pub mod prelude {
         Window,
         WindowDescriptor,
         WindowError,
-        WindowId,
-        WindowingClient,
+        App,
         WindowingSystem,
         WindowManager,
         WindowManagerError,

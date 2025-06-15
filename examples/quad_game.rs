@@ -18,7 +18,7 @@ const HEADER_TEXT_SIZE: f32 = 30.0;
 
 
 fn main() -> Result<()> {
-    run_app(Game {
+    run_simple_app(Game {
         menu: None,
         last_frame_time: Instant::now(),
         player_pos: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
@@ -39,7 +39,7 @@ struct Game {
     mouse_pos: Vec2,
 }
 
-impl AppHandler for Game {
+impl SimpleApp for Game {
     fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
         cx.window.request_redraw();
 

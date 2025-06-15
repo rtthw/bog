@@ -18,7 +18,7 @@ pub use winit::raw_window_handle as rwh;
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     event::{ElementState, Event as WindowManagerEvent},
-    window::{Cursor, CursorIcon, CustomCursor, WindowId},
+    window::{Cursor, CursorIcon, CustomCursor},
 };
 
 
@@ -136,39 +136,52 @@ impl Monitor {
 
 
 
-/// Wndowing clients can be registered through the [`WindowingSystem`] and create windows through
-/// the [`WindowManager`]. Once registered, the client will receive events from the windowing
-/// system that it can then use to perform some behavior.
-pub trait WindowingClient {
-    /// Called when this client's connection to the [`WindowManager`] is first established. This
-    /// can be used to create an initial window if the client is some sort of application.
+#[derive(Clone, Copy, Debug)]
+pub enum AppEvent {
+    /// Called when this application's connection to the [`WindowManager`] is first established.
     ///
-    /// It should be noted that the client will also receive a resume event after this one.
-    fn on_startup(&mut self, wm: WindowManager);
-    /// Called when this client is resumed.
+    /// This can be used to create an initial window.
     ///
-    /// There is no guarantee that a client will recieve suspend and resume events in any
-    /// particular order.
+    /// It should be noted that the application will also receive a resume event after this one.
+    Init,
+    /// Called when this application is suspended.
     ///
-    /// On certain platforms, this may only be called when the [`WindowManager`] is first
-    /// initialized. See [`WindowingClient::on_startup`].
-    fn on_resume(&mut self, wm: WindowManager);
-    /// Called when this client is suspended.
-    ///
-    /// There is no guarantee that a client will recieve suspend and resume events in any
+    /// There is no guarantee that an application will recieve suspend and resume events in any
     /// particular order.
     ///
     /// On certain platforms, this may never be called.
-    fn on_suspend(&mut self, wm: WindowManager);
-    /// Called when one of this client's windows receives a [`WindowEvent`].
-    fn on_event(&mut self, wm: WindowManager, id: WindowId, event: WindowEvent);
+    Suspend,
+    /// Called when this application is resumed.
+    ///
+    /// There is no guarantee that an application will recieve suspend and resume events in any
+    /// particular order.
+    ///
+    /// On certain platforms, this may only be called when the [`WindowManager`] is first
+    /// initialized. See [`AppEvent::Init`].
+    Resume,
+    /// Called when one of this application's windows receives a [`WindowEvent`].
+    Window {
+        /// The ID of the window targeted by this event.
+        ///
+        /// You can safely ignore this if your application only has one window.
+        id: u64,
+        event: WindowEvent,
+    },
 }
 
-struct ClientProxy<'a, C: WindowingClient> {
+/// Applications (also known as *windowing clients*) can be registered through the
+/// [`WindowingSystem`] and create windows through the [`WindowManager`]. Once registered, the
+/// application will receive events from the windowing system that it can then use to perform some
+/// behavior.
+pub trait App {
+    fn on_event(&mut self, wm: WindowManager, event: AppEvent);
+}
+
+struct ClientProxy<'a, C: App> {
     client: &'a mut C,
 }
 
-impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientProxy<'a, C> {
+impl<'a, C: App> winit::application::ApplicationHandler for ClientProxy<'a, C> {
     fn new_events(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
@@ -176,28 +189,31 @@ impl<'a, C: WindowingClient> winit::application::ApplicationHandler for ClientPr
     ) {
         match cause {
             winit::event::StartCause::Init => {
-                self.client.on_startup(WindowManager { event_loop });
+                self.client.on_event(WindowManager { event_loop }, AppEvent::Init);
             }
             _ => {}
         }
     }
 
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.client.on_resume(WindowManager { event_loop })
+        self.client.on_event(WindowManager { event_loop }, AppEvent::Resume)
     }
 
     fn suspended(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.client.on_suspend(WindowManager { event_loop })
+        self.client.on_event(WindowManager { event_loop }, AppEvent::Suspend)
     }
 
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        id: WindowId,
+        id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let Some(raw_event) = translate_window_event(event) {
-            self.client.on_event(WindowManager { event_loop }, id, raw_event);
+        if let Some(event) = translate_window_event(event) {
+            self.client.on_event(
+                WindowManager { event_loop },
+                AppEvent::Window { id: id.into(), event },
+            );
         }
     }
 }
@@ -393,21 +409,23 @@ const fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) ->
 /// responsible for managing the "lifecycle" of its clients. This takes the form of resume,
 /// suspend, and wakeup events that are passed to the clients managing the affected window(s).
 ///
-/// To access a windowing system, you create a [`Client`] object that will be capable of creating
+/// To access a windowing system, you create an [`App`] object that will be capable of creating
 /// windows through the [`WindowManager`] object.
 pub struct WindowingSystem {
     event_loop: winit::event_loop::EventLoop<()>,
 }
 
 impl WindowingSystem {
+    /// Create a new connection to the windowing system.
     pub fn new() -> Result<Self, WindowManagerError> {
         Ok(Self {
             event_loop: winit::event_loop::EventLoop::new()?,
         })
     }
 
-    pub fn run_client(self, client: &mut impl WindowingClient) -> Result<(), WindowManagerError> {
-        self.event_loop.run_app(&mut ClientProxy { client })
+    /// Run the provided [`App`].
+    pub fn run_app(self, app: &mut impl App) -> Result<(), WindowManagerError> {
+        self.event_loop.run_app(&mut ClientProxy { client: app })
     }
 }
 
@@ -419,8 +437,8 @@ impl WindowingSystem {
 /// actual window management behavior associated with a windowing system. You can think of this
 /// object as a sort of "dispatcher" for requests to the system.
 ///
-/// This window manager object is tied to the [`WindowingClient`] you provided to the windowing
-/// system. Calling [`WindowManager::exit`] will ask the windowing system to shutdown the client.
+/// This window manager object is tied to the [`App`] you provided to the windowing system. Calling
+/// [`WindowManager::exit`] will ask the windowing system to shutdown the application.
 pub struct WindowManager<'a> {
     event_loop: &'a winit::event_loop::ActiveEventLoop,
 }
