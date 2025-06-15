@@ -15,8 +15,19 @@ use crate::{
 
 
 
-pub fn run_simple_app<A: SimpleApp>(app: A) -> Result<()> {
-    let windowing_system = WindowingSystem::new()?;
+pub fn run_simple_app<A, E>(existing_system: Option<WindowingSystem<E>>, app: A) -> Result<()>
+where
+    A: SimpleApp<CustomEvent = E>,
+    E: 'static,
+{
+    let windowing_system = {
+        // NOTE: Can't use `unwrap_or_else` here because we need the error.
+        if let Some(windowing_system) = existing_system {
+            windowing_system
+        } else {
+            WindowingSystem::new()?
+        }
+    };
 
     let mut runner = AppRunner {
         app,
@@ -33,9 +44,12 @@ pub fn run_simple_app<A: SimpleApp>(app: A) -> Result<()> {
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait SimpleApp {
+    type CustomEvent: 'static;
+
     fn startup(&mut self, cx: AppContext) {}
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>);
     fn input(&mut self, cx: AppContext, input: InputEvent) {}
+    fn event(&mut self, cx: AppContext, event: Self::CustomEvent) {}
     fn on_close(&mut self, cx: AppContext) -> bool { true }
     fn window_desc(&self) -> WindowDescriptor;
 }
@@ -45,14 +59,22 @@ pub struct AppContext<'a> {
     pub renderer: &'a mut Renderer,
 }
 
-struct AppRunner<A: SimpleApp> {
+struct AppRunner<A: SimpleApp<CustomEvent = E>, E: 'static> {
     app: A,
     state: AppState,
 }
 
-impl<A: SimpleApp> App for AppRunner<A> {
-    fn on_event(&mut self, wm: WindowManager, event: AppEvent) {
+impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
+    type CustomEvent = E;
+
+    fn on_event(&mut self, wm: WindowManager, event: AppEvent<E>) {
         match event {
+            AppEvent::Custom(event) => {
+                let AppState::Active { window, renderer, .. } = &mut self.state else {
+                    return;
+                };
+                self.app.event(AppContext { window, renderer }, event);
+            }
             AppEvent::Init => {}
             AppEvent::Suspend => {
                 if let AppState::Active { window, .. } = &self.state {

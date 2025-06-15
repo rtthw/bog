@@ -84,11 +84,12 @@ pub mod prelude {
         Viewport,
     };
     pub use bog_window::{
+        App,
+        AppEvent,
         CursorIcon,
         Window,
         WindowDescriptor,
         WindowError,
-        App,
         WindowingSystem,
         WindowManager,
         WindowManagerError,

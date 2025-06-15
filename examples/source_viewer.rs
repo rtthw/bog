@@ -22,7 +22,7 @@ fn main() -> Result<()> {
         lines.push(ranges);
     }
 
-    run_simple_app(App {
+    run_simple_app(None, App {
         lines,
         cell_bounds: Vec2::new(0.0, 1.0), // Height cannot be 0.
         scroll_offset: 0,
@@ -42,6 +42,8 @@ struct App {
 }
 
 impl SimpleApp for App {
+    type CustomEvent = ();
+
     fn startup(&mut self, cx: AppContext) {
         self.cell_bounds = cx.renderer.measure_text(&Text {
             content: "█".into(),

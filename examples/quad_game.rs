@@ -18,7 +18,7 @@ const HEADER_TEXT_SIZE: f32 = 30.0;
 
 
 fn main() -> Result<()> {
-    run_simple_app(Game {
+    run_simple_app(None, Game {
         menu: None,
         last_frame_time: Instant::now(),
         player_pos: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
@@ -40,6 +40,8 @@ struct Game {
 }
 
 impl SimpleApp for Game {
+    type CustomEvent = ();
+
     fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
         cx.window.request_redraw();
 

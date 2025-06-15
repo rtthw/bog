@@ -137,7 +137,8 @@ impl Monitor {
 
 
 #[derive(Clone, Copy, Debug)]
-pub enum AppEvent {
+pub enum AppEvent<CustomEvent: 'static = ()> {
+    Custom(CustomEvent),
     /// Called when this application's connection to the [`WindowManager`] is first established.
     ///
     /// This can be used to create an initial window.
@@ -174,14 +175,20 @@ pub enum AppEvent {
 /// application will receive events from the windowing system that it can then use to perform some
 /// behavior.
 pub trait App {
-    fn on_event(&mut self, wm: WindowManager, event: AppEvent);
+    /// The parameter provided to [`AppEvent::Custom`].
+    type CustomEvent: 'static;
+    fn on_event(&mut self, wm: WindowManager, event: AppEvent<Self::CustomEvent>);
 }
 
-struct ClientProxy<'a, C: App> {
-    client: &'a mut C,
+struct ClientProxy<'a, A: App<CustomEvent = E>, E: 'static> {
+    client: &'a mut A,
 }
 
-impl<'a, C: App> winit::application::ApplicationHandler for ClientProxy<'a, C> {
+impl<'a, A, E> winit::application::ApplicationHandler<E> for ClientProxy<'a, A, E>
+where
+    A: App<CustomEvent = E>,
+    E: 'static,
+{
     fn new_events(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
@@ -201,6 +208,10 @@ impl<'a, C: App> winit::application::ApplicationHandler for ClientProxy<'a, C> {
 
     fn suspended(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.client.on_event(WindowManager { event_loop }, AppEvent::Suspend)
+    }
+
+    fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, event: E) {
+        self.client.on_event(WindowManager { event_loop }, AppEvent::Custom(event));
     }
 
     fn window_event(
@@ -411,21 +422,43 @@ const fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) ->
 ///
 /// To access a windowing system, you create an [`App`] object that will be capable of creating
 /// windows through the [`WindowManager`] object.
-pub struct WindowingSystem {
-    event_loop: winit::event_loop::EventLoop<()>,
+pub struct WindowingSystem<E: 'static = ()> {
+    event_loop: winit::event_loop::EventLoop<E>,
 }
 
-impl WindowingSystem {
+impl<E: 'static> WindowingSystem<E> {
     /// Create a new connection to the windowing system.
     pub fn new() -> Result<Self, WindowManagerError> {
         Ok(Self {
-            event_loop: winit::event_loop::EventLoop::new()?,
+            event_loop: winit::event_loop::EventLoop::with_user_event().build()?,
         })
     }
 
+    /// Create a [`WindowingSystemProxy`].
+    pub fn create_proxy(&self) -> WindowingSystemProxy<E> {
+        WindowingSystemProxy {
+            event_loop: self.event_loop.create_proxy()
+        }
+    }
+
     /// Run the provided [`App`].
-    pub fn run_app(self, app: &mut impl App) -> Result<(), WindowManagerError> {
+    pub fn run_app(self, app: &mut impl App<CustomEvent = E>) -> Result<(), WindowManagerError> {
         self.event_loop.run_app(&mut ClientProxy { client: app })
+    }
+}
+
+/// A proxied reference to the platform's windowing system.
+///
+/// See [`WindowingSystem`] for more information.
+#[derive(Clone)]
+pub struct WindowingSystemProxy<E: 'static = ()> {
+    event_loop: winit::event_loop::EventLoopProxy<E>,
+}
+
+impl<E: 'static> WindowingSystemProxy<E> {
+    /// Send a custom event to the application.
+    pub fn send(&self, event: E) -> bool {
+        self.event_loop.send_event(event).is_ok()
     }
 }
 
