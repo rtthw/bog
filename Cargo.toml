@@ -29,6 +29,8 @@ bog-core = { path = "crates/bog-core" }
 bog-render = { path = "crates/bog-render" }
 bog-window = { path = "crates/bog-window" }
 
+[[example]]
+name = "loop_style"
 
 [[example]]
 name = "source_viewer"
