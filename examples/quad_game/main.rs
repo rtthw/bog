@@ -1,9 +1,13 @@
 
 
 
+mod state;
+
 use std::time::Instant;
 
 use bog::prelude::*;
+
+use state::*;
 
 
 
@@ -19,11 +23,15 @@ const HEADER_TEXT_SIZE: f32 = 30.0;
 
 fn main() -> Result<()> {
     run_simple_app(None, Game {
+        state: State {
+            player: Player {
+                position: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
+                move_speed: 100.0,
+            },
+        },
         menu: None,
         last_frame_time: Instant::now(),
-        player_pos: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
         player_move: None,
-        player_speed: 100.0,
         mouse_pos: Vec2::ZERO,
     })
 }
@@ -31,11 +39,10 @@ fn main() -> Result<()> {
 
 
 struct Game {
+    state: State,
     menu: Option<Menu>,
     last_frame_time: Instant,
-    player_pos: Vec2,
     player_move: Option<Vec2>,
-    player_speed: f32,
     mouse_pos: Vec2,
 }
 
@@ -52,9 +59,9 @@ impl SimpleApp for Game {
         let screen_rect = cx.renderer.viewport_rect();
 
         if let Some(move_target) = self.player_move {
-            if self.player_pos.distance(move_target) > 5.0 {
-                self.player_pos = self.player_pos
-                    .move_towards(move_target, dt as f32 * self.player_speed);
+            if self.state.player.position.distance(move_target) > 5.0 {
+                self.state.player.position = self.state.player.position
+                    .move_towards(move_target, dt as f32 * self.state.player.move_speed);
             } else {
                 self.player_move = None;
             }
@@ -76,7 +83,7 @@ impl SimpleApp for Game {
             pass.start_layer(screen_rect);
             pass.fill_quad(Quad {
                 bounds: Rect::new(
-                    self.player_pos - vec2(PLAYER_WIDTH / 2.0, PLAYER_HEIGHT / 2.0),
+                    self.state.player.position - vec2(PLAYER_WIDTH / 2.0, PLAYER_HEIGHT / 2.0),
                     vec2(PLAYER_WIDTH, PLAYER_HEIGHT),
                 ),
                 bg_color: Color::new(163, 163, 173, 255),
