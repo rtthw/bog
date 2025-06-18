@@ -38,5 +38,8 @@ name = "source_viewer"
 [[example]]
 name = "quad_game"
 
+[[example]]
+name = "quick_start"
+
 [dev-dependencies]
 syntect = "5"
