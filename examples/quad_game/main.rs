@@ -1,12 +1,14 @@
 
 
 
+mod process;
 mod state;
 
 use std::time::Instant;
 
 use bog::prelude::*;
 
+use process::*;
 use state::*;
 
 
@@ -22,31 +24,36 @@ const HEADER_TEXT_SIZE: f32 = 30.0;
 
 
 fn main() -> Result<()> {
-    run_simple_app(None, Game {
+    run_simple_app(None, App {
         state: State {
-            player: Player {
+            input: InputState {
+                mouse_pos: Vec2::ZERO,
+                mouse_buttons_down: MouseButtonMask::empty(),
+            },
+            player: PlayerState {
                 position: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
                 move_speed: 100.0,
             },
         },
-        menu: None,
+        process: Game {
+            menu: None,
+            player_movement: PlayerMovement {
+                target: None,
+            },
+        },
         last_frame_time: Instant::now(),
-        player_move: None,
-        mouse_pos: Vec2::ZERO,
     })
 }
 
 
 
-struct Game {
+struct App {
     state: State,
-    menu: Option<Menu>,
+    process: Game,
     last_frame_time: Instant,
-    player_move: Option<Vec2>,
-    mouse_pos: Vec2,
 }
 
-impl SimpleApp for Game {
+impl SimpleApp for App {
     type CustomEvent = ();
 
     fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
@@ -58,14 +65,7 @@ impl SimpleApp for Game {
 
         let screen_rect = cx.renderer.viewport_rect();
 
-        if let Some(move_target) = self.player_move {
-            if self.state.player.position.distance(move_target) > 5.0 {
-                self.state.player.position = self.state.player.position
-                    .move_towards(move_target, dt as f32 * self.state.player.move_speed);
-            } else {
-                self.player_move = None;
-            }
-        }
+        self.process.update(&mut self.state, dt);
 
         // Background.
         {
@@ -104,7 +104,7 @@ impl SimpleApp for Game {
         // Overlay.
         {
             pass.start_layer(screen_rect);
-            if let Some(menu) = self.menu {
+            if let Some(menu) = self.process.menu {
                 match menu {
                     Menu::Pause => {
                         pass.fill_quad(Quad {
@@ -151,27 +151,42 @@ impl SimpleApp for Game {
     fn input(&mut self, _cx: AppContext, event: InputEvent) {
         match event {
             InputEvent::MouseMove { x, y } => {
-                self.mouse_pos = vec2(x, y);
+                self.state.input.mouse_pos = vec2(x, y);
             }
             InputEvent::MouseDown { button } => match button {
-                MouseButton::Left => {}
+                MouseButton::Left => {
+                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::LEFT);
+                }
                 MouseButton::Right => {
-                    if self.menu.is_none() {
-                        self.player_move = Some(self.mouse_pos);
-                    }
+                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::RIGHT);
+                }
+                MouseButton::Middle => {
+                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::LEFT);
+                }
+                _ => {}
+            }
+            InputEvent::MouseUp { button } => match button {
+                MouseButton::Left => {
+                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::LEFT);
+                }
+                MouseButton::Right => {
+                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::RIGHT);
+                }
+                MouseButton::Middle => {
+                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::LEFT);
                 }
                 _ => {}
             }
             InputEvent::KeyDown { code, .. } => match code {
                 KeyCode::C_SPACE => {
-                    self.menu = match self.menu {
+                    self.process.menu = match self.process.menu {
                         Some(Menu::Pause) => None,
                         None => Some(Menu::Pause),
                         other => other,
                     };
                 }
                 KeyCode::C_ESCAPE => {
-                    self.menu = Some(Menu::Start);
+                    self.process.menu = Some(Menu::Start);
                 }
                 _ => {}
             }
@@ -184,6 +199,21 @@ impl SimpleApp for Game {
             title: "Bog - Quad Game Example",
             inner_size: Vec2::new(WORLD_WIDTH, WORLD_HEIGHT),
             ..Default::default()
+        }
+    }
+}
+
+
+
+struct Game {
+    menu: Option<Menu>,
+    player_movement: PlayerMovement,
+}
+
+impl Process for Game {
+    fn update(&mut self, state: &mut State, dt: f64) {
+        if self.menu.is_none() {
+            self.player_movement.update(state, dt);
         }
     }
 }

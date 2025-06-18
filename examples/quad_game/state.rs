@@ -1,17 +1,21 @@
 
 
 
-use bog_core::Vec2;
+use bog_core::{MouseButtonMask, Vec2};
 
 
 
 pub struct State {
-    pub player: Player,
+    pub input: InputState,
+    pub player: PlayerState,
 }
 
+pub struct InputState {
+    pub mouse_pos: Vec2,
+    pub mouse_buttons_down: MouseButtonMask,
+}
 
-
-pub struct Player {
+pub struct PlayerState {
     pub position: Vec2,
     pub move_speed: f32,
 }
