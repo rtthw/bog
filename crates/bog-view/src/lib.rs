@@ -2,4 +2,69 @@
 
 
 
-pub trait View {}
+use bog_core::InputEvent;
+use bog_render::RenderPass;
+
+
+
+#[allow(unused)]
+pub trait View {
+    type Event;
+    type Context;
+
+    fn event(&mut self, event: Self::Event) {}
+    fn render<'a>(&'a mut self, cx: Self::Context, pass: &mut RenderPass<'a>) {}
+    fn input(&mut self, cx: Self::Context, event: InputEvent) {}
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use std::marker::PhantomData;
+
+    use bog_render::{RenderPass, Text};
+
+    use crate::View;
+
+    struct ContextWithLifetime<'a> {
+        field: &'a mut String,
+    }
+
+    #[derive(Default)]
+    struct TestView<'cx> {
+        counter: usize,
+        _lifetime_constraint: PhantomData<&'cx ()>,
+    }
+
+    impl<'cx> View for TestView<'cx> {
+        type Context = ContextWithLifetime<'cx>;
+        type Event = ();
+
+        fn render<'a>(&'a mut self, cx: ContextWithLifetime<'a>, pass: &mut RenderPass<'a>) {
+            self.counter += cx.field.len();
+            *cx.field = "Thing".to_string();
+            pass.fill_text(Text {
+                content: cx.field.as_str().into(),
+                ..Default::default()
+            });
+        }
+    }
+
+    #[test]
+    fn works() {
+        let mut field = "Something".to_string();
+        let mut view = TestView::default();
+
+        {
+            let cx = ContextWithLifetime {
+                field: &mut field,
+            };
+
+            view.render(cx, &mut RenderPass::new());
+        }
+
+        assert!(view.counter == 9);
+        assert!(field.as_str() == "Thing");
+    }
+}

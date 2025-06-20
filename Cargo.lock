@@ -219,6 +219,7 @@ name = "bog-view"
 version = "0.1.0"
 dependencies = [
  "bog-core",
+ "bog-render",
 ]
 
 [[package]]
