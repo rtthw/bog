@@ -1,11 +1,29 @@
-//! Bog view
+//! Prototyping
 
 
+
+pub mod style;
 
 use bog_core::InputEvent;
-use bog_render::RenderPass;
+use bog_render::{RenderPass, Renderer};
+
+use style::Style;
 
 
+
+pub struct Visuals<'a> {
+    pub renderer: &'a mut Renderer,
+}
+
+#[allow(unused)]
+pub trait Element {
+    fn render<'a>(&'a mut self, visuals: Visuals, pass: &mut RenderPass<'a>) {}
+    fn style(&self) -> &Style;
+    fn style_mut(&mut self) -> &mut Style;
+    fn num_children(&self) -> usize;
+    fn child_at(&self, index: usize) -> &Box<dyn Element>;
+    fn child_at_mut(&mut self, index: usize) -> &mut Box<dyn Element>;
+}
 
 #[allow(unused)]
 pub trait View {

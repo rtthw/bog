@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 bog-core.workspace = true
 bog-render.workspace = true
+taffy = "0.8"
