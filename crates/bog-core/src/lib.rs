@@ -9,6 +9,7 @@ mod event;
 mod input;
 mod key;
 mod nohash_map;
+mod primitives;
 mod rect;
 mod type_map;
 mod unit_map;
@@ -22,6 +23,7 @@ pub use input::{
 };
 pub use key::{Key, KeyCode, KeyUpdate};
 pub use nohash_map::NoHashMap;
+pub use primitives::Xy;
 pub use rect::Rect;
 pub use type_map::TypeMap;
 pub use unit_map::UnitMap;
