@@ -218,8 +218,8 @@ impl core::ops::Mul<Mat4> for Rect<f32> {
         let size = self.size();
 
         Self::new(
-            transform.transform_point3(vec3(pos.x, pos.y, 0.0)).xy(),
-            transform.transform_vector3(vec3(size.x, size.y, 0.0)).xy(),
+            transform.transform_point3(vec3(pos.x, pos.y, 0.0)).xy().into(),
+            transform.transform_vector3(vec3(size.x, size.y, 0.0)).xy().into(),
         )
     }
 }

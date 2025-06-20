@@ -14,6 +14,20 @@ pub struct Xy<T> {
     pub y: T,
 }
 
+impl<T> Into<[T; 2]> for Xy<T> {
+    #[inline]
+    fn into(self) -> [T; 2] {
+        [self.x, self.y]
+    }
+}
+
+impl<T> Into<(T, T)> for Xy<T> {
+    #[inline]
+    fn into(self) -> (T, T) {
+        (self.x, self.y)
+    }
+}
+
 impl<T: PartialEq> PartialEq<(T, T)> for Xy<T> {
     fn eq(&self, (x, y): &(T, T)) -> bool {
         &self.x == x && &self.y == y
@@ -267,4 +281,12 @@ mod tests {
         assert_eq!(add_one(a), Xy::ONE);
         assert_eq!(add_one(a), Vec2::ONE);
     }
+
+    // #[test]
+    // fn conversion() {
+    //     let a: Xy<f32> = Xy::ONE;
+    //     let b: Xy<u16> = Xy::splat(1);
+
+    //     assert_eq!(b.into(), a);
+    // }
 }
