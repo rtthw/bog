@@ -215,6 +215,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bog-view"
+version = "0.1.0"
+dependencies = [
+ "bog-core",
+]
+
+[[package]]
 name = "bog-window"
 version = "0.1.0"
 dependencies = [
