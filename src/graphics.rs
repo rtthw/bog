@@ -20,6 +20,26 @@ pub enum GraphicsError {
 
 
 
+pub struct GraphicsDescriptor {
+    /// Override the GPU backend selection.
+    pub backend_override: Option<gpu::Backends>,
+    pub power_preference: gpu::PowerPreference,
+    /// Use the system's fallback (generally, software-level) rendering adapter.
+    pub force_fallback_adapter: bool,
+}
+
+impl Default for GraphicsDescriptor {
+    fn default() -> Self {
+        Self {
+            backend_override: None,
+            power_preference: gpu::PowerPreference::HighPerformance,
+            force_fallback_adapter: false,
+        }
+    }
+}
+
+
+
 // NOTE: Window must be dropped after the other surface fields.
 pub struct WindowGraphics<'w> {
     surface: gpu::Surface<'w>,
@@ -28,10 +48,7 @@ pub struct WindowGraphics<'w> {
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
-    pub async fn from_window<W>(
-        window: W,
-        backend_override: Option<gpu::Backends>,
-    ) -> Result<(
+    pub async fn from_window<W>(window: W, desc: GraphicsDescriptor) -> Result<(
         Self,
         gpu::Device,
         gpu::Queue,
@@ -40,9 +57,14 @@ impl<'w> WindowGraphics<'w> {
     )>
     where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
-        let backends = backend_override.unwrap_or({
+        let backends = desc.backend_override.unwrap_or({
             #[cfg(not(target_arch = "wasm32"))]
             {
+                // HACK: It's safer to default to GL on Linux because it is highly likely for users
+                //       to not have properly configured Vulkan (especially when using an AMD GPU).
+                //       And, for whatever reason (probably something unintentional), WGPU would
+                //       rather use the integrated CPU graphics than try using GL. That would be
+                //       VERY BAD.
                 #[cfg(target_os = "linux")]
                 {
                     gpu::Backends::GL
@@ -62,9 +84,9 @@ impl<'w> WindowGraphics<'w> {
 
         let adapter = instance
             .request_adapter(&gpu::RequestAdapterOptions {
-                power_preference: gpu::PowerPreference::HighPerformance,
+                power_preference: desc.power_preference,
                 compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
+                force_fallback_adapter: desc.force_fallback_adapter,
             })
             .await
             .unwrap(); // TODO: Remove unwrap.

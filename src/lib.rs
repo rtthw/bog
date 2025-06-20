@@ -37,6 +37,7 @@ pub mod prelude {
     pub use crate::{
         Error,
         graphics::{
+            GraphicsDescriptor,
             GraphicsError,
             WindowGraphics,
         },

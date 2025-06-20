@@ -9,7 +9,7 @@ use bog_window::{
 };
 
 use crate::{
-    graphics::WindowGraphics,
+    graphics::{GraphicsDescriptor, WindowGraphics},
     Result,
 };
 
@@ -89,7 +89,7 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
                     wm.create_window(self.app.window_desc()).unwrap()
                 });
                 let (graphics, device, queue, format, backend) = pollster::block_on(async {
-                    WindowGraphics::from_window(window.clone(), None).await
+                    WindowGraphics::from_window(window.clone(), GraphicsDescriptor::default()).await
                 }).unwrap();
                 let mut renderer = Renderer::new(device, queue, format, backend);
 
