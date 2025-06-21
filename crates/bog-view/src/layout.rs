@@ -79,11 +79,11 @@ impl<'e> taffy::TraversePartialTree for Node<'e> {
     type ChildIter<'a> = ChildIter where Self: 'a;
 
     fn child_ids(&self, _parent_node_id: taffy::NodeId) -> Self::ChildIter<'_> {
-        ChildIter(0..self.element.num_children())
+        ChildIter(0..self.element.child_count())
     }
 
     fn child_count(&self, _parent_node_id: taffy::NodeId) -> usize {
-        self.element.num_children()
+        self.element.child_count()
     }
 
     fn get_child_id(&self, _parent_node_id: taffy::NodeId, child_index: usize) -> taffy::NodeId {
@@ -118,7 +118,7 @@ impl<'e> taffy::LayoutPartialTree for Node<'e> {
             };
             let style = node.element.style();
             let display_mode = style.inner.display;
-            let has_children = node.element.num_children() > 0;
+            let has_children = node.element.child_count() > 0;
 
             match (display_mode, has_children) {
                 (taffy::Display::None, _) => {
@@ -136,16 +136,17 @@ impl<'e> taffy::LayoutPartialTree for Node<'e> {
                         &style.inner,
                         |_value, _basis| 0.0,
                         |known_dimensions, available_space| {
-                            let xy = node.element.measure(
+                            let Some(xy) = node.element.measure(
                                 Xy::new(known_dimensions.width, known_dimensions.height),
                                 Xy::new(
                                     available_space.width.unwrap(),
                                     available_space.height.unwrap(),
                                 ),
-                            );
+                            ) else {
+                                return taffy::Size::ZERO;
+                            };
 
                             taffy::Size::from_lengths(xy.x, xy.y).map(|v| v.value())
-                            // taffy::Size::ZERO
                         }
                     )
                 }
