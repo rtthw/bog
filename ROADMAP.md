@@ -10,20 +10,13 @@
 ### Core
 
 - [X] Color.
-- [ ] Math.
+- [X] Math.
   - [X] Vectors (2D, 3D, 4D).
   - [X] Matrices (2D, 3D, 4D).
-  - [ ] Rectangle.
+  - [X] Rectangle.
     - [X] Core functionality.
-    - [ ] Layout primitives (splitting, resizing, etc.)
-- [X] ~Abstraction builders.~
-  > **STATUS:** Removed
-- [ ] File management.
-  - [ ] File type abstraction.
-  - [ ] Parsers.
-- [ ] Environment management.
-  - [ ] Platform discovery.
-  - [ ] Platform features.
+    - [X] Layout primitives (splitting, resizing, etc.)
+- [X] Abstraction builders.
 
 ### Graphics
 
@@ -44,7 +37,7 @@
     - [X] Ligatures.
     - [X] Font collections.
     - [X] OpenType font features.
-  - [ ] Images.
+  - [X] Images.
   - [X] Layering/transforms.
 - [ ] User interfacing.
   - [X] Complex layouts (flexbox model, grids, etc.).

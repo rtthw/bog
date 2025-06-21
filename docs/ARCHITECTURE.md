@@ -7,4 +7,6 @@
 
 ## bog-render
 
+## bog-view
+
 ## bog-window

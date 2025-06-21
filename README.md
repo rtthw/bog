@@ -82,14 +82,12 @@ bog = { version = "*", default-features = false, features = ["window", "render"]
 ```
 
 - `app`, an easy way to create cross-platform applications.
-- `layout`, for CSS-style layout management.
 - `render`, for rendering to surfaces with the GPU.
 - `window`, for connecting to the platform's windowing system.
 
 ## Learn More
 
 - [Notes on the project's architecture](./docs/ARCHITECTURE.md)
-- [Reference sheet for various interfaces](./docs/REFERENCE.md)
 
 ## License
 
