@@ -22,7 +22,7 @@ pub trait Element {
     fn style_mut(&mut self) -> &mut Style;
     fn layout_cache(&self) -> &LayoutCache;
     fn layout_cache_mut(&mut self) -> &mut LayoutCache;
-    fn measure(&mut self, known_dimensions: Xy<Option<f32>>, available_space: Vec2) -> Vec2;
+    fn measure(&self, known_dimensions: Xy<Option<f32>>, available_space: Vec2) -> Vec2;
     fn num_children(&self) -> usize;
     fn child_at(&self, index: usize) -> &Box<dyn Element>;
     fn child_at_mut(&mut self, index: usize) -> &mut Box<dyn Element>;

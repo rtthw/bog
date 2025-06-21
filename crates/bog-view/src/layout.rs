@@ -2,6 +2,8 @@
 
 
 
+use bog_core::Xy;
+
 use crate::Element;
 
 
@@ -133,17 +135,17 @@ impl<'e> taffy::LayoutPartialTree for Node<'e> {
                         inputs,
                         &style.inner,
                         |_value, _basis| 0.0,
-                        |_known_dimensions, _available_space| {
-                            // let xy = node.element.measure(
-                            //     Xy::new(known_dimensions.width, known_dimensions.height),
-                            //     Xy::new(
-                            //         available_space.width.unwrap(),
-                            //         available_space.height.unwrap(),
-                            //     ),
-                            // );
+                        |known_dimensions, available_space| {
+                            let xy = node.element.measure(
+                                Xy::new(known_dimensions.width, known_dimensions.height),
+                                Xy::new(
+                                    available_space.width.unwrap(),
+                                    available_space.height.unwrap(),
+                                ),
+                            );
 
-                            // taffy::Size::from_lengths(xy.x, xy.y).map(|v| v.value())
-                            taffy::Size::ZERO
+                            taffy::Size::from_lengths(xy.x, xy.y).map(|v| v.value())
+                            // taffy::Size::ZERO
                         }
                     )
                 }
