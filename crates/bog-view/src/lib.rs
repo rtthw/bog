@@ -2,12 +2,12 @@
 
 
 
-pub mod style;
+pub mod layout;
 
-use bog_core::InputEvent;
+use bog_core::{InputEvent, Vec2, Xy};
 use bog_render::{RenderPass, Renderer};
 
-use style::Style;
+use layout::{LayoutCache, Style};
 
 
 
@@ -20,6 +20,9 @@ pub trait Element {
     fn render<'a>(&'a mut self, visuals: Visuals, pass: &mut RenderPass<'a>) {}
     fn style(&self) -> &Style;
     fn style_mut(&mut self) -> &mut Style;
+    fn layout_cache(&self) -> &LayoutCache;
+    fn layout_cache_mut(&mut self) -> &mut LayoutCache;
+    fn measure(&mut self, known_dimensions: Xy<Option<f32>>, available_space: Vec2) -> Vec2;
     fn num_children(&self) -> usize;
     fn child_at(&self, index: usize) -> &Box<dyn Element>;
     fn child_at_mut(&mut self, index: usize) -> &mut Box<dyn Element>;
