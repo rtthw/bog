@@ -25,6 +25,7 @@ fn main() -> Result<()> {
     run_simple_app(None, App {
         state: State {
             screen_size: vec2(1280.0, 720.0),
+            screen_offset: Vec2::ZERO,
             input: InputState {
                 mouse_pos: Vec2::ZERO,
                 mouse_buttons_down: MouseButtonMask::empty(),
@@ -64,8 +65,18 @@ impl SimpleApp for App {
 
         let screen_rect = cx.renderer.viewport_rect();
         self.state.screen_size = screen_rect.size();
+        self.state.screen_offset = vec2(
+            (self.state.screen_size.x / 2.0) - self.state.player.position.x,
+            (self.state.screen_size.y / 2.0) - self.state.player.position.y,
+        );
 
         self.process.update(&mut self.state, dt);
+
+        pass.start_transform(Mat4::from_translation(vec3(
+            self.state.screen_offset.x,
+            self.state.screen_offset.y,
+            0.0,
+        )));
 
         // Background.
         {
@@ -81,11 +92,6 @@ impl SimpleApp for App {
         // Game objects.
         {
             pass.start_layer(screen_rect);
-            pass.start_transform(Mat4::from_translation(vec3(
-                (self.state.screen_size.x / 2.0) - self.state.player.position.x,
-                (self.state.screen_size.y / 2.0) - self.state.player.position.y,
-                0.0,
-            )));
             pass.fill_quad(Quad {
                 bounds: Rect::new(
                     self.state.player.position - vec2(PLAYER_WIDTH / 2.0, PLAYER_HEIGHT / 2.0),
@@ -103,9 +109,10 @@ impl SimpleApp for App {
                 },
                 ..Default::default()
             });
-            pass.end_transform();
             pass.end_layer();
         }
+
+        pass.end_transform();
 
         // Overlay.
         {

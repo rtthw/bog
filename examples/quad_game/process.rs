@@ -21,7 +21,7 @@ pub struct PlayerMovement {
 impl Process for PlayerMovement {
     fn update(&mut self, state: &mut State, dt: f64) {
         if state.input.mouse_buttons_down.right() {
-            self.target = Some(state.input.mouse_pos);
+            self.target = Some(state.input.mouse_pos - state.screen_offset);
         }
         if let Some(move_target) = self.target {
             if state.player.position.distance(move_target) > 5.0 {
