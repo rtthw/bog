@@ -13,8 +13,6 @@ use state::*;
 
 
 
-const WORLD_WIDTH: f32 = 1200.0;
-const WORLD_HEIGHT: f32 = 900.0;
 const PLAYER_WIDTH: f32 = 20.0;
 const PLAYER_HEIGHT: f32 = 40.0;
 const BACKGROUND_COLOR: Color = Color::new(29, 29, 39, 255);
@@ -26,12 +24,13 @@ const HEADER_TEXT_SIZE: f32 = 30.0;
 fn main() -> Result<()> {
     run_simple_app(None, App {
         state: State {
+            screen_size: vec2(1280.0, 720.0),
             input: InputState {
                 mouse_pos: Vec2::ZERO,
                 mouse_buttons_down: MouseButtonMask::empty(),
             },
             player: PlayerState {
-                position: vec2(WORLD_WIDTH / 2.0, WORLD_HEIGHT / 2.0),
+                position: Vec2::ZERO,
                 move_speed: 100.0,
             },
         },
@@ -64,6 +63,7 @@ impl SimpleApp for App {
         self.last_frame_time = now;
 
         let screen_rect = cx.renderer.viewport_rect();
+        self.state.screen_size = screen_rect.size();
 
         self.process.update(&mut self.state, dt);
 
@@ -81,6 +81,11 @@ impl SimpleApp for App {
         // Game objects.
         {
             pass.start_layer(screen_rect);
+            pass.start_transform(Mat4::from_translation(vec3(
+                (self.state.screen_size.x / 2.0) - self.state.player.position.x,
+                (self.state.screen_size.y / 2.0) - self.state.player.position.y,
+                0.0,
+            )));
             pass.fill_quad(Quad {
                 bounds: Rect::new(
                     self.state.player.position - vec2(PLAYER_WIDTH / 2.0, PLAYER_HEIGHT / 2.0),
@@ -98,6 +103,7 @@ impl SimpleApp for App {
                 },
                 ..Default::default()
             });
+            pass.end_transform();
             pass.end_layer();
         }
 
@@ -124,8 +130,8 @@ impl SimpleApp for App {
                             content: "PAUSED".into(),
                             bounds: Rect::new(
                                 vec2(
-                                    (WORLD_WIDTH / 2.0) - (header_text_bounds.x / 2.0),
-                                    (WORLD_HEIGHT / 2.0) - (header_text_bounds.y / 2.0),
+                                    (self.state.screen_size.x / 2.0) - (header_text_bounds.x / 2.0),
+                                    (self.state.screen_size.y / 2.0) - (header_text_bounds.y / 2.0),
                                 ),
                                 header_text_bounds,
                             ),
@@ -197,7 +203,7 @@ impl SimpleApp for App {
     fn window_desc(&self) -> WindowDescriptor {
         WindowDescriptor {
             title: "Bog - Quad Game Example",
-            inner_size: Vec2::new(WORLD_WIDTH, WORLD_HEIGHT),
+            maximized: true,
             ..Default::default()
         }
     }
