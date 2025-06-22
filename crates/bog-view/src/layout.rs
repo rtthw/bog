@@ -2,7 +2,7 @@
 
 
 
-use bog_core::Xy;
+use bog_core::{vec2, Vec2, Xy};
 
 use crate::Element;
 
@@ -19,6 +19,10 @@ impl LayoutCache {
             cache: taffy::Cache::new(),
             layout: taffy::Layout::new(), // TODO: Ordered?
         }
+    }
+
+    pub fn position(&self) -> Vec2 {
+        vec2(self.layout.location.x, self.layout.location.y)
     }
 }
 
