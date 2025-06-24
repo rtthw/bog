@@ -18,6 +18,8 @@ pub struct Text<'a> {
     pub bounds: Rect,
     pub size: f32,
     pub color: Color,
+    /// The font's line height, in pixels.
+    ///
     /// Set this to `0.0` if you just want to use the font's default line height.
     pub line_height: f32,
     pub font_family: FontFamily<'static>,
@@ -31,7 +33,7 @@ impl Default for Text<'_> {
             bounds: Rect::INFINITE,
             size: 20.0,
             color: Color::default(),
-            line_height: 20.0 * 1.2,
+            line_height: 0.0, // 20.0 * 1.2,
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
         }
