@@ -57,6 +57,16 @@ impl EventParser {
         }
     }
 
+    /// Get a reference to the root [`InputArea`].
+    pub fn root_area(&self) -> &InputArea {
+        &self.mouse.root_area
+    }
+
+    /// Get a mutable reference to the root [`InputArea`].
+    pub fn root_area_mut(&mut self) -> &mut InputArea {
+        &mut self.mouse.root_area
+    }
+
     pub fn update_areas(&mut self, new_root_area: InputArea) -> Vec<Input> {
         self.mouse.update_areas(new_root_area).into_iter().map(Input::Mouse).collect()
     }

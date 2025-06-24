@@ -147,6 +147,14 @@ impl Rect<f32> {
         }
     }
 
+    /// Create a new rectangle centered inside this one with the provided width and height.
+    pub fn inner_centered(&self, width: f32, height: f32) -> Self {
+        let x = self.x + ((self.w - width).max(0.0) / 2.0);
+        let y = self.y + ((self.h - height).max(0.0) / 2.0);
+
+        Self { x, y, w: width.min(self.w), h: height.min(self.h) }
+    }
+
     /// Split this rectangle horizontally at the provided length.
     pub const fn split_len_h(&self, len: f32) -> (Self, Self) {
         (
