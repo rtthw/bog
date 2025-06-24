@@ -155,6 +155,44 @@ impl Rect<f32> {
         Self { x, y, w: width.min(self.w), h: height.min(self.h) }
     }
 
+    /// Split this rectangle into `count` rows with the same height.
+    pub fn rows(&self, count: usize) -> Vec<Self> {
+        if count == 0 {
+            return vec![*self];
+        }
+
+        let row_height = self.h / count as f32;
+        (0..count)
+            .map(|i| {
+                Self {
+                    x: self.x,
+                    y: row_height * i as f32,
+                    w: self.w,
+                    h: row_height,
+                }
+            })
+            .collect()
+    }
+
+    /// Split this rectangle into `count` columns with the same width.
+    pub fn columns(&self, count: usize) -> Vec<Self> {
+        if count == 0 {
+            return vec![*self];
+        }
+
+        let col_width = self.w / count as f32;
+        (0..count)
+            .map(|i| {
+                Self {
+                    x: col_width * i as f32,
+                    y: self.y,
+                    w: col_width,
+                    h: self.h,
+                }
+            })
+            .collect()
+    }
+
     /// Split this rectangle horizontally at the provided length.
     pub const fn split_len_h(&self, len: f32) -> (Self, Self) {
         (
@@ -229,5 +267,33 @@ impl core::ops::Mul<Mat4> for Rect<f32> {
             transform.transform_point3(vec3(pos.x, pos.y, 0.0)).xy().into(),
             transform.transform_vector3(vec3(size.x, size.y, 0.0)).xy().into(),
         )
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rows_and_columns() {
+        let a = Rect::new(Vec2::ZERO, Vec2::splat(1.0));
+        let b = Rect::new(Vec2::ZERO, Vec2::splat(10.0));
+        let (b_1, b_2) = b.split_len_v(5.0);
+        let (b_3, b_4) = b.split_len_h(5.0);
+        let (b_5, b_6) = b_3.split_portion_h(0.5);
+        let (b_7, b_8) = b_4.split_portion_h(0.5);
+
+        assert_eq!(a.rows(0), vec![a]);
+        assert_eq!(a.rows(5), vec![a]);
+        assert_eq!(a.rows(1), vec![a]);
+        assert_eq!(a.columns(0), vec![a]);
+        assert_eq!(a.columns(5), vec![a]);
+        assert_eq!(a.columns(1), vec![a]);
+
+        assert_eq!(b.rows(2), vec![b_1, b_2]);
+        assert_eq!(b.columns(2), vec![b_3, b_4]);
+        assert_eq!(b.columns(4), vec![b_5, b_6, b_7, b_8]);
     }
 }
