@@ -215,15 +215,23 @@ impl Vec2 {
     pub const ZERO: Self = Self::splat(0.0);
     pub const ONE: Self = Self::splat(1.0);
 
+    /// `(self.x * rhs.x) + (self.y * rhs.y)`
     #[inline]
     pub fn dot(self, rhs: Self) -> f32 {
         (self.x * rhs.x) + (self.y * rhs.y)
     }
 
+    /// `self.dot(self).sqrt()`
     #[inline]
     pub fn length(self) -> f32 {
         // FIXME: This uses the standard library. Maybe don't?
         self.dot(self).sqrt()
+    }
+
+    /// `self.dot(self)`
+    #[inline]
+    pub fn length_squared(self) -> f32 {
+        self.dot(self)
     }
 
     /// `1.0 / length()`
@@ -232,11 +240,19 @@ impl Vec2 {
         self.length().recip()
     }
 
+    /// `(self - rhs).length()`
     #[inline]
     pub fn distance(self, rhs: Self) -> f32 {
         (self - rhs).length()
     }
 
+    /// `(self - rhs).length_squared()`
+    #[inline]
+    pub fn distance_squared(self, rhs: Self) -> f32 {
+        (self - rhs).length_squared()
+    }
+
+    /// `self * self.length_recip()`
     #[inline]
     pub fn normalize(self) -> Self {
         self.mul(self.length_recip())
@@ -258,6 +274,7 @@ impl Vec2 {
         *self + a / len * d
     }
 
+    /// `(self + rhs) * 0.5`
     #[inline]
     pub fn midpoint(self, rhs: Self) -> Self {
         (self + rhs) * 0.5
@@ -282,11 +299,16 @@ mod tests {
         assert_eq!(add_one(a), Vec2::ONE);
     }
 
-    // #[test]
-    // fn conversion() {
-    //     let a: Xy<f32> = Xy::ONE;
-    //     let b: Xy<u16> = Xy::splat(1);
+    #[test]
+    fn distance() {
+        let a: Xy<f32> = Vec2::ONE;
+        let b: Xy<f32> = Vec2::ONE * 10.0;
 
-    //     assert_eq!(b.into(), a);
-    // }
+        let distance = a.distance(b);
+        // NOTE: There are some minor differences in implementation that lead to a floating point
+        //       error of about 0.00002.
+        let basically_distance_squared = (distance * distance).round();
+
+        assert_eq!(a.distance_squared(b), basically_distance_squared);
+    }
 }
