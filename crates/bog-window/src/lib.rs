@@ -17,7 +17,6 @@ use bog_core::{vec2, Vec2};
 pub use winit::raw_window_handle as rwh;
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
-    event::{ElementState, Event as WindowManagerEvent},
     window::{Cursor, CursorIcon, CustomCursor},
 };
 

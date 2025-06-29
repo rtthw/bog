@@ -94,6 +94,5 @@ pub mod prelude {
         WindowingSystem,
         WindowManager,
         WindowManagerError,
-        WindowManagerEvent,
     };
 }
