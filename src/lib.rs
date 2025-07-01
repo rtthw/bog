@@ -5,6 +5,7 @@
 #[cfg(feature = "app")]
 pub mod app;
 pub mod graphics;
+pub mod ui;
 
 pub use bog_render as render;
 pub use bog_window as window;
@@ -42,6 +43,10 @@ pub mod prelude {
             WindowGraphics,
         },
         Result,
+        ui::{
+            Element,
+            UserInterface,
+        },
     };
 
     pub use bog_core::{

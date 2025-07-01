@@ -186,6 +186,7 @@ dependencies = [
  "bog-render",
  "bog-window",
  "pollster",
+ "slotmap",
  "syntect",
  "thiserror 2.0.12",
 ]
