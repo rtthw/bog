@@ -11,10 +11,61 @@ pub enum Event {
     MouseMoved {
         delta: Vec2,
     },
+    MouseEntered {
+        node: Node,
+    },
+    MouseLeft {
+        node: Node,
+    },
+    /// The user has moved his mouse pointer over this node, and left it there long enough
+    /// (default is 500 milliseconds) to trigger a hover request.
+    ///
+    /// This event signals an intentional request to "learn more" about the node, and you can use
+    /// it to perform some hover action (e.g. show a tooltip).
+    ///
+    /// Only nodes with the [hover event mask](EventMask::HOVER) will trigger this event. If two
+    /// nodes with this mask intersect, the topmost node will be the only one to receive this
+    /// event.
+    ///
+    /// If you need to trigger some callback immediately after the user's mouse moves into an
+    /// element, use [`Event::MouseEntered`] instead.
+    Hovered {
+        node: Node,
+    },
     NodeRemoved {
         node: Node,
     },
 }
+
+
+
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+pub struct EventMask(u8);
+
+bitflags::bitflags! {
+    impl EventMask: u8 {
+        const HOVER = 1 << 0;
+    }
+}
+
+impl core::fmt::Debug for EventMask {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EventMask {{")?;
+        if self.hoverable() {
+            write!(f, " hover")?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl EventMask {
+    #[inline]
+    pub fn hoverable(&self) -> bool {
+        self.contains(Self::HOVER)
+    }
+}
+
+
 
 slotmap::new_key_type! { pub struct Node; }
 
@@ -125,6 +176,7 @@ impl UserInterface {
 
 pub struct Element {
     pub style: Style,
+    pub event_mask: EventMask,
     pub children: Vec<Element>,
 }
 
@@ -132,17 +184,23 @@ impl Element {
     pub fn new() -> Self {
         Self {
             style: Style::default(),
+            event_mask: EventMask::empty(),
             children: Vec::new(),
         }
     }
 
-    pub fn with_children(mut self, children: impl Into<Vec<Element>>) -> Self {
-        self.children = children.into();
+    pub fn with_style(mut self, style: impl Into<Style>) -> Self {
+        self.style = style.into();
         self
     }
 
-    pub fn with_style(mut self, style: impl Into<Style>) -> Self {
-        self.style = style.into();
+    pub fn with_event_mask(mut self, event_mask: EventMask) -> Self {
+        self.event_mask = event_mask;
+        self
+    }
+
+    pub fn with_children(mut self, children: impl Into<Vec<Element>>) -> Self {
+        self.children = children.into();
         self
     }
 }

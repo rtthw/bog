@@ -21,6 +21,7 @@ bog-core.workspace = true
 bog-render.workspace = true
 bog-window.workspace = true
 
+bitflags = "2"
 pollster = "0.4"
 slotmap = "1"
 thiserror = "2"
