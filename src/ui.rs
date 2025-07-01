@@ -2,44 +2,51 @@
 
 
 
-use bog_core::{vec2, Rect, Xy};
+use bog_core::{vec2, InputEvent, Rect, Vec2, Xy};
 
 
+
+#[non_exhaustive]
+pub enum Event {
+    MouseMoved {
+        delta: Vec2,
+    },
+    NodeRemoved {
+        node: Node,
+    },
+}
 
 slotmap::new_key_type! { pub struct Node; }
 
 pub struct UserInterface {
+    root: Node,
     elements: slotmap::SlotMap<Node, ElementInfo>,
     children: slotmap::SecondaryMap<Node, Vec<Node>>,
     parents: slotmap::SecondaryMap<Node, Option<Node>>,
-}
 
-impl Default for UserInterface {
-    fn default() -> Self {
-        Self {
-            elements: slotmap::SlotMap::with_capacity_and_key(16),
-            children: slotmap::SecondaryMap::with_capacity(16),
-            parents: slotmap::SecondaryMap::with_capacity(16),
-        }
-    }
+    mouse_pos: Vec2,
 }
 
 impl UserInterface {
     pub fn new(root: Element, area: Rect) -> Self {
-        let mut ui = Self::default();
+        let mut elements = slotmap::SlotMap::with_capacity_and_key(16);
+        let mut children = slotmap::SecondaryMap::with_capacity(16);
+        let mut parents = slotmap::SecondaryMap::with_capacity(16);
 
         fn digest(
             element: Element,
             area: Rect,
             parent: Option<Node>,
-            ui: &mut UserInterface,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
+            parents: &mut slotmap::SecondaryMap<Node, Option<Node>>,
         ) -> Node {
             let child_orientation = element.style.orient_children;
-            let node = ui.elements.insert(ElementInfo {
+            let node = elements.insert(ElementInfo {
                 area,
                 style: element.style,
             });
-            let _ = ui.parents.insert(node, parent);
+            let _ = parents.insert(node, parent);
 
             let available = match child_orientation {
                 Axis::Horizontal => area.w,
@@ -64,18 +71,53 @@ impl UserInterface {
                 };
                 length_acc += child_length;
 
-                let child_node = digest(child, child_area, Some(node), ui);
+                let child_node = digest(child, child_area, Some(node), elements, children, parents);
                 element_children.push(child_node);
             }
 
-            let _ = ui.children.insert(node, element_children);
+            let _ = children.insert(node, element_children);
 
             node
         }
 
-        let _root_node = digest(root, area, None, &mut ui);
+        let root_node = digest(root, area, None, &mut elements, &mut children, &mut parents);
 
-        ui
+        Self {
+            root: root_node,
+            elements,
+            children,
+            parents,
+
+            mouse_pos: Vec2::ZERO,
+        }
+    }
+}
+
+impl UserInterface {
+    pub fn process_input(&mut self, event: InputEvent) -> Vec<Event> {
+        match event {
+            InputEvent::MouseMove { x, y } => {
+                self.process_mouse_move(vec2(x, y))
+            }
+            _ => Vec::new(), // TODO
+        }
+    }
+
+    pub fn process_mouse_move(&mut self, position: Vec2) -> Vec<Event> {
+        if self.mouse_pos == position {
+            return Vec::new();
+        }
+
+        let delta = position - self.mouse_pos;
+        let mut events = vec![Event::MouseMoved { delta }];
+
+        events
+    }
+}
+
+impl UserInterface {
+    pub fn remove(&mut self, node: Node) -> Vec<Event> {
+        vec![Event::NodeRemoved { node }] // TODO
     }
 }
 
@@ -199,6 +241,31 @@ struct ElementInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn works() {
+        use std::collections::VecDeque;
+
+        let mut ui = UserInterface::new(Element::new(), Rect::NONE);
+        let mut events = VecDeque::new();
+        events.extend(ui.process_input(InputEvent::MouseMove { x: 1.0, y: 1.0 }).into_iter());
+        let mut event_num = 0;
+        while let Some(event) = events.pop_front() {
+            match event {
+                Event::MouseMoved { .. } => {
+                    events.extend(ui.remove(ui.root).into_iter());
+                    assert!(event_num == 0);
+                    event_num += 1;
+                }
+                Event::NodeRemoved { .. } => {
+                    assert!(event_num == 1);
+                    event_num += 1;
+                }
+                _ => {}
+            }
+        }
+        assert!(event_num == 2);
+    }
 
     #[test]
     fn sizing_resolver_works() {
