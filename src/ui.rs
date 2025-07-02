@@ -2,7 +2,7 @@
 
 
 
-use bog_core::{vec2, InputEvent, Rect, Vec2, Xy};
+use bog_core::{vec2, InputEvent, MouseButton, Rect, Vec2, Xy};
 
 
 
@@ -11,13 +11,13 @@ pub enum Event {
     Resize {
         node: Node,
     },
-    MouseMoved {
+    MouseMove {
         delta: Vec2,
     },
-    MouseEntered {
+    MouseEnter {
         node: Node,
     },
-    MouseLeft {
+    MouseLeave {
         node: Node,
     },
     /// The user has moved his mouse pointer over this node, and left it there long enough
@@ -32,10 +32,28 @@ pub enum Event {
     ///
     /// If you need to trigger some callback immediately after the user's mouse moves into an
     /// element, use [`Event::MouseEntered`] instead.
-    Hovered {
+    Hover {
         node: Node,
     },
-    NodeRemoved {
+    MouseDown {
+        node: Node,
+    },
+    MouseUp {
+        node: Node,
+    },
+    /// Only nodes with the [click event mask](EventMask::CLICK) will trigger this event. If two
+    /// nodes with this mask intersect, the topmost node will be the only one to receive this
+    /// event.
+    Click {
+        node: Node,
+    },
+    DoubleClick {
+        node: Node,
+    },
+    RightClick {
+        node: Node,
+    },
+    RemoveNode {
         node: Node,
     },
 }
@@ -48,6 +66,8 @@ pub struct EventMask(u8);
 bitflags::bitflags! {
     impl EventMask: u8 {
         const HOVER = 1 << 0;
+        const CLICK = 1 << 1;
+        const FOCUS = 1 << 2;
     }
 }
 
@@ -57,6 +77,12 @@ impl core::fmt::Debug for EventMask {
         if self.hoverable() {
             write!(f, " hover")?;
         }
+        if self.clickable() {
+            write!(f, " click")?;
+        }
+        if self.focusable() {
+            write!(f, " focus")?;
+        }
         write!(f, " }}")
     }
 }
@@ -65,6 +91,16 @@ impl EventMask {
     #[inline]
     pub fn hoverable(&self) -> bool {
         self.contains(Self::HOVER)
+    }
+
+    #[inline]
+    pub fn clickable(&self) -> bool {
+        self.contains(Self::CLICK)
+    }
+
+    #[inline]
+    pub fn focusable(&self) -> bool {
+        self.contains(Self::FOCUS)
     }
 }
 
@@ -99,6 +135,7 @@ impl UserInterface {
             let child_orientation = element.style.orient_children;
             let node = elements.insert(ElementInfo {
                 area,
+                event_mask: element.event_mask,
                 style: element.style,
             });
             let _ = parents.insert(node, parent);
@@ -163,7 +200,13 @@ impl UserInterface {
                 Vec::new()
             }
             InputEvent::MouseLeave => {
-                self.mouse_over.drain(..).map(|node| Event::MouseLeft { node }).collect()
+                self.mouse_over.drain(..).map(|node| Event::MouseLeave { node }).collect()
+            }
+            InputEvent::MouseDown { button } => {
+                self.handle_mouse_down(button)
+            }
+            InputEvent::MouseUp { button } => {
+                self.handle_mouse_up(button)
             }
             _ => Vec::new(), // TODO
         }
@@ -239,7 +282,7 @@ impl UserInterface {
         }
 
         let delta = position - self.mouse_pos;
-        let mut events = vec![Event::MouseMoved { delta }];
+        let mut events = vec![Event::MouseMove { delta }];
 
         fn inner(
             node: Node,
@@ -263,12 +306,12 @@ impl UserInterface {
         if self.mouse_over != new_mouse_over {
             for node in &self.mouse_over {
                 if !new_mouse_over.contains(node) {
-                    events.push(Event::MouseLeft { node: *node });
+                    events.push(Event::MouseLeave { node: *node });
                 }
             }
             for node in &new_mouse_over {
                 if !self.mouse_over.contains(node) {
-                    events.push(Event::MouseEntered { node: *node });
+                    events.push(Event::MouseEnter { node: *node });
                 }
             }
             self.mouse_over = new_mouse_over;
@@ -276,11 +319,32 @@ impl UserInterface {
 
         events
     }
+
+    // TODO: Settings for act on press/release and double click timing.
+    pub fn handle_mouse_down(&mut self, button: MouseButton) -> Vec<Event> {
+        if self.mouse_over.is_empty() {
+            return Vec::new();
+        }
+
+        self.mouse_over.iter()
+            .rev()
+            .find(|node| self.elements[**node].event_mask.clickable())
+            .map(|node| match button {
+                MouseButton::Left => vec![Event::Click { node: *node }],
+                MouseButton::Right => vec![Event::RightClick { node: *node }],
+                _ => vec![]
+            })
+            .unwrap_or(Vec::new())
+    }
+
+    pub fn handle_mouse_up(&mut self, _button: MouseButton) -> Vec<Event> {
+        Vec::new()
+    }
 }
 
 impl UserInterface {
     pub fn remove(&mut self, node: Node) -> Vec<Event> {
-        vec![Event::NodeRemoved { node }] // TODO
+        vec![Event::RemoveNode { node }] // TODO
     }
 }
 
@@ -404,6 +468,7 @@ fn resolve_lengths(available: f32, lengths: Vec<Length>) -> Vec<f32> {
 struct ElementInfo {
     area: Rect,
     style: Style,
+    event_mask: EventMask,
 }
 
 
@@ -422,12 +487,12 @@ mod tests {
         let mut event_num = 0;
         while let Some(event) = events.pop_front() {
             match event {
-                Event::MouseMoved { .. } => {
+                Event::MouseMove { .. } => {
                     events.extend(ui.remove(ui.root).into_iter());
                     assert!(event_num == 0);
                     event_num += 1;
                 }
-                Event::NodeRemoved { .. } => {
+                Event::RemoveNode { .. } => {
                     assert!(event_num == 1);
                     event_num += 1;
                 }
