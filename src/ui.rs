@@ -2,6 +2,8 @@
 
 
 
+use std::collections::VecDeque;
+
 use bog_core::{vec2, InputEvent, MouseButton, Rect, Vec2, Xy};
 
 
@@ -119,6 +121,8 @@ pub struct UserInterface {
     children: slotmap::SecondaryMap<Node, Vec<Node>>,
     parents: slotmap::SecondaryMap<Node, Option<Node>>,
 
+    events: VecDeque<Event>,
+
     mouse_pos: Vec2,
     mouse_over: Vec<Node>,
 }
@@ -185,14 +189,20 @@ impl UserInterface {
             children,
             parents,
 
+            events: VecDeque::new(),
+
             mouse_pos: Vec2::ZERO,
             mouse_over: Vec::new(),
         }
     }
+
+    pub fn next_event(&mut self) -> Option<Event> {
+        self.events.pop_front()
+    }
 }
 
 impl UserInterface {
-    pub fn handle_input(&mut self, event: InputEvent) -> Vec<Event> {
+    pub fn handle_input(&mut self, event: InputEvent) {
         match event {
             InputEvent::Resize { width, height } => {
                 self.handle_resize(vec2(width as _, height as _))
@@ -202,10 +212,9 @@ impl UserInterface {
             }
             InputEvent::MouseEnter => {
                 // Handled by mouse move.
-                Vec::new()
             }
             InputEvent::MouseLeave => {
-                self.mouse_over.drain(..).map(|node| Event::MouseLeave { node }).collect()
+                self.events.extend(self.mouse_over.drain(..).map(|node| Event::MouseLeave { node }));
             }
             InputEvent::MouseDown { button } => {
                 self.handle_mouse_down(button)
@@ -213,22 +222,22 @@ impl UserInterface {
             InputEvent::MouseUp { button } => {
                 self.handle_mouse_up(button)
             }
-            _ => Vec::new(), // TODO
+            _ => {} // TODO
         }
     }
 
-    pub fn handle_resize(&mut self, size: Vec2) -> Vec<Event> {
+    pub fn handle_resize(&mut self, size: Vec2) {
         let area = Rect::new(Vec2::ZERO, size);
 
         // FIXME: Maybe don't early return here? (Only saves one allocation?)
         if self.elements[self.root].area == area {
-            return vec![];
+            return;
         }
 
         fn inner(
             node: Node,
             area: Rect,
-            events: &mut Vec<Event>,
+            events: &mut VecDeque<Event>,
             elements: &mut slotmap::SlotMap<Node, ElementInfo>,
             children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
         ) {
@@ -237,7 +246,7 @@ impl UserInterface {
             }
             elements[node].area = area;
 
-            events.push(Event::Resize { node });
+            events.push_back(Event::Resize { node });
 
             let child_orientation = elements[node].style.orient_children;
             let available = match child_orientation {
@@ -274,20 +283,16 @@ impl UserInterface {
             }
         }
 
-        let mut events = vec![];
-
-        inner(self.root, area, &mut events, &mut self.elements, &mut self.children);
-
-        Vec::new()
+        inner(self.root, area, &mut self.events, &mut self.elements, &mut self.children);
     }
 
-    pub fn handle_mouse_move(&mut self, position: Vec2) -> Vec<Event> {
+    pub fn handle_mouse_move(&mut self, position: Vec2) {
         if self.mouse_pos == position {
-            return Vec::new();
+            return;
         }
 
         let delta = position - self.mouse_pos;
-        let mut events = vec![Event::MouseMove { delta }];
+        self.events.push_back(Event::MouseMove { delta });
 
         fn inner(
             node: Node,
@@ -311,47 +316,46 @@ impl UserInterface {
         if self.mouse_over != new_mouse_over {
             for node in &self.mouse_over {
                 if !new_mouse_over.contains(node) {
-                    events.push(Event::MouseLeave { node: *node });
+                    self.events.push_back(Event::MouseLeave { node: *node });
                 }
             }
             for node in &new_mouse_over {
                 if !self.mouse_over.contains(node) {
-                    events.push(Event::MouseEnter { node: *node });
+                    self.events.push_back(Event::MouseEnter { node: *node });
                 }
             }
             self.mouse_over = new_mouse_over;
         }
-
-        events
     }
 
     // TODO: Settings for act on press/release and double click timing.
-    pub fn handle_mouse_down(&mut self, button: MouseButton) -> Vec<Event> {
+    pub fn handle_mouse_down(&mut self, button: MouseButton) {
         if self.mouse_over.is_empty() {
-            return Vec::new();
+            return;
         }
 
-        self.mouse_over.iter()
+        if let Some(node) = self.mouse_over.iter()
             .rev()
             .find(|node| self.elements[**node].event_mask.clickable())
-            .map(|node| match button {
-                MouseButton::Left => vec![Event::Click { node: *node }],
-                MouseButton::Right => vec![Event::RightClick { node: *node }],
-                _ => vec![]
-            })
-            .unwrap_or(Vec::new())
+        {
+            match button {
+                MouseButton::Left => self.events.push_back(Event::Click { node: *node }),
+                MouseButton::Right => self.events.push_back(Event::RightClick { node: *node }),
+                _ => {}
+            }
+        }
     }
 
-    pub fn handle_mouse_up(&mut self, _button: MouseButton) -> Vec<Event> {
-        Vec::new()
+    pub fn handle_mouse_up(&mut self, _button: MouseButton) {
+        // TODO
     }
 }
 
 impl UserInterface {
-    pub fn insert(&mut self, parent: Option<Node>, child: Node) -> Vec<Event> {
+    pub fn insert(&mut self, parent: Option<Node>, child: Node) {
         let old_parent = self.parents[child];
         if old_parent == parent {
-            return Vec::new();
+            return;
         }
         if let Some(old_parent) = old_parent {
             self.children[old_parent].retain(|node| node != &child);
@@ -361,15 +365,15 @@ impl UserInterface {
         }
         self.parents[child] = parent;
 
-        vec![Event::MoveNode {
+        self.events.push_back(Event::MoveNode {
             node: child,
             old_parent,
             new_parent: parent,
-        }]
+        });
     }
 
-    pub fn delete(&mut self, node: Node) -> Vec<Event> {
-        vec![Event::DeleteNode { node }] // TODO
+    pub fn delete(&mut self, node: Node) {
+        self.events.push_back(Event::DeleteNode { node }); // TODO
     }
 }
 
@@ -504,16 +508,13 @@ mod tests {
 
     #[test]
     fn works() {
-        use std::collections::VecDeque;
-
         let mut ui = UserInterface::new(Element::new(), Rect::NONE);
-        let mut events = VecDeque::new();
-        events.extend(ui.handle_input(InputEvent::MouseMove { x: 1.0, y: 1.0 }).into_iter());
+        ui.handle_input(InputEvent::MouseMove { x: 1.0, y: 1.0 });
         let mut event_num = 0;
-        while let Some(event) = events.pop_front() {
+        while let Some(event) = ui.next_event() {
             match event {
                 Event::MouseMove { .. } => {
-                    events.extend(ui.delete(ui.root).into_iter());
+                    ui.delete(ui.root);
                     assert!(event_num == 0);
                     event_num += 1;
                 }
