@@ -53,7 +53,12 @@ pub enum Event {
     RightClick {
         node: Node,
     },
-    RemoveNode {
+    MoveNode {
+        node: Node,
+        old_parent: Option<Node>,
+        new_parent: Option<Node>,
+    },
+    DeleteNode {
         node: Node,
     },
 }
@@ -343,8 +348,28 @@ impl UserInterface {
 }
 
 impl UserInterface {
-    pub fn remove(&mut self, node: Node) -> Vec<Event> {
-        vec![Event::RemoveNode { node }] // TODO
+    pub fn insert(&mut self, parent: Option<Node>, child: Node) -> Vec<Event> {
+        let old_parent = self.parents[child];
+        if old_parent == parent {
+            return Vec::new();
+        }
+        if let Some(old_parent) = old_parent {
+            self.children[old_parent].retain(|node| node != &child);
+        }
+        if let Some(parent) = parent {
+            self.children[parent].push(child);
+        }
+        self.parents[child] = parent;
+
+        vec![Event::MoveNode {
+            node: child,
+            old_parent,
+            new_parent: parent,
+        }]
+    }
+
+    pub fn delete(&mut self, node: Node) -> Vec<Event> {
+        vec![Event::DeleteNode { node }] // TODO
     }
 }
 
@@ -488,11 +513,11 @@ mod tests {
         while let Some(event) = events.pop_front() {
             match event {
                 Event::MouseMove { .. } => {
-                    events.extend(ui.remove(ui.root).into_iter());
+                    events.extend(ui.delete(ui.root).into_iter());
                     assert!(event_num == 0);
                     event_num += 1;
                 }
-                Event::RemoveNode { .. } => {
+                Event::DeleteNode { .. } => {
                     assert!(event_num == 1);
                     event_num += 1;
                 }
