@@ -8,6 +8,9 @@ use bog_core::{vec2, InputEvent, Rect, Vec2, Xy};
 
 #[non_exhaustive]
 pub enum Event {
+    Resize {
+        node: Node,
+    },
     MouseMoved {
         delta: Vec2,
     },
@@ -76,6 +79,7 @@ pub struct UserInterface {
     parents: slotmap::SecondaryMap<Node, Option<Node>>,
 
     mouse_pos: Vec2,
+    mouse_over: Vec<Node>,
 }
 
 impl UserInterface {
@@ -140,27 +144,135 @@ impl UserInterface {
             parents,
 
             mouse_pos: Vec2::ZERO,
+            mouse_over: Vec::new(),
         }
     }
 }
 
 impl UserInterface {
-    pub fn process_input(&mut self, event: InputEvent) -> Vec<Event> {
+    pub fn handle_input(&mut self, event: InputEvent) -> Vec<Event> {
         match event {
+            InputEvent::Resize { width, height } => {
+                self.handle_resize(vec2(width as _, height as _))
+            }
             InputEvent::MouseMove { x, y } => {
-                self.process_mouse_move(vec2(x, y))
+                self.handle_mouse_move(vec2(x, y))
+            }
+            InputEvent::MouseEnter => {
+                // Handled by mouse move.
+                Vec::new()
+            }
+            InputEvent::MouseLeave => {
+                self.mouse_over.drain(..).map(|node| Event::MouseLeft { node }).collect()
             }
             _ => Vec::new(), // TODO
         }
     }
 
-    pub fn process_mouse_move(&mut self, position: Vec2) -> Vec<Event> {
+    pub fn handle_resize(&mut self, size: Vec2) -> Vec<Event> {
+        let area = Rect::new(Vec2::ZERO, size);
+
+        // FIXME: Maybe don't early return here? (Only saves one allocation?)
+        if self.elements[self.root].area == area {
+            return vec![];
+        }
+
+        fn inner(
+            node: Node,
+            area: Rect,
+            events: &mut Vec<Event>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
+        ) {
+            if elements[node].area == area {
+                return;
+            }
+            elements[node].area = area;
+
+            events.push(Event::Resize { node });
+
+            let child_orientation = elements[node].style.orient_children;
+            let available = match child_orientation {
+                Axis::Horizontal => area.w,
+                Axis::Vertical => area.h,
+            };
+            let lengths = children[node].iter()
+                .map(|n| {
+                    match child_orientation {
+                        Axis::Horizontal => elements[*n].style.sizing.x,
+                        Axis::Vertical => elements[*n].style.sizing.y,
+                    }
+                })
+                .collect::<Vec<_>>();
+            let sizes = resolve_lengths(available, lengths);
+
+            let mut length_acc = 0.0;
+            for (child_node, child_length) in children[node].clone().into_iter()
+                .zip(sizes.into_iter())
+            {
+                let child_area = match child_orientation {
+                    Axis::Horizontal => Rect::new(
+                        vec2(area.x + length_acc, area.y),
+                        vec2(child_length, area.h),
+                    ),
+                    Axis::Vertical => Rect::new(
+                        vec2(area.x, area.y + length_acc),
+                        vec2(area.w, child_length),
+                    ),
+                };
+                length_acc += child_length;
+
+                inner(child_node, child_area, events, elements, children);
+            }
+        }
+
+        let mut events = vec![];
+
+        inner(self.root, area, &mut events, &mut self.elements, &mut self.children);
+
+        Vec::new()
+    }
+
+    pub fn handle_mouse_move(&mut self, position: Vec2) -> Vec<Event> {
         if self.mouse_pos == position {
             return Vec::new();
         }
 
         let delta = position - self.mouse_pos;
         let mut events = vec![Event::MouseMoved { delta }];
+
+        fn inner(
+            node: Node,
+            position: Vec2,
+            mouse_over: &mut Vec<Node>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
+        ) {
+            if !elements[node].area.contains(position) {
+                return;
+            }
+            mouse_over.push(node);
+            for child in children[node].clone() {
+                inner(child, position, mouse_over, elements, children);
+            }
+        }
+
+        let mut new_mouse_over = Vec::new();
+        inner(self.root, position, &mut new_mouse_over, &mut self.elements, &mut self.children);
+
+        if self.mouse_over != new_mouse_over {
+            for node in &self.mouse_over {
+                if !new_mouse_over.contains(node) {
+                    events.push(Event::MouseLeft { node: *node });
+                }
+            }
+            for node in &new_mouse_over {
+                if !self.mouse_over.contains(node) {
+                    events.push(Event::MouseEntered { node: *node });
+                }
+            }
+            self.mouse_over = new_mouse_over;
+        }
 
         events
     }
@@ -306,7 +418,7 @@ mod tests {
 
         let mut ui = UserInterface::new(Element::new(), Rect::NONE);
         let mut events = VecDeque::new();
-        events.extend(ui.process_input(InputEvent::MouseMove { x: 1.0, y: 1.0 }).into_iter());
+        events.extend(ui.handle_input(InputEvent::MouseMove { x: 1.0, y: 1.0 }).into_iter());
         let mut event_num = 0;
         while let Some(event) = events.pop_front() {
             match event {
