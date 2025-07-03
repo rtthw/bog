@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use crate::{vec2, InputEvent, Key, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
+use crate::{key::ModifierKey, vec2, InputEvent, Key, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
 
 
 
@@ -114,10 +114,10 @@ impl KeyEventParser {
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) -> Vec<KeyInput> {
         let key = Key::from((code, self.shift_down));
         match key {
-            Key::Control => { self.control_down = true; }
-            Key::Shift => { self.shift_down = true; }
-            Key::Alt => { self.alt_down = true; }
-            Key::Super => { self.super_down = true; }
+            Key::Modifier(ModifierKey::Control) => { self.control_down = true; }
+            Key::Modifier(ModifierKey::Shift) => { self.shift_down = true; }
+            Key::Modifier(ModifierKey::Alt) => { self.alt_down = true; }
+            Key::Modifier(ModifierKey::Super) => { self.super_down = true; }
             _ => {}
         }
         // let repeat = !self.codes_down.insert(code) || repeat;
@@ -129,10 +129,10 @@ impl KeyEventParser {
     pub fn handle_key_up(&mut self, code: KeyCode) -> Vec<KeyInput> {
         let key = Key::from((code, self.shift_down));
         match key {
-            Key::Control => { self.control_down = false; }
-            Key::Shift => { self.shift_down = false; }
-            Key::Alt => { self.alt_down = false; }
-            Key::Super => { self.super_down = false; }
+            Key::Modifier(ModifierKey::Control) => { self.control_down = false; }
+            Key::Modifier(ModifierKey::Shift) => { self.shift_down = false; }
+            Key::Modifier(ModifierKey::Alt) => { self.alt_down = false; }
+            Key::Modifier(ModifierKey::Super) => { self.super_down = false; }
             _ => {}
         }
         let valid = self.codes_down.remove(&code);

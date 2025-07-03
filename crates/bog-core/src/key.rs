@@ -256,11 +256,12 @@ impl KeyCode {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Key {
     Char(char),
+    Modifier(ModifierKey),
 
-    Control,
-    Shift,
-    Alt,
-    Super,
+    Left,
+    Right,
+    Up,
+    Down,
 
     Unknown,
 }
@@ -270,15 +271,86 @@ impl From<(KeyCode, bool)> for Key {
         if let Some(ch) = code.to_char(shifted) {
             Self::Char(ch)
         } else if code.is_control() {
-            Self::Control
+            Self::Modifier(ModifierKey::Control)
         } else if code.is_shift() {
-            Self::Shift
+            Self::Modifier(ModifierKey::Shift)
         } else if code.is_alt() {
-            Self::Alt
+            Self::Modifier(ModifierKey::Alt)
         } else if code.is_super() {
-            Self::Super
+            Self::Modifier(ModifierKey::Super)
         } else {
-            Self::Unknown
+            match code {
+                KeyCode::C_ARROWLEFT => Self::Left,
+                KeyCode::C_ARROWRIGHT => Self::Right,
+                KeyCode::C_ARROWUP => Self::Up,
+                KeyCode::C_ARROWDOWN => Self::Down,
+                _ => Self::Unknown,
+            }
         }
+    }
+}
+
+
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ModifierKey {
+    Control,
+    Shift,
+    Alt,
+    Super,
+}
+
+
+
+#[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
+pub struct ModifierMask(u8);
+
+bitflags::bitflags! {
+    impl ModifierMask: u8 {
+        const CTRL = 1 << 0;
+        const SHIFT = 1 << 1;
+        const ALT = 1 << 2;
+        const SUPER = 1 << 3;
+    }
+}
+
+impl core::fmt::Debug for ModifierMask {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ModifierMask {{")?;
+        if self.has_control() {
+            write!(f, " ctrl")?;
+        }
+        if self.has_shift() {
+            write!(f, " shift")?;
+        }
+        if self.has_alt() {
+            write!(f, " alt")?;
+        }
+        if self.has_super() {
+            write!(f, " super")?;
+        }
+        write!(f, " }}")
+    }
+}
+
+impl ModifierMask {
+    #[inline]
+    pub fn has_control(&self) -> bool {
+        self.contains(Self::CTRL)
+    }
+
+    #[inline]
+    pub fn has_shift(&self) -> bool {
+        self.contains(Self::SHIFT)
+    }
+
+    #[inline]
+    pub fn has_alt(&self) -> bool {
+        self.contains(Self::ALT)
+    }
+
+    #[inline]
+    pub fn has_super(&self) -> bool {
+        self.contains(Self::SUPER)
     }
 }
