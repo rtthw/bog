@@ -4,13 +4,16 @@
 
 use std::collections::VecDeque;
 
-use bog_core::{vec2, InputEvent, MouseButton, Rect, Vec2, Xy};
+use bog_core::{vec2, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, Xy};
 
 
 
 #[non_exhaustive]
 pub enum Event {
     Resize {
+        node: Node,
+    },
+    Focus {
         node: Node,
     },
     MouseMove {
@@ -125,6 +128,7 @@ pub struct UserInterface {
 
     mouse_pos: Vec2,
     mouse_over: Vec<Node>,
+    key_modifiers: ModifierMask,
 }
 
 impl UserInterface {
@@ -193,6 +197,7 @@ impl UserInterface {
 
             mouse_pos: Vec2::ZERO,
             mouse_over: Vec::new(),
+            key_modifiers: ModifierMask::empty(),
         }
     }
 
@@ -205,22 +210,29 @@ impl UserInterface {
     pub fn handle_input(&mut self, event: InputEvent) {
         match event {
             InputEvent::Resize { width, height } => {
-                self.handle_resize(vec2(width as _, height as _))
+                self.handle_resize(vec2(width as _, height as _));
             }
             InputEvent::MouseMove { x, y } => {
-                self.handle_mouse_move(vec2(x, y))
+                self.handle_mouse_move(vec2(x, y));
             }
             InputEvent::MouseEnter => {
                 // Handled by mouse move.
             }
             InputEvent::MouseLeave => {
-                self.events.extend(self.mouse_over.drain(..).map(|node| Event::MouseLeave { node }));
+                self.events.extend(self.mouse_over.drain(..)
+                    .map(|node| Event::MouseLeave { node }));
             }
             InputEvent::MouseDown { button } => {
-                self.handle_mouse_down(button)
+                self.handle_mouse_down(button);
             }
             InputEvent::MouseUp { button } => {
-                self.handle_mouse_up(button)
+                self.handle_mouse_up(button);
+            }
+            InputEvent::KeyDown { code, repeat } => {
+                self.handle_key_down(code, repeat);
+            }
+            InputEvent::KeyUp { code } => {
+                self.handle_key_up(code);
             }
             _ => {} // TODO
         }
@@ -344,10 +356,78 @@ impl UserInterface {
                 _ => {}
             }
         }
+        if let Some(node) = self.mouse_over.iter()
+            .rev()
+            .find(|node| self.elements[**node].event_mask.focusable())
+        {
+            match button {
+                MouseButton::Left => self.events.push_back(Event::Focus { node: *node }),
+                _ => {}
+            }
+        }
     }
 
     pub fn handle_mouse_up(&mut self, _button: MouseButton) {
         // TODO
+    }
+
+    pub fn handle_key_down(&mut self, code: KeyCode, _repeat: bool) {
+        match Key::from((code, self.key_modifiers.has_shift())) {
+            Key::Modifier(mod_key) => {
+                match mod_key {
+                    ModifierKey::Control => {
+                        self.key_modifiers.insert(ModifierMask::CTRL);
+                    }
+                    ModifierKey::Shift => {
+                        self.key_modifiers.insert(ModifierMask::SHIFT);
+                    }
+                    ModifierKey::Alt => {
+                        self.key_modifiers.insert(ModifierMask::ALT);
+                    }
+                    ModifierKey::Super => {
+                        self.key_modifiers.insert(ModifierMask::SUPER);
+                    }
+                }
+            }
+            Key::Char(_ch) => {
+                // TODO: Handle input, keybinds, etc.
+            }
+            Key::Left => {
+                // self.focus_left()
+            }
+            Key::Right => {
+                // self.focus_right()
+            }
+            Key::Up => {
+                // self.focus_up()
+            }
+            Key::Down => {
+                // self.focus_down()
+            }
+            _ => {}
+        }
+    }
+
+    pub fn handle_key_up(&mut self, code: KeyCode) {
+        match Key::from((code, self.key_modifiers.has_shift())) {
+            Key::Modifier(mod_key) => {
+                match mod_key {
+                    ModifierKey::Control => {
+                        self.key_modifiers.remove(ModifierMask::CTRL);
+                    }
+                    ModifierKey::Shift => {
+                        self.key_modifiers.remove(ModifierMask::SHIFT);
+                    }
+                    ModifierKey::Alt => {
+                        self.key_modifiers.remove(ModifierMask::ALT);
+                    }
+                    ModifierKey::Super => {
+                        self.key_modifiers.remove(ModifierMask::SUPER);
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 
