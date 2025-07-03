@@ -134,6 +134,7 @@ pub struct UserInterface {
     focused: Option<Node>,
 }
 
+// Core.
 impl UserInterface {
     pub fn new(root: Element, area: Rect) -> Self {
         let mut elements = slotmap::SlotMap::with_capacity_and_key(16);
@@ -205,6 +206,14 @@ impl UserInterface {
         }
     }
 
+    pub fn next_event(&mut self) -> Option<Event> {
+        self.events.pop_front()
+    }
+}
+
+// Iterators, Accessors, & Mutators.
+impl UserInterface {
+    /// Apply the provided function to each element node in descending (back to front) order.
     pub fn crawl(&self, func: &mut impl FnMut(&UserInterface, Node)) {
         fn inner(
             ui: &UserInterface,
@@ -220,24 +229,62 @@ impl UserInterface {
         inner(self, self.root, func);
     }
 
-    pub fn next_event(&mut self) -> Option<Event> {
-        self.events.pop_front()
-    }
-
-    pub fn update_style(&mut self, node: Node, func: impl FnOnce(&mut Style)) {
-        func(&mut self.elements[node].style)
-    }
-
+    /// Get the current bounds of the node.
     pub fn bounds(&self, node: Node) -> Rect {
         self.elements[node].area
     }
 
+    /// Get a reference to the node's [`Style`].
     pub fn style(&self, node: Node) -> &Style {
         &self.elements[node].style
     }
+
+    /// Get a mutable reference to the node's [`Style`].
+    pub fn style_mut(&mut self, node: Node) -> &mut Style {
+        &mut self.elements[node].style
+    }
+
+    /// Apply the provided function to the node's [`Style`].
+    pub fn update_style(&mut self, node: Node, func: impl FnOnce(&mut Style)) {
+        func(&mut self.elements[node].style)
+    }
+
+    /// Add `child` to `parent`.
+    ///
+    /// If `None` is provided for `parent`, remove the child from the root tree. This will not free
+    /// the node from memory. Use [`Self::delete`] to completely erase a node from the tree.
+    pub fn insert(&mut self, parent: Option<Node>, child: Node) {
+        let old_parent = self.parents[child];
+        if old_parent == parent {
+            return;
+        }
+        if let Some(old_parent) = old_parent {
+            self.children[old_parent].retain(|node| node != &child);
+        }
+        if let Some(parent) = parent {
+            self.children[parent].push(child);
+        }
+        self.parents[child] = parent;
+
+        self.events.push_back(Event::MoveNode {
+            node: child,
+            old_parent,
+            new_parent: parent,
+        });
+    }
+
+    /// Delete `node` from this UI.
+    pub fn delete(&mut self, node: Node) {
+        self.events.push_back(Event::DeleteNode { node }); // TODO
+    }
 }
 
+// Handlers.
 impl UserInterface {
+    /// Handle the given [`InputEvent`], mutating the UI's internal state.
+    ///
+    /// Be sure to drain the event queue with [`Self::next_event`] immediately after calling this
+    /// function to respond to changes in this UI.
     pub fn handle_input(&mut self, event: InputEvent) {
         match event {
             InputEvent::Resize { width, height } => {
@@ -465,32 +512,6 @@ impl UserInterface {
             }
             _ => {}
         }
-    }
-}
-
-impl UserInterface {
-    pub fn insert(&mut self, parent: Option<Node>, child: Node) {
-        let old_parent = self.parents[child];
-        if old_parent == parent {
-            return;
-        }
-        if let Some(old_parent) = old_parent {
-            self.children[old_parent].retain(|node| node != &child);
-        }
-        if let Some(parent) = parent {
-            self.children[parent].push(child);
-        }
-        self.parents[child] = parent;
-
-        self.events.push_back(Event::MoveNode {
-            node: child,
-            old_parent,
-            new_parent: parent,
-        });
-    }
-
-    pub fn delete(&mut self, node: Node) {
-        self.events.push_back(Event::DeleteNode { node }); // TODO
     }
 }
 
