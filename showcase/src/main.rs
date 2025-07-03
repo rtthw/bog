@@ -19,26 +19,26 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 fn main() -> Result<()> {
-    let root_area = {
-        let area = Rect::new(vec2(0.0, 0.0), vec2(1200.0, 800.0));
-        let (side_area, main_area) = area.split_portion_h(0.2);
-
-        InputArea::new(area, "root")
-            .with_children(vec![
-                InputArea::new(side_area, "side"),
-                InputArea::new(main_area, "main"),
-            ])
-    };
+    let root = Element::new()
+        .with_style(Style::default()
+            .horizontal()
+            .background_color(GRAY_1))
+        .with_children(vec![
+            Element::new()
+                .with_style(Style::default().width(Length::Portion(0.2))),
+            Element::new()
+                .with_style(Style::default().background_color(GRAY_2)),
+        ]);
 
     run_simple_app(None, App {
-        event_parser: EventParser::new(root_area),
+        ui: UserInterface::new(root, Rect::new(vec2(0.0, 0.0), vec2(1200.0, 800.0))),
     })
 }
 
 
 
 struct App {
-    event_parser: EventParser,
+    ui: UserInterface,
 }
 
 impl SimpleApp for App {
@@ -47,32 +47,15 @@ impl SimpleApp for App {
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
         let area = cx.renderer.viewport_rect();
         pass.start_layer(area);
-        pass.fill_quad(Quad::new_colored(area, GRAY_1));
-        pass.end_layer();
-        pass.start_layer(area);
-
-        let (_side_area, main_area) = area.split_portion_h(0.2);
-        pass.fill_quad(Quad::new_colored(main_area, GRAY_2));
-
+        self.ui.render(cx.renderer, pass);
         pass.end_layer();
     }
 
     fn input(&mut self, cx: AppContext, event: InputEvent) {
         cx.window.request_redraw();
-        for input in self.event_parser.parse_event(event) {
-            match input {
-                Input::Mouse(i) => match i {
-                    MouseInput::Enter { area: "side" } => {
-                        println!("(A) Works!");
-                    }
-                    MouseInput::Leave { area: "side" } => {
-                        println!("(B) Works!");
-                    }
-                    MouseInput::Enter { area: "main" } => {
-                        println!("(C) Works!");
-                    }
-                    _ => {}
-                }
+        self.ui.handle_input(event);
+        while let Some(event) = self.ui.next_event() {
+            match event {
                 _ => {}
             }
         }

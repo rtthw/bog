@@ -4,7 +4,8 @@
 
 use std::collections::VecDeque;
 
-use bog_core::{vec2, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, Xy};
+use bog_core::{vec2, Color, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, Xy};
+use bog_render::{Border, Quad, RenderPass, Renderer};
 
 
 
@@ -199,6 +200,40 @@ impl UserInterface {
             mouse_over: Vec::new(),
             key_modifiers: ModifierMask::empty(),
         }
+    }
+
+    pub fn render<'r>(&'r self, renderer: &mut Renderer, pass: &mut RenderPass<'r>) {
+        fn inner<'r>(
+            node: Node,
+            renderer: &mut Renderer,
+            pass: &mut RenderPass<'r>,
+            elements: &slotmap::SlotMap<Node, ElementInfo>,
+            children: &slotmap::SecondaryMap<Node, Vec<Node>>,
+        ) {
+            let bounds = elements[node].area;
+            let has_children = !children[node].is_empty();
+
+            pass.fill_quad(Quad {
+                bounds,
+                border: Border {
+                    color: elements[node].style.border_color,
+                    width: elements[node].style.border_width,
+                    ..Default::default()
+                },
+                bg_color: elements[node].style.background_color,
+                ..Default::default()
+            });
+
+            if has_children {
+                pass.start_layer(bounds);
+                for child in children[node].clone() {
+                    inner(child, renderer, pass, elements, children);
+                }
+                pass.end_layer();
+            }
+        }
+
+        inner(self.root, renderer, pass, &self.elements, &self.children);
     }
 
     pub fn next_event(&mut self) -> Option<Event> {
@@ -497,6 +532,9 @@ pub type Sizing = Xy<Length>;
 pub struct Style {
     pub sizing: Sizing,
     pub orient_children: Axis,
+    pub background_color: Color,
+    pub border_color: Color,
+    pub border_width: f32,
 }
 
 impl Default for Style {
@@ -504,7 +542,47 @@ impl Default for Style {
         Self {
             sizing: Xy::new(Length::Auto, Length::Auto),
             orient_children: Axis::Vertical,
+            background_color: Color::NONE,
+            border_color: Color::NONE,
+            border_width: 0.0,
         }
+    }
+}
+
+impl Style {
+    pub fn background_color(mut self, color: Color) -> Self {
+        self.background_color = color;
+        self
+    }
+
+    pub fn border_color(mut self, color: Color) -> Self {
+        self.border_color = color;
+        self
+    }
+
+    pub fn border_width(mut self, width: f32) -> Self {
+        self.border_width = width;
+        self
+    }
+
+    pub fn horizontal(mut self) -> Self {
+        self.orient_children = Axis::Horizontal;
+        self
+    }
+
+    pub fn vertical(mut self) -> Self {
+        self.orient_children = Axis::Vertical;
+        self
+    }
+
+    pub fn width(mut self, length: Length) -> Self {
+        self.sizing.x = length;
+        self
+    }
+
+    pub fn height(mut self, length: Length) -> Self {
+        self.sizing.y = length;
+        self
     }
 }
 
