@@ -5,7 +5,6 @@
 use std::collections::VecDeque;
 
 use bog_core::{vec2, Color, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, Xy};
-use bog_render::{Border, Quad, RenderPass, Renderer};
 
 
 
@@ -206,38 +205,19 @@ impl UserInterface {
         }
     }
 
-    pub fn render<'r>(&'r self, renderer: &mut Renderer, pass: &mut RenderPass<'r>) {
-        fn inner<'r>(
+    pub fn crawl(&self, func: &mut impl FnMut(&UserInterface, Node)) {
+        fn inner(
+            ui: &UserInterface,
             node: Node,
-            renderer: &mut Renderer,
-            pass: &mut RenderPass<'r>,
-            elements: &slotmap::SlotMap<Node, ElementInfo>,
-            children: &slotmap::SecondaryMap<Node, Vec<Node>>,
+            func: &mut impl FnMut(&UserInterface, Node),
         ) {
-            let bounds = elements[node].area;
-            let has_children = !children[node].is_empty();
-
-            pass.fill_quad(Quad {
-                bounds,
-                border: Border {
-                    color: elements[node].style.border_color,
-                    width: elements[node].style.border_width,
-                    ..Default::default()
-                },
-                bg_color: elements[node].style.background_color,
-                ..Default::default()
-            });
-
-            if has_children {
-                pass.start_layer(bounds);
-                for child in children[node].clone() {
-                    inner(child, renderer, pass, elements, children);
-                }
-                pass.end_layer();
+            func(ui, node);
+            for child in ui.children[node].clone() {
+                inner(ui, child, func);
             }
         }
 
-        inner(self.root, renderer, pass, &self.elements, &self.children);
+        inner(self, self.root, func);
     }
 
     pub fn next_event(&mut self) -> Option<Event> {
@@ -246,6 +226,14 @@ impl UserInterface {
 
     pub fn update_style(&mut self, node: Node, func: impl FnOnce(&mut Style)) {
         func(&mut self.elements[node].style)
+    }
+
+    pub fn bounds(&self, node: Node) -> Rect {
+        self.elements[node].area
+    }
+
+    pub fn style(&self, node: Node) -> &Style {
+        &self.elements[node].style
     }
 }
 

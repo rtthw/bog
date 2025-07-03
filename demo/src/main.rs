@@ -49,7 +49,21 @@ impl SimpleApp for App {
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
         let area = cx.renderer.viewport_rect();
         pass.start_layer(area);
-        self.ui.render(cx.renderer, pass);
+        self.ui.crawl(&mut |ui, node| {
+            let bounds = ui.bounds(node);
+            let style = ui.style(node);
+
+            pass.fill_quad(Quad {
+                bounds,
+                border: Border {
+                    color: style.border_color,
+                    width: style.border_width,
+                    ..Default::default()
+                },
+                bg_color: style.background_color,
+                ..Default::default()
+            });
+        });
         pass.end_layer();
     }
 
