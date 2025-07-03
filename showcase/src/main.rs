@@ -25,9 +25,11 @@ fn main() -> Result<()> {
             .background_color(GRAY_1))
         .with_children(vec![
             Element::new()
-                .with_style(Style::default().width(Length::Portion(0.2))),
+                .with_style(Style::default().width(Length::Portion(0.2)))
+                .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
             Element::new()
-                .with_style(Style::default().background_color(GRAY_2)),
+                .with_style(Style::default().background_color(GRAY_2))
+                .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
         ]);
 
     run_simple_app(None, App {
@@ -56,6 +58,17 @@ impl SimpleApp for App {
         self.ui.handle_input(event);
         while let Some(event) = self.ui.next_event() {
             match event {
+                Event::Focus { old, new } => {
+                    if let Some(old) = old {
+                        self.ui.update_style(old, |style| {
+                            style.border_width = 0.0;
+                        });
+                    }
+                    self.ui.update_style(new, |style| {
+                        style.border_color = GRAY_6;
+                        style.border_width = 2.0;
+                    });
+                }
                 _ => {}
             }
         }

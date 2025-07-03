@@ -9,13 +9,15 @@ use bog_render::{Border, Quad, RenderPass, Renderer};
 
 
 
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Event {
     Resize {
         node: Node,
     },
     Focus {
-        node: Node,
+        old: Option<Node>,
+        new: Node,
     },
     MouseMove {
         delta: Vec2,
@@ -130,6 +132,7 @@ pub struct UserInterface {
     mouse_pos: Vec2,
     mouse_over: Vec<Node>,
     key_modifiers: ModifierMask,
+    focused: Option<Node>,
 }
 
 impl UserInterface {
@@ -199,6 +202,7 @@ impl UserInterface {
             mouse_pos: Vec2::ZERO,
             mouse_over: Vec::new(),
             key_modifiers: ModifierMask::empty(),
+            focused: None,
         }
     }
 
@@ -238,6 +242,10 @@ impl UserInterface {
 
     pub fn next_event(&mut self) -> Option<Event> {
         self.events.pop_front()
+    }
+
+    pub fn update_style(&mut self, node: Node, func: impl FnOnce(&mut Style)) {
+        func(&mut self.elements[node].style)
     }
 }
 
@@ -339,6 +347,7 @@ impl UserInterface {
         }
 
         let delta = position - self.mouse_pos;
+        // TODO: Setting for not reporting mouse movements to avoid clogging event queue?
         self.events.push_back(Event::MouseMove { delta });
 
         fn inner(
@@ -396,7 +405,12 @@ impl UserInterface {
             .find(|node| self.elements[**node].event_mask.focusable())
         {
             match button {
-                MouseButton::Left => self.events.push_back(Event::Focus { node: *node }),
+                MouseButton::Left => {
+                    let old = self.focused.take();
+                    self.focused = Some(*node);
+
+                    self.events.push_back(Event::Focus { old, new: *node });
+                }
                 _ => {}
             }
         }
