@@ -173,10 +173,14 @@ impl UserInterface {
             let mut element_children = Vec::with_capacity(element.children.len());
             for (child, child_length) in element.children.into_iter().zip(sizes.into_iter()) {
                 let child_area = match child_orientation {
-                    Axis::Horizontal =>
-                        Rect::new(vec2(length_acc, 0.0), vec2(child_length, area.h)),
-                    Axis::Vertical =>
-                        Rect::new(vec2(0.0, length_acc), vec2(area.w, child_length)),
+                    Axis::Horizontal => Rect::new(
+                        vec2(area.x + length_acc, area.y),
+                        vec2(child_length, area.h),
+                    ),
+                    Axis::Vertical => Rect::new(
+                        vec2(area.x, area.y + length_acc),
+                        vec2(area.w, child_length),
+                    ),
                 };
                 length_acc += child_length;
 
