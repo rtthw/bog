@@ -258,11 +258,14 @@ impl core::ops::Mul<f32> for Rect<f32> {
     type Output = Self;
 
     fn mul(self, scale: f32) -> Self {
+        let w = self.w * scale;
+        let h = self.h * scale;
+
         Self {
-            x: self.x * scale,
-            y: self.y * scale,
-            w: self.w * scale,
-            h: self.h * scale,
+            x: self.x + ((self.w - w) / 2.0),
+            y: self.y + ((self.h - h) / 2.0),
+            w,
+            h,
         }
     }
 }
