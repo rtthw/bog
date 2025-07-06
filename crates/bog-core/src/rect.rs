@@ -25,15 +25,26 @@ impl Default for Rect<f32> {
 impl Rect<f32> {
     /// A zero-sized rectangle located at the origin.
     pub const NONE: Self = Self::new(Vec2::ZERO, Vec2::ZERO);
-    pub const INFINITE: Self = Self::new(
-        Vec2::ZERO,
-        Vec2::new(f32::INFINITY, f32::INFINITY),
-    );
+    /// An unsized rectangle located at the origin.
+    pub const INFINITE: Self = Self::at_origin(Vec2::new(f32::INFINITY, f32::INFINITY));
 
-    pub const fn new(pos: Vec2, size: Vec2) -> Self {
+    /// Create a new rectangle with the provided `position` and `size`.
+    #[inline]
+    pub const fn new(position: Vec2, size: Vec2) -> Self {
         Self {
-            x: pos.x,
-            y: pos.y,
+            x: position.x,
+            y: position.y,
+            w: size.x,
+            h: size.y,
+        }
+    }
+
+    /// Create a new rectangle at (0, 0).
+    #[inline]
+    pub const fn at_origin(size: Vec2) -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
             w: size.x,
             h: size.y,
         }
@@ -278,8 +289,8 @@ mod tests {
 
     #[test]
     fn rows_and_columns() {
-        let a = Rect::new(Vec2::ZERO, Vec2::splat(1.0));
-        let b = Rect::new(Vec2::ZERO, Vec2::splat(10.0));
+        let a = Rect::at_origin(Vec2::splat(1.0));
+        let b = Rect::at_origin(Vec2::splat(10.0));
         let (b_1, b_2) = b.split_len_v(5.0);
         let (b_3, b_4) = b.split_len_h(5.0);
         let (b_5, b_6) = b_3.split_portion_h(0.5);

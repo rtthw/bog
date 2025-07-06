@@ -526,7 +526,7 @@ mod tests {
 
     #[test]
     fn input_area_tree_basics() {
-        let root = Rect::new(Vec2::ZERO, vec2(40.0, 50.0));
+        let root = Rect::at_origin(vec2(40.0, 50.0));
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 
@@ -549,7 +549,7 @@ mod tests {
 
     #[test]
     fn input_area_hovering() {
-        let root = Rect::new(Vec2::ZERO, vec2(40.0, 50.0));
+        let root = Rect::at_origin(vec2(40.0, 50.0));
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 
@@ -585,7 +585,7 @@ mod tests {
 
     #[test]
     fn input_area_crawling() {
-        let root = Rect::new(Vec2::ZERO, vec2(40.0, 50.0));
+        let root = Rect::at_origin(vec2(40.0, 50.0));
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 

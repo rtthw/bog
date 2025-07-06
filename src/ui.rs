@@ -317,7 +317,7 @@ impl UserInterface {
     }
 
     pub fn handle_resize(&mut self, size: Vec2) {
-        let area = Rect::new(Vec2::ZERO, size);
+        let area = Rect::at_origin(size);
 
         // FIXME: Maybe don't early return here? (Only saves one allocation?)
         if self.elements[self.root].area == area {

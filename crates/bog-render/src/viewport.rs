@@ -30,7 +30,7 @@ impl Default for Viewport {
 impl Viewport {
     #[inline]
     pub const fn rect(&self) -> Rect {
-        Rect::new(Vec2::ZERO, self.physical_size)
+        Rect::at_origin(self.physical_size)
     }
 
     pub fn resize(&mut self, physical_size: Vec2) {

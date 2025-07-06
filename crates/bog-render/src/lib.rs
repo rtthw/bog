@@ -217,7 +217,7 @@ impl Renderer {
 
     /// The viewport's current [`Rect`].
     pub fn viewport_rect(&self) -> Rect {
-        Rect::new(Vec2::ZERO, vec2(
+        Rect::at_origin(vec2(
             self.text_pipeline.viewport.resolution().width as f32,
             self.text_pipeline.viewport.resolution().height as f32,
         ))
