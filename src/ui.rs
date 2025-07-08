@@ -157,33 +157,14 @@ impl UserInterface {
             });
             let _ = parents.insert(node, parent);
 
-            let available = match child_orientation {
-                Axis::Horizontal => area.w,
-                Axis::Vertical => area.h,
-            };
-            let lengths = element.children.iter()
-                .map(|e| match child_orientation {
-                    Axis::Horizontal => e.style.sizing[0],
-                    Axis::Vertical => e.style.sizing[1],
-                })
-                .collect::<Vec<_>>();
-            let sizes = resolve_lengths(available, lengths);
+            let child_areas = resolve_layout(
+                area,
+                child_orientation,
+                element.children.iter().map(|c| Sizing::from(&c.style)).collect(),
+            );
 
-            let mut length_acc = 0.0;
             let mut element_children = Vec::with_capacity(element.children.len());
-            for (child, child_length) in element.children.into_iter().zip(sizes.into_iter()) {
-                let child_area = match child_orientation {
-                    Axis::Horizontal => Rect::new(
-                        vec2(area.x + length_acc, area.y),
-                        vec2(child_length, area.h),
-                    ),
-                    Axis::Vertical => Rect::new(
-                        vec2(area.x, area.y + length_acc),
-                        vec2(area.w, child_length),
-                    ),
-                };
-                length_acc += child_length;
-
+            for (child, child_area) in element.children.into_iter().zip(child_areas.into_iter()) {
                 let child_node = digest(child, child_area, Some(node), elements, children, parents);
                 element_children.push(child_node);
             }
@@ -342,37 +323,15 @@ impl UserInterface {
 
             events.push_back(Event::Resize { node });
 
-            let child_orientation = elements[node].style.orient_children;
-            let available = match child_orientation {
-                Axis::Horizontal => area.w,
-                Axis::Vertical => area.h,
-            };
-            let lengths = children[node].iter()
-                .map(|n| {
-                    match child_orientation {
-                        Axis::Horizontal => elements[*n].style.sizing[0],
-                        Axis::Vertical => elements[*n].style.sizing[1],
-                    }
-                })
-                .collect::<Vec<_>>();
-            let sizes = resolve_lengths(available, lengths);
+            let child_areas = resolve_layout(
+                area,
+                elements[node].style.orient_children,
+                children[node].iter().map(|c| Sizing::from(&elements[*c].style)).collect(),
+            );
 
-            let mut length_acc = 0.0;
-            for (child_node, child_length) in children[node].clone().into_iter()
-                .zip(sizes.into_iter())
+            for (child_node, child_area) in children[node].clone().into_iter()
+                .zip(child_areas.into_iter())
             {
-                let child_area = match child_orientation {
-                    Axis::Horizontal => Rect::new(
-                        vec2(area.x + length_acc, area.y),
-                        vec2(child_length, area.h),
-                    ),
-                    Axis::Vertical => Rect::new(
-                        vec2(area.x, area.y + length_acc),
-                        vec2(area.w, child_length),
-                    ),
-                };
-                length_acc += child_length;
-
                 inner(child_node, child_area, events, elements, children);
             }
         }
@@ -655,14 +614,15 @@ impl Edges {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Axis {
     Horizontal,
     Vertical,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Length {
+    #[default]
     Auto,
     Exact(f32),
     Portion(f32),
@@ -688,19 +648,35 @@ impl Length {
     }
 }
 
-// struct LengthSizing {
-//     len: Length,
-//     min_padding: f32,
-//     max_padding: f32,
-//     min_margin: f32,
-//     max_margin: f32,
-// }
+#[derive(Clone, Debug, Default)]
+struct Sizing {
+    width: Length,
+    height: Length,
+    padding: Edges,
+    margin: Edges,
+}
 
-fn resolve_lengths(available: f32, lengths: Vec<Length>) -> Vec<f32> {
-    let mut sizes = [available / lengths.len() as f32].repeat(lengths.len());
-    let mut remaining = available;
+impl From<&Style> for Sizing {
+    fn from(value: &Style) -> Self {
+        Self {
+            width: value.sizing[0],
+            height: value.sizing[1],
+            padding: value.padding,
+            margin: value.margin,
+        }
+    }
+}
+
+fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect> {
+    let (main_axis_length, lengths): (f32, Vec<Length>) = match axis {
+        Axis::Horizontal => (available.w, sizings.iter().map(|s| s.width).collect()),
+        Axis::Vertical => (available.h, sizings.iter().map(|s| s.height).collect()),
+    };
+
+    let mut sizes = [0.0].repeat(lengths.len());
+    let mut remaining = main_axis_length;
     let auto_count: usize = lengths.iter()
-        .fold(0, |acc, s| if s.is_auto() { acc + 1 } else { acc });
+        .fold(0, |acc, len| if len.is_auto() { acc + 1 } else { acc });
 
     for (i, exact) in lengths.iter().enumerate().filter_map(|(i, s)| Some((i, s.exact()?))) {
         sizes[i] = exact;
@@ -708,7 +684,7 @@ fn resolve_lengths(available: f32, lengths: Vec<Length>) -> Vec<f32> {
     }
 
     for (i, portion) in lengths.iter().enumerate().filter_map(|(i, s)| Some((i, s.portion()?))) {
-        let size = available * portion;
+        let size = main_axis_length * portion;
         sizes[i] = size;
         remaining -= size;
     }
@@ -718,7 +694,24 @@ fn resolve_lengths(available: f32, lengths: Vec<Length>) -> Vec<f32> {
         sizes[i] = auto_size;
     }
 
-    sizes
+    let mut size_acc = 0.0;
+    sizes.into_iter()
+        .map(|size| {
+            let rect = match axis {
+                Axis::Horizontal => Rect::new(
+                    vec2(size_acc + available.x, available.y),
+                    vec2(size, available.h),
+                ),
+                Axis::Vertical => Rect::new(
+                    vec2(available.x, size_acc + available.y),
+                    vec2(available.w, size),
+                ),
+            };
+            size_acc += size;
+
+            rect
+        })
+        .collect()
 }
 
 
@@ -762,12 +755,26 @@ mod tests {
     }
 
     #[test]
-    fn sizing_resolver_works() {
-        // NOTE: This is needed to account for floating point precision.
+    fn layout_resolver_works() {
         let round_sizes = |length: f32, sizings: &[Length]| -> Vec<f32> {
-            resolve_lengths(length, sizings.to_vec())
+            resolve_layout(
+                Rect::at_origin(vec2(length, 0.0)),
+                Axis::Horizontal,
+                sizings.into_iter()
+                    .map(|s| Sizing {
+                        width: *s,
+                        height: Length::Auto,
+                        ..Default::default()
+                    })
+                    .collect(),
+            )
                 .into_iter()
-                .map(|s| (s * 10.0).round() / 10.0)
+                // NOTE: This is needed to account for floating point precision.
+                .map(|r| r.with_size(vec2(
+                    (r.size().x * 10.0).round() / 10.0,
+                    (r.size().y * 10.0).round() / 10.0,
+                )))
+                .map(|r| r.size().x)
                 .collect()
         };
 

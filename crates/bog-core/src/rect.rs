@@ -49,6 +49,24 @@ impl Rect<f32> {
             h: size.y,
         }
     }
+
+    #[inline]
+    pub fn with_position(self, position: Vec2) -> Self {
+        Self {
+            x: position.x,
+            y: position.y,
+            ..self
+        }
+    }
+
+    #[inline]
+    pub fn with_size(self, size: Vec2) -> Self {
+        Self {
+            w: size.x,
+            h: size.y,
+            ..self
+        }
+    }
 }
 
 impl Rect<f32> {
