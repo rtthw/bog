@@ -262,6 +262,40 @@ impl UserInterface {
     pub fn delete(&mut self, node: Node) {
         self.events.push_back(Event::DeleteNode { node }); // TODO
     }
+
+    /// Get the position of the node **without** its margin, border, or padding offsets.
+    ///
+    /// See [`Self::border_position`], [`Self::inner_position`], [`Self::content_position`].
+    #[inline]
+    pub fn absolute_position(&self, node: Node) -> Vec2 {
+        self.elements[node].absolute_position()
+    }
+
+    /// Get the position of the node relative to its margin (`absolute_position` + `margin_offset`).
+    ///
+    /// See [`Self::absolute_position`], [`Self::inner_position`], [`Self::content_position`].
+    #[inline]
+    pub fn border_position(&self, node: Node) -> Vec2 {
+        self.elements[node].border_position()
+    }
+
+    /// Get the position of the node relative to its margin and border (`absolute_position` +
+    /// `margin_offset` + `border_offset`).
+    ///
+    /// See [`Self::absolute_position`], [`Self::border_position`], [`Self::content_position`].
+    #[inline]
+    pub fn inner_position(&self, node: Node) -> Vec2 {
+        self.elements[node].inner_position()
+    }
+
+    /// Get the position of the node relative to its margin, border, and padding
+    /// (`absolute_position` + `margin_offset` + `border_offset` + `padding_offset`).
+    ///
+    /// See [`Self::absolute_pos`], [`Self::border_position`], [`Self::inner_position`].
+    #[inline]
+    pub fn content_position(&self, node: Node) -> Vec2 {
+        self.elements[node].content_position()
+    }
 }
 
 // Handlers.
@@ -652,8 +686,8 @@ impl Length {
 struct Sizing {
     width: Length,
     height: Length,
-    padding: Edges,
-    margin: Edges,
+    // NOTE: For now, we don't need to know about padding/margins/borders until after the initial
+    //       size resolution.
 }
 
 impl From<&Style> for Sizing {
@@ -661,8 +695,8 @@ impl From<&Style> for Sizing {
         Self {
             width: value.sizing[0],
             height: value.sizing[1],
-            padding: value.padding,
-            margin: value.margin,
+            // padding: value.padding,
+            // margin: value.margin,
         }
     }
 }
@@ -724,6 +758,34 @@ struct ElementInfo {
     area: Rect,
     style: Style,
     event_mask: EventMask,
+}
+
+impl ElementInfo {
+    #[inline]
+    fn absolute_position(&self) -> Vec2 {
+        self.area.position()
+    }
+
+    #[inline]
+    fn border_position(&self) -> Vec2 {
+        self.area.position()
+            + vec2(self.style.margin.left, self.style.margin.top)
+    }
+
+    #[inline]
+    fn inner_position(&self) -> Vec2 {
+        self.area.position()
+            + vec2(self.style.margin.left, self.style.margin.top)
+            + vec2(self.style.border_width, self.style.border_width) // TODO: Use `Edges` here?
+    }
+
+    #[inline]
+    fn content_position(&self) -> Vec2 {
+        self.area.position()
+            + vec2(self.style.margin.left, self.style.margin.top)
+            + vec2(self.style.border_width, self.style.border_width) // TODO: Use `Edges` here?
+            + vec2(self.style.padding.left, self.style.padding.top)
+    }
 }
 
 
