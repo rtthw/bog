@@ -49,7 +49,6 @@ pub mod prelude {
             Event,
             EventMask,
             Length,
-            Sizing,
             Style,
             UserInterface,
         },

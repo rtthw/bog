@@ -4,7 +4,7 @@
 
 use std::collections::VecDeque;
 
-use bog_core::{vec2, Color, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, Xy};
+use bog_core::{vec2, Color, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2};
 
 
 
@@ -163,8 +163,8 @@ impl UserInterface {
             };
             let lengths = element.children.iter()
                 .map(|e| match child_orientation {
-                    Axis::Horizontal => e.style.sizing.x,
-                    Axis::Vertical => e.style.sizing.y,
+                    Axis::Horizontal => e.style.sizing[0],
+                    Axis::Vertical => e.style.sizing[1],
                 })
                 .collect::<Vec<_>>();
             let sizes = resolve_lengths(available, lengths);
@@ -350,8 +350,8 @@ impl UserInterface {
             let lengths = children[node].iter()
                 .map(|n| {
                     match child_orientation {
-                        Axis::Horizontal => elements[*n].style.sizing.x,
-                        Axis::Vertical => elements[*n].style.sizing.y,
+                        Axis::Horizontal => elements[*n].style.sizing[0],
+                        Axis::Vertical => elements[*n].style.sizing[1],
                     }
                 })
                 .collect::<Vec<_>>();
@@ -554,24 +554,26 @@ impl Element {
 
 
 
-pub type Sizing = Xy<Length>;
-
 pub struct Style {
-    pub sizing: Sizing,
+    pub sizing: [Length; 2],
     pub orient_children: Axis,
     pub background_color: Color,
     pub border_color: Color,
     pub border_width: f32,
+    pub padding: Edges,
+    pub margin: Edges,
 }
 
 impl Default for Style {
     fn default() -> Self {
         Self {
-            sizing: Xy::new(Length::Auto, Length::Auto),
+            sizing: [Length::Auto; 2],
             orient_children: Axis::Vertical,
             background_color: Color::NONE,
             border_color: Color::NONE,
             border_width: 0.0,
+            padding: Edges::default(),
+            margin: Edges::default(),
         }
     }
 }
@@ -592,6 +594,26 @@ impl Style {
         self
     }
 
+    pub fn padding(mut self, size: f32) -> Self {
+        self.padding = Edges::all(size);
+        self
+    }
+
+    pub fn padding2(mut self, left_right: f32, top_bottom: f32) -> Self {
+        self.padding = Edges::two_value(left_right, top_bottom);
+        self
+    }
+
+    pub fn margin(mut self, size: f32) -> Self {
+        self.margin = Edges::all(size);
+        self
+    }
+
+    pub fn margin2(mut self, left_right: f32, top_bottom: f32) -> Self {
+        self.margin = Edges::two_value(left_right, top_bottom);
+        self
+    }
+
     pub fn horizontal(mut self) -> Self {
         self.orient_children = Axis::Horizontal;
         self
@@ -603,17 +625,35 @@ impl Style {
     }
 
     pub fn width(mut self, length: Length) -> Self {
-        self.sizing.x = length;
+        self.sizing[0] = length;
         self
     }
 
     pub fn height(mut self, length: Length) -> Self {
-        self.sizing.y = length;
+        self.sizing[1] = length;
         self
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Edges {
+    pub left: f32,
+    pub right: f32,
+    pub top: f32,
+    pub bottom: f32,
+}
 
+impl Edges {
+    #[inline]
+    pub const fn all(size: f32) -> Self {
+        Self { left: size, right: size, top: size, bottom: size }
+    }
+
+    #[inline]
+    pub const fn two_value(left_right: f32, top_bottom: f32) -> Self {
+        Self { left: left_right, right: left_right, top: top_bottom, bottom: top_bottom }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum Axis {
@@ -647,6 +687,14 @@ impl Length {
         }
     }
 }
+
+// struct LengthSizing {
+//     len: Length,
+//     min_padding: f32,
+//     max_padding: f32,
+//     min_margin: f32,
+//     max_margin: f32,
+// }
 
 fn resolve_lengths(available: f32, lengths: Vec<Length>) -> Vec<f32> {
     let mut sizes = [available / lengths.len() as f32].repeat(lengths.len());
