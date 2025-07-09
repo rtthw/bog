@@ -19,15 +19,15 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 
 fn main() -> Result<()> {
-    let root = Element::new()
+    let root = Element::new(Widget::Null)
         .with_style(Style::default()
             .horizontal()
             .background_color(GRAY_1))
         .with_children(vec![
-            Element::new()
+            Element::new(Widget::SidePanel)
                 .with_style(Style::default().width(Length::Portion(0.2)))
                 .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
-            Element::new()
+            Element::new(Widget::MainPanel)
                 .with_style(Style::default().background_color(GRAY_2))
                 .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
         ]);
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
 
 
 struct App {
-    ui: UserInterface,
+    ui: UserInterface<Widget>,
 }
 
 impl SimpleApp for App {
@@ -95,4 +95,11 @@ impl SimpleApp for App {
             ..Default::default()
         }
     }
+}
+
+enum Widget {
+    Null,
+
+    SidePanel,
+    MainPanel,
 }

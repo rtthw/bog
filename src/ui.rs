@@ -120,9 +120,9 @@ impl EventMask {
 
 slotmap::new_key_type! { pub struct Node; }
 
-pub struct UserInterface {
+pub struct UserInterface<T = ()> {
     root: Node,
-    elements: slotmap::SlotMap<Node, ElementInfo>,
+    elements: slotmap::SlotMap<Node, ElementInfo<T>>,
     children: slotmap::SecondaryMap<Node, Vec<Node>>,
     parents: slotmap::SecondaryMap<Node, Option<Node>>,
 
@@ -135,22 +135,23 @@ pub struct UserInterface {
 }
 
 // Core.
-impl UserInterface {
-    pub fn new(root: Element, area: Rect) -> Self {
+impl<T> UserInterface<T> {
+    pub fn new(root: Element<T>, area: Rect) -> Self {
         let mut elements = slotmap::SlotMap::with_capacity_and_key(16);
         let mut children = slotmap::SecondaryMap::with_capacity(16);
         let mut parents = slotmap::SecondaryMap::with_capacity(16);
 
-        fn digest(
-            element: Element,
+        fn digest<T>(
+            element: Element<T>,
             area: Rect,
             parent: Option<Node>,
-            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo<T>>,
             children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
             parents: &mut slotmap::SecondaryMap<Node, Option<Node>>,
         ) -> Node {
             let child_orientation = element.style.orient_children;
             let node = elements.insert(ElementInfo {
+                data: element.data,
                 area,
                 event_mask: element.event_mask,
                 style: element.style,
@@ -197,13 +198,13 @@ impl UserInterface {
 }
 
 // Iterators, Accessors, & Mutators.
-impl UserInterface {
+impl<T> UserInterface<T> {
     /// Apply the provided function to each element node in descending (back to front) order.
-    pub fn crawl(&self, func: &mut impl FnMut(&UserInterface, Node)) {
-        fn inner(
-            ui: &UserInterface,
+    pub fn crawl(&self, func: &mut impl FnMut(&UserInterface<T>, Node)) {
+        fn inner<T>(
+            ui: &UserInterface<T>,
             node: Node,
-            func: &mut impl FnMut(&UserInterface, Node),
+            func: &mut impl FnMut(&UserInterface<T>, Node),
         ) {
             func(ui, node);
             for child in ui.children[node].clone() {
@@ -212,6 +213,16 @@ impl UserInterface {
         }
 
         inner(self, self.root, func);
+    }
+
+    /// Get a reference to the node's associated custom data.
+    pub fn data(&self, node: Node) -> &T {
+        &self.elements[node].data
+    }
+
+    /// Get a mutable reference to the node's associated custom data.
+    pub fn data_mut(&mut self, node: Node) -> &mut T {
+        &mut self.elements[node].data
     }
 
     /// Get the current bounds of the node.
@@ -299,7 +310,7 @@ impl UserInterface {
 }
 
 // Handlers.
-impl UserInterface {
+impl<T> UserInterface<T> {
     /// Handle the given [`InputEvent`], mutating the UI's internal state.
     ///
     /// Be sure to drain the event queue with [`Self::next_event`] immediately after calling this
@@ -343,11 +354,11 @@ impl UserInterface {
             return;
         }
 
-        fn inner(
+        fn inner<T>(
             node: Node,
             area: Rect,
             events: &mut VecDeque<Event>,
-            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo<T>>,
             children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
         ) {
             if elements[node].area == area {
@@ -382,11 +393,11 @@ impl UserInterface {
         // TODO: Setting for not reporting mouse movements to avoid clogging event queue?
         self.events.push_back(Event::MouseMove { delta });
 
-        fn inner(
+        fn inner<T>(
             node: Node,
             position: Vec2,
             mouse_over: &mut Vec<Node>,
-            elements: &mut slotmap::SlotMap<Node, ElementInfo>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo<T>>,
             children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
         ) {
             if !elements[node].area.contains(position) {
@@ -514,19 +525,26 @@ impl UserInterface {
 
 
 
-pub struct Element {
+pub struct Element<T> {
+    pub data: T,
     pub style: Style,
     pub event_mask: EventMask,
-    pub children: Vec<Element>,
+    pub children: Vec<Element<T>>,
 }
 
-impl Element {
-    pub fn new() -> Self {
+impl<T> Element<T> {
+    pub fn new(data: T) -> Self {
         Self {
+            data,
             style: Style::default(),
             event_mask: EventMask::empty(),
             children: Vec::new(),
         }
+    }
+
+    pub fn with_data(mut self, data: T) -> Self {
+        self.data = data;
+        self
     }
 
     pub fn with_style(mut self, style: impl Into<Style>) -> Self {
@@ -539,7 +557,7 @@ impl Element {
         self
     }
 
-    pub fn with_children(mut self, children: impl Into<Vec<Element>>) -> Self {
+    pub fn with_children(mut self, children: impl Into<Vec<Element<T>>>) -> Self {
         self.children = children.into();
         self
     }
@@ -754,13 +772,14 @@ fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect
 
 
 
-struct ElementInfo {
+struct ElementInfo<T> {
+    data: T,
     area: Rect,
     style: Style,
     event_mask: EventMask,
 }
 
-impl ElementInfo {
+impl<T> ElementInfo<T> {
     #[inline]
     fn absolute_position(&self) -> Vec2 {
         self.area.position()
@@ -796,7 +815,7 @@ mod tests {
 
     #[test]
     fn works() {
-        let mut ui = UserInterface::new(Element::new(), Rect::NONE);
+        let mut ui = UserInterface::new(Element::new(()), Rect::NONE);
         ui.handle_input(InputEvent::MouseMove { x: 1.0, y: 1.0 });
         let mut event_num = 0;
         while let Some(event) = ui.next_event() {
