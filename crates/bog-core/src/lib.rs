@@ -9,7 +9,6 @@ mod event;
 mod input;
 mod key;
 mod nohash_map;
-mod primitives;
 mod rect;
 mod type_map;
 mod unit_map;
@@ -23,16 +22,17 @@ pub use input::{
 };
 pub use key::{Key, KeyCode, KeyUpdate, ModifierKey, ModifierMask};
 pub use nohash_map::NoHashMap;
-pub use primitives::{Vec2, Xy};
 pub use rect::Rect;
 pub use type_map::TypeMap;
 pub use unit_map::UnitMap;
 
 
+
 // ---
 
 
-// pub type Vec2 = glam::Vec2;
+
+pub type Vec2 = glam::Vec2;
 pub type Vec3 = glam::Vec3;
 pub type Vec4 = glam::Vec4;
 
@@ -61,31 +61,22 @@ pub type Mat4 = glam::Mat4;
 
 
 
-// #[inline]
-// pub fn mat3_translation(translation: Vec2) -> Mat3 {
-//     Mat3::from_translation(translation)
-// }
+#[inline]
+pub fn mat3_translation(translation: Vec2) -> Mat3 {
+    Mat3::from_translation(translation)
+}
 
 #[inline]
 pub fn mat4_translation(translation: Vec3) -> Mat4 {
     Mat4::from_translation(translation)
 }
 
-// #[inline]
-// pub fn mat3_scale(scale: Vec2) -> Mat3 {
-//     Mat3::from_scale(scale)
-// }
+#[inline]
+pub fn mat3_scale(scale: Vec2) -> Mat3 {
+    Mat3::from_scale(scale)
+}
 
 #[inline]
 pub fn mat4_scale(scale: Vec3) -> Mat4 {
     Mat4::from_scale(scale)
-}
-
-
-
-// FIXME: Temporary workaround for mixing glam types with primitives.
-impl From<glam::Vec2> for Vec2 {
-    fn from(value: glam::Vec2) -> Self {
-        Self::new(value.x, value.y)
-    }
 }
