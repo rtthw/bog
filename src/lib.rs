@@ -102,6 +102,7 @@ pub mod prelude {
         WindowDescriptor,
         WindowError,
         WindowingSystem,
+        WindowingSystemProxy,
         WindowManager,
         WindowManagerError,
     };

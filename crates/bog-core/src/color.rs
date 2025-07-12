@@ -2,17 +2,24 @@
 
 
 
+/// A 32-bit color value.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Color {
+    /// The red channel value (0-255).
     pub r: u8,
+    /// The green channel value (0-255).
     pub g: u8,
+    /// The blue channel value (0-255).
     pub b: u8,
+    /// The alpha channel value (0-255).
     pub a: u8,
 }
 
 impl Color {
+    /// A color with no values for its channels.
     pub const NONE: Self = Self::new(0, 0, 0, 0);
 
+    /// Create a new color with the provided channel values.
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
@@ -37,6 +44,31 @@ impl Color {
         }
     }
 
+    /// Alter this color's red channel value.
+    pub fn with_red(self, red: u8) -> Self {
+        Self {
+            r: red,
+            ..self
+        }
+    }
+
+    /// Alter this color's green channel value.
+    pub fn with_green(self, green: u8) -> Self {
+        Self {
+            g: green,
+            ..self
+        }
+    }
+
+    /// Alter this color's blue channel value.
+    pub fn with_blue(self, blue: u8) -> Self {
+        Self {
+            b: blue,
+            ..self
+        }
+    }
+
+    /// Alter this color's alpha channel value.
     pub fn with_alpha(self, alpha: u8) -> Self {
         Self {
             a: alpha,

@@ -8,6 +8,7 @@ use crate::{vec3, Mat4, Vec2};
 
 
 
+/// A rectangular area.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Rect<T = f32> {
     pub x: T,
@@ -50,6 +51,7 @@ impl Rect<f32> {
         }
     }
 
+    /// Alter this rectangle's position.
     #[inline]
     pub fn with_position(self, position: Vec2) -> Self {
         Self {
@@ -59,6 +61,7 @@ impl Rect<f32> {
         }
     }
 
+    /// Alter this rectangle's size.
     #[inline]
     pub fn with_size(self, size: Vec2) -> Self {
         Self {
@@ -70,14 +73,17 @@ impl Rect<f32> {
 }
 
 impl Rect<f32> {
+    /// This coordinates for this rectangle's top-left corner.
     pub fn position(&self) -> Vec2 {
         Vec2::new(self.x, self.y)
     }
 
+    /// The width and height of this rectangle.
     pub fn size(&self) -> Vec2 {
         Vec2::new(self.w, self.h)
     }
 
+    /// Whether the given `point` is inside the bounds of this rectangle.
     pub fn contains(&self, point: Vec2) -> bool {
         self.x <= point.x
             && point.x < self.x + self.w
@@ -85,6 +91,7 @@ impl Rect<f32> {
             && point.y < self.y + self.h
     }
 
+    /// A rectangle that is large enough to fit both `self` and `other`.
     pub fn intersection(&self, other: &Self) -> Option<Self> {
         let x = self.x.max(other.x);
         let y = self.y.max(other.y);
@@ -102,6 +109,7 @@ impl Rect<f32> {
         }
     }
 
+    /// Convert this `Rect<f32>` into a `Rect<u32>`, if its values are valid.
     pub fn snap_to_u32(self) -> Option<Rect<u32>> {
         let w = self.w as u32;
         let h = self.h as u32;

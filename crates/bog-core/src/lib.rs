@@ -38,14 +38,17 @@ pub type Vec4 = glam::Vec4;
 
 
 
+#[inline]
 pub fn vec2(x: f32, y: f32) -> Vec2 {
     Vec2::new(x, y)
 }
 
+#[inline]
 pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
     Vec3::new(x, y, z)
 }
 
+#[inline]
 pub fn vec4(x: f32, y: f32, z: f32, w: f32) -> Vec4 {
     Vec4::new(x, y, z, w)
 }
@@ -58,18 +61,22 @@ pub type Mat4 = glam::Mat4;
 
 
 
+// #[inline]
 // pub fn mat3_translation(translation: Vec2) -> Mat3 {
 //     Mat3::from_translation(translation)
 // }
 
+#[inline]
 pub fn mat4_translation(translation: Vec3) -> Mat4 {
     Mat4::from_translation(translation)
 }
 
+// #[inline]
 // pub fn mat3_scale(scale: Vec2) -> Mat3 {
 //     Mat3::from_scale(scale)
 // }
 
+#[inline]
 pub fn mat4_scale(scale: Vec3) -> Mat4 {
     Mat4::from_scale(scale)
 }

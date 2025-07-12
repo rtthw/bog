@@ -12,21 +12,38 @@ pub struct NoHashMap<K, V> {
     map: HashMap<K, V, BuildHasherDefault<NoHashHasher<K>>>,
 }
 
+impl<K, V> Default for NoHashMap<K, V> {
+    fn default() -> Self {
+        Self {
+            map: HashMap::default()
+        }
+    }
+}
+
 impl<K: Default + Eq + core::hash::Hash + Into<u64>, V> NoHashMap<K, V> {
+    /// Create an empty map.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Create a map with space pre-allocated for `capacity` key-value pairs.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             map: HashMap::with_capacity_and_hasher(capacity, BuildHasherDefault::new()),
         }
     }
 
+    /// Get the value associated with the given key.
     pub fn get(&self, k: &K) -> Option<&V> {
         self.map.get(k)
     }
 
+    /// Get a mutable reference to the value associated with the given key.
     pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
         self.map.get_mut(k)
     }
 
+    /// Insert the given key-value pair into the map.
     pub fn insert(&mut self, k: K, v: V) -> Option<V> {
         self.map.insert(k, v)
     }

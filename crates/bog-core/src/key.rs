@@ -2,6 +2,7 @@
 
 
 
+/// A key up/down change.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum KeyUpdate {
     Down {
