@@ -121,21 +121,21 @@ impl<T: bytemuck::Pod> Buffer<T> {
         self.raw.slice(bounds)
     }
 
-    /// Returns the slice calculated from the offset stored at `index`.
-    pub fn slice_from_index(&self, index: usize) -> gpu::BufferSlice<'_> {
-        self.raw.slice(self.offset_at(index)..)
-    }
+    // /// Returns the slice calculated from the offset stored at `index`.
+    // pub fn slice_from_index(&self, index: usize) -> gpu::BufferSlice<'_> {
+    //     self.raw.slice(self.offset_at(index)..)
+    // }
 
-    /// Clears temporary data (offsets) from the buffer.
-    pub fn clear(&mut self) {
-        self.offsets.clear();
-    }
+    // /// Clears temporary data (offsets) from the buffer.
+    // pub fn clear(&mut self) {
+    //     self.offsets.clear();
+    // }
 
-    /// Returns the offset at `index`.
-    fn offset_at(&self, index: usize) -> &gpu::BufferAddress {
-        self.offsets.get(index)
-            .expect("no offset at index")
-    }
+    // /// Returns the offset at `index`.
+    // fn offset_at(&self, index: usize) -> &gpu::BufferAddress {
+    //     self.offsets.get(index)
+    //         .expect("no offset at index")
+    // }
 }
 
 fn next_copy_size<T>(amount: usize) -> u64 {

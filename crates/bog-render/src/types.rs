@@ -14,15 +14,21 @@ pub use bytes::Bytes;
 /// A renderable piece of text.
 #[derive(Clone, Debug)]
 pub struct Text<'a> {
+    /// This text's content.
     pub content: TextContent<'a>,
+    /// The clipping bounds for this text.
     pub bounds: Rect,
+    /// This text's font size.
     pub size: f32,
+    /// This text's color.
     pub color: Color,
     /// The font's line height, in pixels.
     ///
     /// Set this to `0.0` if you just want to use the font's default line height.
     pub line_height: f32,
+    /// The font family selection for this text.
     pub font_family: FontFamily<'static>,
+    /// The slant (normal, italic, oblique) of this text.
     pub text_slant: TextSlant,
 }
 

@@ -8,11 +8,16 @@ use crate::{Image, QuadSolid, Text};
 
 
 
+/// Rendering layer.
 #[derive(Debug)]
 pub struct Layer<'a> {
+    /// The layer's clip rect.
     pub bounds: Rect,
+    /// The set of quads to be rendered onto this layer.
     pub quads: Vec<QuadSolid>,
+    /// The set of texts to be rendered onto this layer.
     pub texts: Vec<Text<'a>>,
+    /// The set of images to be rendered onto this layer.
     pub images: Vec<Image>,
 }
 
@@ -49,6 +54,9 @@ impl<'a> Layer<'a> {
     }
 }
 
+
+
+/// The render pass is the primary way in which things are drawn to the screen with the GPU.
 pub struct RenderPass<'a> {
     layers: Vec<Layer<'a>>,
     transformations: Vec<Mat4>,

@@ -4,7 +4,7 @@
 
 pub extern crate wgpu as gpu;
 
-pub mod buffer;
+mod buffer;
 mod image;
 mod layer;
 pub mod primitive;
@@ -13,10 +13,11 @@ mod text;
 mod types;
 mod viewport;
 
-pub use layer::*;
 use image::*;
 use quad::*;
 use text::*;
+
+pub use layer::*;
 pub use types::*;
 pub use viewport::*;
 
