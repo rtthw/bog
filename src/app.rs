@@ -51,7 +51,7 @@ pub trait SimpleApp {
     fn input(&mut self, cx: AppContext, input: InputEvent) {}
     fn event(&mut self, cx: AppContext, event: Self::CustomEvent) {}
     fn on_close(&mut self, cx: AppContext) -> bool { true }
-    fn window_desc(&self) -> WindowDescriptor;
+    fn window_desc(&self) -> WindowDescriptor<'_>;
 }
 
 pub struct AppContext<'a> {

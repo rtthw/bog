@@ -142,7 +142,7 @@ impl<'w> WindowGraphics<'w> {
 
 // Getters.
 impl<'w> WindowGraphics<'w> {
-    pub fn surface(&self) -> &gpu::Surface {
+    pub fn surface(&self) -> &gpu::Surface<'_> {
         &self.surface
     }
 

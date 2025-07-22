@@ -123,11 +123,11 @@ impl<'a> RenderPass<'a> {
         self.layers[..self.active_count].iter_mut()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Layer> {
+    pub fn iter(&self) -> impl Iterator<Item = &Layer<'_>> {
         self.layers[..self.active_count].iter()
     }
 
-    pub fn as_slice(&self) -> &[Layer] {
+    pub fn as_slice(&self) -> &[Layer<'_>] {
         &self.layers[..self.active_count]
     }
 

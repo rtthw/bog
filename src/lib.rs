@@ -92,6 +92,7 @@ pub mod prelude {
         RenderPass,
         Shadow,
         Text,
+        TextContent,
         Viewport,
     };
     pub use bog_window::{
