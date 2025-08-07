@@ -2,17 +2,24 @@
 
 
 
-use core::any::TypeId;
+use core::{any::TypeId, hash::{BuildHasherDefault, Hasher}};
 
 
 
 /// A map that can store homogenous values for any number of types.
 #[derive(Default)]
 pub struct TypeMap<V> {
-    map: rustc_hash::FxHashMap<TypeId, V>,
+    map: hashbrown::HashMap<TypeId, V, BuildHasherDefault<TypeIdHasher>>,
 }
 
 impl<V> TypeMap<V> {
+    /// Create an empty type map.
+    pub const fn new() -> Self {
+        Self {
+            map: hashbrown::HashMap::with_hasher(BuildHasherDefault::new()),
+        }
+    }
+
     /// Whether the type `K` has a value stored in this map.
     pub fn has<K: 'static>(&self) -> bool {
         self.map.contains_key(&TypeId::of::<K>())
@@ -36,5 +43,34 @@ impl<V> TypeMap<V> {
     /// Clear all values from this map.
     pub fn clear(&mut self) {
         self.map.clear();
+    }
+}
+
+
+
+/// A hashless hasher designed specifically with [`TypeId`]s in mind.
+#[derive(Default)]
+pub struct TypeIdHasher {
+    hash: u64,
+}
+
+impl Hasher for TypeIdHasher {
+    fn write_u64(&mut self, n: u64) {
+        // Only a single value can be hashed, so the old hash should be zero.
+        debug_assert_eq!(self.hash, 0);
+        self.hash = n;
+    }
+
+    fn write_u128(&mut self, n: u128) {
+        debug_assert_eq!(self.hash, 0);
+        self.hash = n as u64;
+    }
+
+    fn write(&mut self, _bytes: &[u8]) {
+        panic!("Type ID is the wrong type!")
+    }
+
+    fn finish(&self) -> u64 {
+        self.hash
     }
 }

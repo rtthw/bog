@@ -23,7 +23,7 @@ pub use input::{
 pub use key::{Key, KeyCode, KeyUpdate, ModifierKey, ModifierMask};
 pub use nohash_map::NoHashMap;
 pub use rect::Rect;
-pub use type_map::TypeMap;
+pub use type_map::{TypeIdHasher, TypeMap};
 pub use unit_map::UnitMap;
 
 
