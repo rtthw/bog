@@ -348,12 +348,12 @@ fn add_instance(
         _rotation: rotation,
         _opacity: opacity,
         _position_in_atlas: [
-            (x as f32 + 0.5) / ATLAS_SIZE as f32,
-            (y as f32 + 0.5) / ATLAS_SIZE as f32,
+            x as f32 / ATLAS_SIZE as f32,
+            y as f32 / ATLAS_SIZE as f32,
         ],
         _size_in_atlas: [
-            (width as f32 - 1.0) / ATLAS_SIZE as f32,
-            (height as f32 - 1.0) / ATLAS_SIZE as f32,
+            width as f32 / ATLAS_SIZE as f32,
+            height as f32 / ATLAS_SIZE as f32,
         ],
         _layer: layer as u32,
         _snap: snap as u32,
@@ -656,7 +656,7 @@ impl ImageAtlas {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("iced_wgpu::image texture atlas"),
+            label: Some("bog::image texture atlas"),
             size: extent,
             mip_level_count: 1,
             sample_count: 1,
@@ -675,7 +675,7 @@ impl ImageAtlas {
 
         let texture_bind_group =
             device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("iced_wgpu::image texture atlas bind group"),
+                label: Some("bog::image texture atlas bind group"),
                 layout: &texture_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
