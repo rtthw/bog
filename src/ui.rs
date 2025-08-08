@@ -522,6 +522,9 @@ impl<T> UserInterface<T> {
             .rev()
             .find(|node| self.elements[**node].event_mask.focusable())
         {
+            if self.focused.as_ref().is_some_and(|n| n == node) {
+                return;
+            }
             match button {
                 MouseButton::Left => {
                     let old = self.focused.take();
