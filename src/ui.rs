@@ -60,6 +60,13 @@ pub enum Event {
     RightClick {
         node: Node,
     },
+    CharInput {
+        /// The [`char`] that was pressed.
+        ch: char,
+        /// A repeated character was pressed due to the user having a key held for long enough to
+        /// trigger a repeat event.
+        repeat: bool,
+    },
     MoveNode {
         node: Node,
         old_parent: Option<Node>,
@@ -463,7 +470,7 @@ impl<T> UserInterface<T> {
         // TODO
     }
 
-    pub fn handle_key_down(&mut self, code: KeyCode, _repeat: bool) {
+    pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) {
         match Key::from((code, self.key_modifiers.has_shift())) {
             Key::Modifier(mod_key) => {
                 match mod_key {
@@ -481,8 +488,9 @@ impl<T> UserInterface<T> {
                     }
                 }
             }
-            Key::Char(_ch) => {
-                // TODO: Handle input, keybinds, etc.
+            Key::Char(ch) => {
+                // TODO: Keybinds?
+                self.events.push_back(Event::CharInput { ch, repeat });
             }
             Key::Left => {
                 // self.focus_left()
