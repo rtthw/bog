@@ -150,6 +150,8 @@ impl EventMask {
 slotmap::new_key_type! { pub struct Node; }
 
 pub struct UserInterface<T = ()> {
+    settings: Settings,
+
     root: Node,
     elements: slotmap::SlotMap<Node, ElementInfo<T>>,
     children: slotmap::SecondaryMap<Node, Vec<Node>>,
@@ -208,6 +210,8 @@ impl<T> UserInterface<T> {
         let root_node = digest(root, area, None, &mut elements, &mut children, &mut parents);
 
         Self {
+            settings: Settings::default(),
+
             root: root_node,
             elements,
             children,
@@ -230,6 +234,16 @@ impl<T> UserInterface<T> {
 
 // Iterators, Accessors, & Mutators.
 impl<T> UserInterface<T> {
+    /// Get a reference to this UI's [`Settings`].
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
+
+    /// Get a mutable reference to this UI's [`Settings`].
+    pub fn settings_mut(&mut self) -> &mut Settings {
+        &mut self.settings
+    }
+
     /// The current mouse position.
     pub fn mouse_position(&self) -> Vec2 {
         self.mouse_pos
@@ -487,7 +501,7 @@ impl<T> UserInterface<T> {
                 MouseButton::Left => {
                     let now = Instant::now();
                     self.events.push_back(Event::Click { node: *node });
-                    if now.duration_since(self.last_left_click).as_secs_f32() < 0.5 {
+                    if now.duration_since(self.last_left_click).as_secs_f32() < self.settings.double_click_time {
                         self.events.push_back(Event::DoubleClick { node: *node });
                     }
                     self.last_left_click = now;
@@ -502,6 +516,12 @@ impl<T> UserInterface<T> {
         {
             match button {
                 MouseButton::Left => {
+                    let old = self.focused.take();
+                    self.focused = Some(*node);
+
+                    self.events.push_back(Event::Focus { old, new: *node });
+                }
+                MouseButton::Right if self.settings.focus_on_right_click => {
                     let old = self.focused.take();
                     self.focused = Some(*node);
 
@@ -568,6 +588,30 @@ impl<T> UserInterface<T> {
                 }
             }
             _ => {}
+        }
+    }
+}
+
+
+
+/// User interface settings.
+pub struct Settings {
+    /// Whether the focus should change when the user right clicks.
+    ///
+    /// *Default:* `false`
+    pub focus_on_right_click: bool,
+    /// The amount of time (in seconds) between clicks to trigger a
+    /// [double click event](Event::DoubleClick).
+    ///
+    /// *Default:* `0.5`
+    pub double_click_time: f32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            focus_on_right_click: false,
+            double_click_time: 0.5,
         }
     }
 }
