@@ -22,9 +22,11 @@ pub enum Event {
         delta: Vec2,
     },
     MouseEnter {
+        /// The element that received the input.
         node: Node,
     },
     MouseLeave {
+        /// The element that received the input.
         node: Node,
     },
     /// The user has moved his mouse pointer over this node, and left it there long enough
@@ -40,28 +42,36 @@ pub enum Event {
     /// If you need to trigger some callback immediately after the user's mouse moves into an
     /// element, use [`Event::MouseEntered`] instead.
     Hover {
+        /// The element that received the input.
         node: Node,
     },
     MouseDown {
+        /// The element that received the input.
         node: Node,
     },
     MouseUp {
+        /// The element that received the input.
         node: Node,
     },
     /// Only nodes with the [click event mask](EventMask::CLICK) will trigger this event. If two
     /// nodes with this mask intersect, the topmost node will be the only one to receive this
     /// event.
     Click {
+        /// The element that received the input.
         node: Node,
     },
     DoubleClick {
+        /// The element that received the input.
         node: Node,
     },
     RightClick {
+        /// The element that received the input.
         node: Node,
     },
     /// A [`ControlKey`] was pressed.
     ControlKeyPress {
+        /// The element that received the input.
+        node: Node,
         /// The [`ControlKey`] that was pressed.
         key: ControlKey,
         /// A repeated key press event due to the user having the key held for long enough to
@@ -69,6 +79,8 @@ pub enum Event {
         repeat: bool,
     },
     CharInput {
+        /// The element that received the input.
+        node: Node,
         /// The [`char`] that was pressed.
         ch: char,
         /// A repeated character due to the user having the key held for long enough to trigger a
@@ -76,11 +88,13 @@ pub enum Event {
         repeat: bool,
     },
     MoveNode {
+        /// The node that was moved.
         node: Node,
         old_parent: Option<Node>,
         new_parent: Option<Node>,
     },
     DeleteNode {
+        /// The node that was deleted.
         node: Node,
     },
 }
@@ -214,6 +228,21 @@ impl<T> UserInterface<T> {
 
 // Iterators, Accessors, & Mutators.
 impl<T> UserInterface<T> {
+    /// The current mouse position.
+    pub fn mouse_position(&self) -> Vec2 {
+        self.mouse_pos
+    }
+
+    /// The set of elements currently being hovered by the user's mouse pointer.
+    pub fn hover_stack(&self) -> &Vec<Node> {
+        &self.mouse_over
+    }
+
+    /// The currently focused element.
+    pub fn focus(&self) -> Option<Node> {
+        self.focused
+    }
+
     /// Apply the provided function to each element node in descending (back to front) order.
     pub fn crawl(&self, func: &mut impl FnMut(&UserInterface<T>, Node)) {
         fn inner<T>(
@@ -498,10 +527,14 @@ impl<T> UserInterface<T> {
             }
             Key::Char(ch) => {
                 // TODO: Keybinds?
-                self.events.push_back(Event::CharInput { ch, repeat });
+                if let Some(node) = self.focus() {
+                    self.events.push_back(Event::CharInput { node, ch, repeat });
+                }
             }
             Key::Control(key) => {
-                self.events.push_back(Event::ControlKeyPress { key, repeat });
+                if let Some(node) = self.focus() {
+                    self.events.push_back(Event::ControlKeyPress { node, key, repeat });
+                }
             }
             _ => {}
         }
