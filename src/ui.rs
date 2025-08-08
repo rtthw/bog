@@ -161,7 +161,8 @@ pub struct UserInterface<T = ()> {
 
     mouse_pos: Vec2,
     mouse_over: Vec<Node>,
-    last_left_click: Instant,
+    last_left_click_time: Instant,
+    last_left_click_node: Option<Node>,
     key_modifiers: ModifierMask,
     focused: Option<Node>,
 }
@@ -221,7 +222,8 @@ impl<T> UserInterface<T> {
 
             mouse_pos: Vec2::ZERO,
             mouse_over: Vec::new(),
-            last_left_click: Instant::now(),
+            last_left_click_time: Instant::now(),
+            last_left_click_node: None,
             key_modifiers: ModifierMask::empty(),
             focused: None,
         }
@@ -501,10 +503,16 @@ impl<T> UserInterface<T> {
                 MouseButton::Left => {
                     let now = Instant::now();
                     self.events.push_back(Event::Click { node: *node });
-                    if now.duration_since(self.last_left_click).as_secs_f32() < self.settings.double_click_time {
-                        self.events.push_back(Event::DoubleClick { node: *node });
+                    if self.last_left_click_node.as_ref().is_some_and(|n| n == node) {
+                        if now.duration_since(self.last_left_click_time).as_secs_f32()
+                            < self.settings.double_click_time
+                        {
+                            self.events.push_back(Event::DoubleClick { node: *node });
+                        }
+                    } else {
+                        self.last_left_click_node = Some(*node);
                     }
-                    self.last_left_click = now;
+                    self.last_left_click_time = now;
                 }
                 MouseButton::Right => self.events.push_back(Event::RightClick { node: *node }),
                 _ => {}
