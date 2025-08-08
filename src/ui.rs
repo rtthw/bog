@@ -4,7 +4,7 @@
 
 use std::collections::VecDeque;
 
-use bog_core::{vec2, Color, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2};
+use bog_core::{vec2, Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2};
 
 
 
@@ -60,11 +60,19 @@ pub enum Event {
     RightClick {
         node: Node,
     },
+    /// A [`ControlKey`] was pressed.
+    ControlKeyPress {
+        /// The [`ControlKey`] that was pressed.
+        key: ControlKey,
+        /// A repeated key press event due to the user having the key held for long enough to
+        /// trigger a repeat event.
+        repeat: bool,
+    },
     CharInput {
         /// The [`char`] that was pressed.
         ch: char,
-        /// A repeated character was pressed due to the user having a key held for long enough to
-        /// trigger a repeat event.
+        /// A repeated character due to the user having the key held for long enough to trigger a
+        /// repeat event.
         repeat: bool,
     },
     MoveNode {
@@ -492,17 +500,8 @@ impl<T> UserInterface<T> {
                 // TODO: Keybinds?
                 self.events.push_back(Event::CharInput { ch, repeat });
             }
-            Key::Left => {
-                // self.focus_left()
-            }
-            Key::Right => {
-                // self.focus_right()
-            }
-            Key::Up => {
-                // self.focus_up()
-            }
-            Key::Down => {
-                // self.focus_down()
+            Key::Control(key) => {
+                self.events.push_back(Event::ControlKeyPress { key, repeat });
             }
             _ => {}
         }

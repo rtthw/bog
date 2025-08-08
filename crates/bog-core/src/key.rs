@@ -257,12 +257,10 @@ impl KeyCode {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Key {
     Char(char),
+    /// A modifier key (control, shift, alt, super).
     Modifier(ModifierKey),
-
-    Left,
-    Right,
-    Up,
-    Down,
+    /// A control key (escape, delete, arrow key, page up/down, etc.).
+    Control(ControlKey),
 
     Unknown,
 }
@@ -281,10 +279,18 @@ impl From<(KeyCode, bool)> for Key {
             Self::Modifier(ModifierKey::Super)
         } else {
             match code {
-                KeyCode::C_ARROWLEFT => Self::Left,
-                KeyCode::C_ARROWRIGHT => Self::Right,
-                KeyCode::C_ARROWUP => Self::Up,
-                KeyCode::C_ARROWDOWN => Self::Down,
+                KeyCode::C_ESCAPE => Self::Control(ControlKey::Escape),
+                KeyCode::C_BACKSPACE => Self::Control(ControlKey::Backspace),
+                KeyCode::C_DELETE => Self::Control(ControlKey::Delete),
+                KeyCode::C_INSERT => Self::Control(ControlKey::Insert),
+                KeyCode::C_ARROWLEFT => Self::Control(ControlKey::Left),
+                KeyCode::C_ARROWRIGHT => Self::Control(ControlKey::Right),
+                KeyCode::C_ARROWUP => Self::Control(ControlKey::Up),
+                KeyCode::C_ARROWDOWN => Self::Control(ControlKey::Down),
+                KeyCode::C_PAGEUP => Self::Control(ControlKey::PageUp),
+                KeyCode::C_PAGEDOWN => Self::Control(ControlKey::PageDown),
+                KeyCode::C_HOME => Self::Control(ControlKey::Home),
+                KeyCode::C_END => Self::Control(ControlKey::End),
                 _ => Self::Unknown,
             }
         }
@@ -292,6 +298,25 @@ impl From<(KeyCode, bool)> for Key {
 }
 
 
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum ControlKey {
+    Escape,
+    Backspace,
+    Delete,
+    Insert,
+
+    Left,
+    Right,
+    Up,
+    Down,
+
+    PageUp,
+    PageDown,
+
+    Home,
+    End,
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ModifierKey {
