@@ -2,7 +2,7 @@
 
 
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, time::Instant};
 
 use bog_core::{vec2, Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2};
 
@@ -159,6 +159,7 @@ pub struct UserInterface<T = ()> {
 
     mouse_pos: Vec2,
     mouse_over: Vec<Node>,
+    last_left_click: Instant,
     key_modifiers: ModifierMask,
     focused: Option<Node>,
 }
@@ -216,6 +217,7 @@ impl<T> UserInterface<T> {
 
             mouse_pos: Vec2::ZERO,
             mouse_over: Vec::new(),
+            last_left_click: Instant::now(),
             key_modifiers: ModifierMask::empty(),
             focused: None,
         }
@@ -482,7 +484,14 @@ impl<T> UserInterface<T> {
             .find(|node| self.elements[**node].event_mask.clickable())
         {
             match button {
-                MouseButton::Left => self.events.push_back(Event::Click { node: *node }),
+                MouseButton::Left => {
+                    let now = Instant::now();
+                    self.events.push_back(Event::Click { node: *node });
+                    if now.duration_since(self.last_left_click).as_secs_f32() < 0.5 {
+                        self.events.push_back(Event::DoubleClick { node: *node });
+                    }
+                    self.last_left_click = now;
+                }
                 MouseButton::Right => self.events.push_back(Event::RightClick { node: *node }),
                 _ => {}
             }
