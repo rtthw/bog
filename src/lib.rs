@@ -56,6 +56,7 @@ pub mod prelude {
 
     pub use bog_core::{
         Color,
+        ControlKey,
         EventParser,
         Input,
         InputArea,
@@ -66,6 +67,8 @@ pub mod prelude {
         KeyUpdate,
         Mat3,
         Mat4,
+        ModifierKey,
+        ModifierMask,
         MouseButton,
         MouseButtonMask,
         MouseEventParser,
