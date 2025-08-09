@@ -220,7 +220,7 @@ impl KeyCode {
             (KeyCode::AN_APOSTROPHE, true) => '"',
             (KeyCode::AN_COMMA, true) => '<',
             (KeyCode::AN_DOT, true) => '>',
-            (KeyCode::AN_SLASH, true) => '/',
+            (KeyCode::AN_SLASH, true) => '?',
 
             (KeyCode::C_SPACE, _) => ' ',
             (KeyCode::C_TAB, _) => '\t',
