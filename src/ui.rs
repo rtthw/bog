@@ -646,22 +646,22 @@ impl<T> Element<T> {
         }
     }
 
-    pub fn with_data(mut self, data: T) -> Self {
+    pub fn data(mut self, data: T) -> Self {
         self.data = data;
         self
     }
 
-    pub fn with_style(mut self, style: impl Into<Style>) -> Self {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
         self.style = style.into();
         self
     }
 
-    pub fn with_event_mask(mut self, event_mask: EventMask) -> Self {
+    pub const fn event_mask(mut self, event_mask: EventMask) -> Self {
         self.event_mask = event_mask;
         self
     }
 
-    pub fn with_children(mut self, children: impl Into<Vec<Element<T>>>) -> Self {
+    pub fn children(mut self, children: impl Into<Vec<Element<T>>>) -> Self {
         self.children = children.into();
         self
     }
@@ -669,87 +669,100 @@ impl<T> Element<T> {
 
 
 
+/// Styling for [`Element`]s within a [`UserInterface`].
 pub struct Style {
+    /// **Default:** `[Length::Auto, Length::Auto]`
     pub sizing: [Length; 2],
+    /// **Default:** `Axis::Vertical`
     pub orient_children: Axis,
+    /// **Default:** `Color::NONE`
     pub background_color: Color,
+    /// **Default:** `Color::NONE`
     pub border_color: Color,
+    /// **Default:** `0.0`
     pub border_width: f32,
+    /// **Default:** `Edges { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }`
     pub padding: Edges,
+    /// **Default:** `Edges { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }`
     pub margin: Edges,
 }
 
 impl Default for Style {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Style {
+    pub const fn new() -> Self {
         Self {
             sizing: [Length::Auto; 2],
             orient_children: Axis::Vertical,
             background_color: Color::NONE,
             border_color: Color::NONE,
             border_width: 0.0,
-            padding: Edges::default(),
-            margin: Edges::default(),
+            padding: Edges::all(0.0),
+            margin: Edges::all(0.0),
         }
     }
-}
 
-impl Style {
-    pub fn background_color(mut self, color: Color) -> Self {
+    pub const fn background_color(mut self, color: Color) -> Self {
         self.background_color = color;
         self
     }
 
-    pub fn border_color(mut self, color: Color) -> Self {
+    pub const fn border_color(mut self, color: Color) -> Self {
         self.border_color = color;
         self
     }
 
-    pub fn border_width(mut self, width: f32) -> Self {
+    pub const fn border_width(mut self, width: f32) -> Self {
         self.border_width = width;
         self
     }
 
-    pub fn padding(mut self, size: f32) -> Self {
+    pub const fn padding(mut self, size: f32) -> Self {
         self.padding = Edges::all(size);
         self
     }
 
-    pub fn padding2(mut self, left_right: f32, top_bottom: f32) -> Self {
+    pub const fn padding2(mut self, left_right: f32, top_bottom: f32) -> Self {
         self.padding = Edges::two_value(left_right, top_bottom);
         self
     }
 
-    pub fn margin(mut self, size: f32) -> Self {
+    pub const fn margin(mut self, size: f32) -> Self {
         self.margin = Edges::all(size);
         self
     }
 
-    pub fn margin2(mut self, left_right: f32, top_bottom: f32) -> Self {
+    pub const fn margin2(mut self, left_right: f32, top_bottom: f32) -> Self {
         self.margin = Edges::two_value(left_right, top_bottom);
         self
     }
 
-    pub fn horizontal(mut self) -> Self {
+    pub const fn horizontal(mut self) -> Self {
         self.orient_children = Axis::Horizontal;
         self
     }
 
-    pub fn vertical(mut self) -> Self {
+    pub const fn vertical(mut self) -> Self {
         self.orient_children = Axis::Vertical;
         self
     }
 
-    pub fn width(mut self, length: Length) -> Self {
+    pub const fn width(mut self, length: Length) -> Self {
         self.sizing[0] = length;
         self
     }
 
-    pub fn height(mut self, length: Length) -> Self {
+    pub const fn height(mut self, length: Length) -> Self {
         self.sizing[1] = length;
         self
     }
 }
 
+/// Values for all 4 edges of a rectangle (left, right, top, bottom).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Edges {
     pub left: f32,
@@ -770,39 +783,50 @@ impl Edges {
     }
 }
 
+/// Horizontal or vertical.
 #[derive(Clone, Copy, Debug)]
 pub enum Axis {
     Horizontal,
     Vertical,
 }
 
+/// A length value for layout resolution.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Length {
+    /// The length is automatically computed (fill remaining space).
     #[default]
     Auto,
+    /// The length is exactly this amount, in pixels.
     Exact(f32),
+    /// The length will attempt to fill this portion (from `0.0` to `1.0`) of the remaining space.
     Portion(f32),
 }
 
 impl Length {
-    pub fn is_auto(&self) -> bool {
+    pub const fn is_auto(&self) -> bool {
         matches!(self, Length::Auto)
     }
 
-    pub fn exact(&self) -> Option<f32> {
+    pub const fn exact(&self) -> Option<f32> {
         match self {
             Length::Exact(n) => Some(*n),
             _ => None,
         }
     }
 
-    pub fn portion(&self) -> Option<f32> {
+    pub const fn portion(&self) -> Option<f32> {
         match self {
             Length::Portion(n) => Some(*n),
             _ => None,
         }
     }
 }
+
+
+
+// ---
+
+
 
 #[derive(Clone, Debug, Default)]
 struct Sizing {
@@ -869,10 +893,6 @@ fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect
         })
         .collect()
 }
-
-
-
-// ---
 
 
 

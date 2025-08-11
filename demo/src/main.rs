@@ -20,16 +20,16 @@ pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
 fn main() -> Result<()> {
     let root = Element::new(Widget::Null)
-        .with_style(Style::default()
+        .style(Style::new()
             .horizontal()
             .background_color(GRAY_1))
-        .with_children(vec![
+        .children(vec![
             Element::new(Widget::SidePanel)
-                .with_style(Style::default().width(Length::Portion(0.2)))
-                .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
+                .style(Style::new().width(Length::Portion(0.2)))
+                .event_mask(EventMask::CLICK | EventMask::FOCUS),
             Element::new(Widget::MainPanel)
-                .with_style(Style::default().background_color(GRAY_2))
-                .with_event_mask(EventMask::CLICK | EventMask::FOCUS),
+                .style(Style::new().background_color(GRAY_2))
+                .event_mask(EventMask::CLICK | EventMask::FOCUS),
         ]);
 
     run_simple_app(None, App {
