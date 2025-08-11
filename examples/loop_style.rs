@@ -14,6 +14,8 @@ fn main() -> Result<()> {
     let window_system = WindowingSystem::<Request>::new()?;
     let app_proxy = window_system.create_proxy();
 
+    // Spawn a secondary thread to receive requests sent from the `main_loop` to the `LoopStyleApp`
+    // through the windowing system proxy.
     std::thread::spawn(move || {
         loop {
             if let Ok(request) = request_receiver.recv() {
@@ -39,16 +41,20 @@ fn main() -> Result<()> {
 }
 
 #[allow(unused_variables, unused_assignments)]
-fn main_loop(request_sender: Sender<Request>, response_receiver: Receiver<Response>) {
-    request_sender.send(Request::CreateWindow(WindowDescriptor {
-        title: "Bog - Loop Style App Example",
-        ..Default::default()
-    })).unwrap();
+fn main_loop(requests: Sender<Request>, responses: Receiver<Response>) {
+    requests
+        .send(Request::CreateWindow(
+            WindowDescriptor {
+                title: "Bog - Loop Style App Example",
+                ..Default::default()
+            }
+        ))
+        .unwrap();
 
-    let mut window = None;
+    let mut window: Option<Window> = None;
 
     loop {
-        if let Ok(response) = response_receiver.try_recv() {
+        if let Ok(response) = responses.try_recv() {
             match response {
                 Response::WindowCreated(new_window) => {
                     window = Some(new_window);
@@ -84,14 +90,13 @@ impl App for LoopStyleApp {
             AppEvent::Custom(request) => match request {
                 Request::CreateWindow(desc) => {
                     let window = wm.create_window(desc).unwrap();
-                    self.response_sender.send(Response::WindowCreated(window.clone()))
+                    self.response_sender
+                        .send(Response::WindowCreated(window.clone()))
                         .unwrap();
                 }
             }
             AppEvent::Window { id: _, event } => match event {
-                WindowEvent::CloseRequest => {
-                    wm.exit();
-                }
+                WindowEvent::CloseRequest => wm.exit(),
                 _ => {}
             }
             _ => {} // TODO: Handle more events and send more responses.
