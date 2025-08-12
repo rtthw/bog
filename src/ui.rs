@@ -277,6 +277,16 @@ impl<T> UserInterface<T> {
         inner(self, self.root, func);
     }
 
+    /// Get the parent of the node, if there is one.
+    pub fn parent(&self, node: Node) -> Option<Node> {
+        self.parents[node]
+    }
+
+    /// Get a slice of nodes that are children of the node.
+    pub fn children(&self, node: Node) -> &[Node] {
+        &self.children[node]
+    }
+
     /// Get a reference to the node's associated custom data.
     pub fn data(&self, node: Node) -> &T {
         &self.elements[node].data
@@ -489,7 +499,6 @@ impl<T> UserInterface<T> {
         }
     }
 
-    // TODO: Settings for act on press/release and double click timing.
     pub fn handle_mouse_down(&mut self, button: MouseButton) {
         if self.mouse_over.is_empty() {
             return;
