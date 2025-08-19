@@ -25,7 +25,7 @@ impl Color {
     }
 
     /// Pack this color into a `u32` as `0xRRGGBBAA`.
-    pub fn to_u32(&self) -> u32 {
+    pub const fn to_u32(&self) -> u32 {
         let mut color = (self.r as u32) << 24;
         color += (self.g as u32) << 16;
         color += (self.b as u32) << 8;
@@ -35,7 +35,7 @@ impl Color {
     }
 
     /// Build a color from a `u32` in the form of `0xRRGGBBAA`.
-    pub fn from_u32(color: u32) -> Self {
+    pub const fn from_u32(color: u32) -> Self {
         Self {
             r: (color >> 24) as u8,
             g: (color >> 16) as u8,
@@ -45,7 +45,7 @@ impl Color {
     }
 
     /// Alter this color's red channel value.
-    pub fn with_red(self, red: u8) -> Self {
+    pub const fn with_red(self, red: u8) -> Self {
         Self {
             r: red,
             ..self
@@ -53,7 +53,7 @@ impl Color {
     }
 
     /// Alter this color's green channel value.
-    pub fn with_green(self, green: u8) -> Self {
+    pub const fn with_green(self, green: u8) -> Self {
         Self {
             g: green,
             ..self
@@ -61,7 +61,7 @@ impl Color {
     }
 
     /// Alter this color's blue channel value.
-    pub fn with_blue(self, blue: u8) -> Self {
+    pub const fn with_blue(self, blue: u8) -> Self {
         Self {
             b: blue,
             ..self
@@ -69,7 +69,7 @@ impl Color {
     }
 
     /// Alter this color's alpha channel value.
-    pub fn with_alpha(self, alpha: u8) -> Self {
+    pub const fn with_alpha(self, alpha: u8) -> Self {
         Self {
             a: alpha,
             ..self
