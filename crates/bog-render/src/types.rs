@@ -15,7 +15,7 @@ pub use bytes::Bytes;
 #[derive(Clone, Debug)]
 pub struct Text<'a> {
     /// This text's content.
-    pub content: TextContent<'a>,
+    pub content: std::borrow::Cow<'a, str>,
     /// The clipping bounds for this text.
     pub bounds: Rect,
     /// This text's font size.
@@ -42,42 +42,6 @@ impl Default for Text<'_> {
             line_height: 0.0, // 20.0 * 1.2,
             font_family: FontFamily::SansSerif,
             text_slant: TextSlant::Normal,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum TextContent<'a> {
-    Owned(String),
-    Borrowed(&'a str),
-    Cow(std::borrow::Cow<'a, str>),
-}
-
-impl<'a> From<std::borrow::Cow<'a, str>> for TextContent<'a> {
-    fn from(value: std::borrow::Cow<'a, str>) -> Self {
-        Self::Cow(value)
-    }
-}
-
-impl<'a> From<&'a str> for TextContent<'a> {
-    fn from(value: &'a str) -> Self {
-        Self::Borrowed(value)
-    }
-}
-
-impl<'a> From<String> for TextContent<'a> {
-    fn from(value: String) -> Self {
-        Self::Owned(value)
-    }
-}
-
-impl<'a> core::ops::Deref for TextContent<'a> {
-    type Target = str;
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Owned(s) => &s,
-            Self::Borrowed(s) => s,
-            Self::Cow(s) => s.as_ref(),
         }
     }
 }
