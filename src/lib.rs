@@ -54,34 +54,8 @@ pub mod prelude {
         },
     };
 
-    pub use bog_core::{
-        Color,
-        ControlKey,
-        EventParser,
-        Input,
-        InputArea,
-        InputEvent,
-        KeyCode,
-        KeyEventParser,
-        KeyInput,
-        KeyUpdate,
-        Mat3,
-        Mat4,
-        ModifierKey,
-        ModifierMask,
-        MouseButton,
-        MouseButtonMask,
-        MouseEventParser,
-        MouseInput,
-        NoHashMap,
-        Rect,
-        vec2,
-        Vec2,
-        vec3,
-        Vec3,
-        WheelMovement,
-        WindowEvent,
-    };
+    pub use bog_core::*;
+
     pub use bog_render::{
         Border,
         FontFamily,
