@@ -5,6 +5,9 @@
 use core::{any::TypeId, hash::{BuildHasherDefault, Hasher}};
 
 
+pub type TypeMapEntry<'a, V>
+    = hashbrown::hash_map::Entry<'a, TypeId, V, BuildHasherDefault<TypeIdHasher>>;
+
 
 /// A map that can store homogenous values for any number of types.
 #[derive(Default)]
@@ -43,6 +46,12 @@ impl<V> TypeMap<V> {
     /// Clear all values from this map.
     pub fn clear(&mut self) {
         self.map.clear();
+    }
+
+    /// Gets the given key’s corresponding [entry](TypeMapEntry) in this map for in-place
+    /// manipulation.
+    pub fn entry<K: 'static>(&mut self) -> TypeMapEntry<V> {
+        self.map.entry(TypeId::of::<K>())
     }
 }
 
