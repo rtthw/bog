@@ -241,6 +241,11 @@ impl<T> UserInterface<T> {
 
 // Iterators, Accessors, & Mutators.
 impl<T> UserInterface<T> {
+    /// The [`Node`] for the root [`Element`] of this UI.
+    pub fn root(&self) -> Node {
+        self.root
+    }
+
     /// Get a reference to this UI's [`Settings`].
     pub fn settings(&self) -> &Settings {
         &self.settings
