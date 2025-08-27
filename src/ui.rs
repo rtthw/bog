@@ -4,7 +4,7 @@
 
 use std::{collections::VecDeque, time::Instant};
 
-use bog_core::{vec2, Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2};
+use bog_core::{vec2, Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, WheelMovement};
 
 
 
@@ -67,6 +67,11 @@ pub enum Event {
     RightClick {
         /// The element that received the input.
         node: Node,
+    },
+    Scroll {
+        /// The element that received the input.
+        node: Node,
+        lines: f32,
     },
     /// A [`ControlKey`] was pressed.
     ControlKeyPress {
@@ -414,6 +419,9 @@ impl<T> UserInterface<T> {
             InputEvent::KeyUp { code } => {
                 self.handle_key_up(code);
             }
+            InputEvent::WheelMove(movement) => {
+                self.handle_wheel_move(movement);
+            }
             _ => {} // TODO
         }
     }
@@ -554,6 +562,18 @@ impl<T> UserInterface<T> {
 
     pub fn handle_mouse_up(&mut self, _button: MouseButton) {
         // TODO
+    }
+
+    // TODO: Handle non-standard scrolling (anything other than a step-based mouse wheel).
+    pub fn handle_wheel_move(&mut self, movement: WheelMovement) {
+        if let Some(node) = self.focus() {
+            match movement {
+                WheelMovement::Lines { x: _, y } => {
+                    self.events.push_back(Event::Scroll { node, lines: y });
+                }
+                _ => {}
+            }
+        }
     }
 
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) {
