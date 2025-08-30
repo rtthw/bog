@@ -49,7 +49,7 @@ impl SimpleApp for App {
     fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
         let area = cx.renderer.viewport_rect();
         pass.start_layer(area);
-        self.ui.crawl(&mut |ui, node| {
+        self.ui.crawl(|ui, node| {
             let bounds = ui.bounds(node);
             let style = ui.style(node);
 

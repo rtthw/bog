@@ -272,7 +272,7 @@ impl<T> UserInterface<T> {
     }
 
     /// Apply the provided function to each element node in descending (back to front) order.
-    pub fn crawl(&self, func: &mut impl FnMut(&UserInterface<T>, Node)) {
+    pub fn crawl(&self, mut func: impl FnMut(&UserInterface<T>, Node)) {
         fn inner<T>(
             ui: &UserInterface<T>,
             node: Node,
@@ -284,7 +284,23 @@ impl<T> UserInterface<T> {
             }
         }
 
-        inner(self, self.root, func);
+        inner(self, self.root, &mut func);
+    }
+
+    /// Apply the provided function to each element node in descending (back to front) order.
+    pub fn crawl_mut(&mut self, mut func: impl FnMut(&mut UserInterface<T>, Node)) {
+        fn inner<T>(
+            ui: &mut UserInterface<T>,
+            node: Node,
+            func: &mut impl FnMut(&mut UserInterface<T>, Node),
+        ) {
+            func(ui, node);
+            for child in ui.children[node].clone() {
+                inner(ui, child, func);
+            }
+        }
+
+        inner(self, self.root, &mut func);
     }
 
     /// Get the parent of the node, if there is one.
