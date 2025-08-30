@@ -489,6 +489,7 @@ impl<T> UserInterface<T> {
         if self.mouse_pos == position {
             return;
         }
+        self.mouse_pos = position;
 
         let delta = position - self.mouse_pos;
         // TODO: Setting for not reporting mouse movements to avoid clogging event queue?
