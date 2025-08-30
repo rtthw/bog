@@ -56,7 +56,11 @@ struct App {
 impl SimpleApp for App {
     type CustomEvent = ();
 
-    fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
+    fn render<'a: 'pass, 'pass>(
+        &'a mut self,
+        cx: AppContext<'pass>,
+        pass: &'pass mut RenderPass<'a>,
+    ) {
         cx.window.request_redraw();
 
         let now = Instant::now();

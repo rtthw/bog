@@ -46,7 +46,11 @@ struct App {
 impl SimpleApp for App {
     type CustomEvent = ();
 
-    fn render<'pass>(&'pass mut self, cx: AppContext, pass: &mut RenderPass<'pass>) {
+    fn render<'a: 'pass, 'pass>(
+        &'a mut self,
+        cx: AppContext<'pass>,
+        pass: &'pass mut RenderPass<'a>,
+    ) {
         let area = cx.renderer.viewport_rect();
         pass.start_layer(area);
         self.ui.crawl(|ui, node| {

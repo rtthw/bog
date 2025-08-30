@@ -54,7 +54,11 @@ impl SimpleApp for App {
         });
     }
 
-    fn render(&mut self, cx: AppContext, pass: &mut RenderPass) {
+    fn render<'a: 'pass, 'pass>(
+        &'a mut self,
+        cx: AppContext<'pass>,
+        pass: &'pass mut RenderPass<'a>,
+    ) {
         pass.start_layer(cx.renderer.viewport_rect());
         // layers.fill_raster_image(
         //     ImageHandle::from_path("...").into(),
