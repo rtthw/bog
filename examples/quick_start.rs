@@ -14,11 +14,7 @@ struct MyApp;
 impl SimpleApp for MyApp {
     type CustomEvent = ();
 
-    fn render<'a: 'pass, 'pass>(
-        &'a mut self,
-        cx: AppContext<'pass>,
-        pass: &'pass mut RenderPass<'a>,
-    ) {
+    fn render<'a>(&'a mut self, cx: AppContext, pass: &mut RenderPass<'a>) {
         pass.start_layer(cx.renderer.viewport_rect());
         pass.fill_quad(Quad {
             bounds: cx.renderer.viewport_rect(),

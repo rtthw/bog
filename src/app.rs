@@ -47,11 +47,7 @@ pub trait SimpleApp {
     type CustomEvent: 'static;
 
     fn startup(&mut self, cx: AppContext) {}
-    fn render<'a: 'pass, 'pass>(
-        &'a mut self,
-        cx: AppContext<'pass>,
-        pass: &'pass mut RenderPass<'a>,
-    );
+    fn render<'a>(&'a mut self, cx: AppContext, pass: &mut RenderPass<'a>);
     fn input(&mut self, cx: AppContext, input: InputEvent) {}
     fn event(&mut self, cx: AppContext, event: Self::CustomEvent) {}
     fn on_close(&mut self, cx: AppContext) -> bool { true }
