@@ -169,7 +169,7 @@ pub struct UserInterface<T = ()> {
     last_left_click_time: Instant,
     last_left_click_node: Option<Node>,
     key_modifiers: ModifierMask,
-    focused: Option<Node>,
+    focus: Option<Node>,
 }
 
 // Core.
@@ -215,6 +215,26 @@ impl<T> UserInterface<T> {
 
         let root_node = digest(root, area, None, &mut elements, &mut children, &mut parents);
 
+        fn set_initial_focus<T>(
+            current: Node,
+            focus: &mut Option<Node>,
+            elements: &mut slotmap::SlotMap<Node, ElementInfo<T>>,
+            children: &mut slotmap::SecondaryMap<Node, Vec<Node>>,
+            parents: &mut slotmap::SecondaryMap<Node, Option<Node>>,
+        ) {
+            if elements[current].event_mask.focusable() {
+                *focus = Some(current);
+                return;
+            }
+            for child in children[current].clone() {
+                set_initial_focus(child, focus, elements, children, parents);
+            }
+        }
+
+        let mut focus = None;
+
+        set_initial_focus(root_node, &mut focus, &mut elements, &mut children, &mut parents);
+
         Self {
             settings: Settings::default(),
 
@@ -230,7 +250,7 @@ impl<T> UserInterface<T> {
             last_left_click_time: Instant::now(),
             last_left_click_node: None,
             key_modifiers: ModifierMask::empty(),
-            focused: None,
+            focus,
         }
     }
 
@@ -268,7 +288,7 @@ impl<T> UserInterface<T> {
 
     /// The currently focused element.
     pub fn focus(&self) -> Option<Node> {
-        self.focused
+        self.focus
     }
 
     /// Apply the provided function to each element node in descending (back to front) order.
@@ -561,19 +581,19 @@ impl<T> UserInterface<T> {
             .rev()
             .find(|node| self.elements[**node].event_mask.focusable())
         {
-            if self.focused.as_ref().is_some_and(|n| n == node) {
+            if self.focus.as_ref().is_some_and(|n| n == node) {
                 return;
             }
             match button {
                 MouseButton::Left => {
-                    let old = self.focused.take();
-                    self.focused = Some(*node);
+                    let old = self.focus.take();
+                    self.focus = Some(*node);
 
                     self.events.push_back(Event::Focus { old, new: *node });
                 }
                 MouseButton::Right if self.settings.focus_on_right_click => {
-                    let old = self.focused.take();
-                    self.focused = Some(*node);
+                    let old = self.focus.take();
+                    self.focus = Some(*node);
 
                     self.events.push_back(Event::Focus { old, new: *node });
                 }
