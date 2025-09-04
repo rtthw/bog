@@ -4,15 +4,22 @@
 
 use core::{any::TypeId, hash::{BuildHasherDefault, Hasher}};
 
+use hashbrown::hash_map::Drain;
+
 
 pub type TypeMapEntry<'a, V>
     = hashbrown::hash_map::Entry<'a, TypeId, V, BuildHasherDefault<TypeIdHasher>>;
 
 
 /// A map that can store homogenous values for any number of types.
-#[derive(Default)]
 pub struct TypeMap<V> {
     map: hashbrown::HashMap<TypeId, V, BuildHasherDefault<TypeIdHasher>>,
+}
+
+impl<V> Default for TypeMap<V> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<V> TypeMap<V> {
@@ -23,6 +30,19 @@ impl<V> TypeMap<V> {
         }
     }
 
+    /// Clear all values from this map.
+    pub fn clear(&mut self) {
+        self.map.clear();
+    }
+
+    /// Clear the map, returning all [`TypeId`]-`V` pairs as an iterator. Keeps the allocated
+    /// memory for future reuse.
+    pub fn drain(&mut self) -> Drain<'_, TypeId, V> {
+        self.map.drain()
+    }
+}
+
+impl<V> TypeMap<V> {
     /// Whether the type `K` has a value stored in this map.
     pub fn has<K: 'static>(&self) -> bool {
         self.map.contains_key(&TypeId::of::<K>())
@@ -43,11 +63,6 @@ impl<V> TypeMap<V> {
         self.map.get_mut(&TypeId::of::<K>())
     }
 
-    /// Clear all values from this map.
-    pub fn clear(&mut self) {
-        self.map.clear();
-    }
-
     /// Gets the given key’s corresponding [entry](TypeMapEntry) in this map for in-place
     /// manipulation.
     pub fn entry<K: 'static>(&mut self) -> TypeMapEntry<V> {
@@ -55,6 +70,33 @@ impl<V> TypeMap<V> {
     }
 }
 
+impl<V> TypeMap<V> {
+    /// Whether the type identified by the given [`TypeId`] has a value stored in this map.
+    pub fn has_id(&self, id: TypeId) -> bool {
+        self.map.contains_key(&id)
+    }
+
+    /// Insert the value `V` associated with the given [`TypeId`] into this map.
+    pub fn insert_for_id(&mut self, id: TypeId, value: V) {
+        let _ = self.map.insert(id, value);
+    }
+
+    /// Get the associated value `V` for the given [`TypeId`], if any.
+    pub fn get_for_id(&self, id: TypeId) -> Option<&V> {
+        self.map.get(&id)
+    }
+
+    /// Get a mutable reference to the associated value `V` for the given [`TypeId`], if any.
+    pub fn get_mut_for_id(&mut self, id: TypeId) -> Option<&mut V> {
+        self.map.get_mut(&id)
+    }
+
+    /// Gets the given [`TypeId`]’s corresponding [entry](TypeMapEntry) in this map for in-place
+    /// manipulation.
+    pub fn entry_for_id(&mut self, id: TypeId) -> TypeMapEntry<V> {
+        self.map.entry(id)
+    }
+}
 
 
 /// A hashless hasher designed specifically with [`TypeId`]s in mind.
@@ -81,5 +123,31 @@ impl Hasher for TypeIdHasher {
 
     fn finish(&self) -> u64 {
         self.hash
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct A;
+    struct B;
+    struct C;
+
+    #[test]
+    fn type_map_works() {
+        let mut map = TypeMap::<usize>::new();
+
+        map.insert::<A>(1);
+        map.insert::<B>(2);
+        map.insert::<C>(3);
+
+        assert!(map.get::<A>().is_some_and(|i| *i == 1));
+        assert!(map.get::<B>().is_some_and(|i| *i == 2));
+        assert!(map.get::<C>().is_some_and(|i| *i == 3));
+
+        assert!(map.drain().count() == 3);
     }
 }
