@@ -281,6 +281,11 @@ impl<T> UserInterface<T> {
         self.mouse_pos
     }
 
+    /// The currently held [modifier keys](ModifierMask).
+    pub fn key_modifiers(&self) -> ModifierMask {
+        self.key_modifiers
+    }
+
     /// The set of elements currently being hovered by the user's mouse pointer.
     pub fn hover_stack(&self) -> &Vec<Node> {
         &self.mouse_over
