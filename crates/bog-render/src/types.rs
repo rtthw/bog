@@ -66,7 +66,7 @@ pub enum TextSlant {
 
 
 /// A renderable rectangle that can have a fill [`Color`], [`Border`], and [`Shadow`].
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quad {
     /// The size and position of the quad.
     pub bounds: Rect,
@@ -103,7 +103,7 @@ impl Quad {
 
 
 /// The border of a [`Quad`].
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Border {
     /// The color of the border.
     pub color: Color,
@@ -141,7 +141,7 @@ impl Border {
 
 
 /// The border of a [`Quad`].
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Shadow {
     /// The color of the shading.
     pub color: Color,

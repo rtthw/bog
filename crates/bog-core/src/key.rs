@@ -265,6 +265,13 @@ pub enum Key {
     Unknown,
 }
 
+impl From<KeyCode> for Key {
+    #[inline]
+    fn from(value: KeyCode) -> Self {
+        Self::from((value, false))
+    }
+}
+
 impl From<(KeyCode, bool)> for Key {
     fn from((code, shifted): (KeyCode, bool)) -> Self {
         if let Some(ch) = code.to_char(shifted) {

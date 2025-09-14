@@ -65,7 +65,7 @@ impl<V> TypeMap<V> {
 
     /// Gets the given key’s corresponding [entry](TypeMapEntry) in this map for in-place
     /// manipulation.
-    pub fn entry<K: 'static>(&mut self) -> TypeMapEntry<V> {
+    pub fn entry<K: 'static>(&mut self) -> TypeMapEntry<'_, V> {
         self.map.entry(TypeId::of::<K>())
     }
 }
@@ -93,7 +93,7 @@ impl<V> TypeMap<V> {
 
     /// Gets the given [`TypeId`]’s corresponding [entry](TypeMapEntry) in this map for in-place
     /// manipulation.
-    pub fn entry_for_id(&mut self, id: TypeId) -> TypeMapEntry<V> {
+    pub fn entry_for_id(&mut self, id: TypeId) -> TypeMapEntry<'_, V> {
         self.map.entry(id)
     }
 }
