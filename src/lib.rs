@@ -5,6 +5,7 @@
 #[cfg(feature = "app")]
 pub mod app;
 pub mod graphics;
+#[cfg(feature = "ui")]
 pub mod ui;
 
 pub use bog_render as render;
@@ -35,6 +36,16 @@ pub mod prelude {
         SimpleApp,
         run_simple_app,
     };
+    #[cfg(feature = "ui")]
+    pub use crate::ui::{
+        Axis,
+        Element,
+        Event,
+        EventMask,
+        Length,
+        Style,
+        UserInterface,
+    };
     pub use crate::{
         Error,
         graphics::{
@@ -43,15 +54,6 @@ pub mod prelude {
             WindowGraphics,
         },
         Result,
-        ui::{
-            Axis,
-            Element,
-            Event,
-            EventMask,
-            Length,
-            Style,
-            UserInterface,
-        },
     };
 
     pub use bog_core::*;

@@ -13,8 +13,9 @@ repository = "https://github.com/rtthw/bog"
 license-file = "LICENSE"
 
 [features]
-default = ["app"]
+default = ["app", "ui"]
 app = []
+ui = []
 
 [dependencies]
 bog-core.workspace = true
