@@ -13,6 +13,8 @@ mod text;
 mod types;
 mod viewport;
 
+use std::borrow::Cow;
+
 use image::*;
 use quad::*;
 use text::*;
@@ -21,7 +23,7 @@ pub use layer::*;
 pub use types::*;
 pub use viewport::*;
 
-use bog_core::{vec2, Mat4, Rect, Vec2};
+use bog_core::{vec2, vec3, Color, Mat4, Rect, Vec2, Vec3};
 
 
 
@@ -264,6 +266,15 @@ impl Renderer {
         vec2(width as _, height as _)
     }
 
+    pub fn monospace_cell_size(&mut self, font_size: f32) -> Vec2 {
+        self.measure_text(&Text {
+            content: "█".into(),
+            size: font_size,
+            font_family: FontFamily::Monospace,
+            ..Default::default()
+        })
+    }
+
     pub fn text_pipeline(&mut self) -> &mut TextPipeline {
         &mut self.text_pipeline
     }
@@ -280,6 +291,14 @@ impl<'a> RenderPass<'a> {
 
     pub fn start_transform(&mut self, transform: Mat4) {
         self.push_transformation(transform);
+    }
+
+    pub fn start_translation(&mut self, translation: Vec3) {
+        self.push_transformation(Mat4::from_translation(translation));
+    }
+
+    pub fn start_translation_2d(&mut self, translation: Vec2) {
+        self.push_transformation(Mat4::from_translation(vec3(translation.x, translation.y, 0.0)));
     }
 
     pub fn end_transform(&mut self) {
@@ -304,6 +323,24 @@ impl<'a> RenderPass<'a> {
         layer.quads.push(QuadSolid { color, quad });
     }
 
+    pub fn fill_simple_quad(&mut self, color: Color, bounds: Rect) {
+        let (layer, transform) = self.current_mut();
+        let bounds = bounds * transform;
+        let color = color.to_u32();
+        let quad = QuadPrimitive {
+            position: [bounds.x, bounds.y],
+            size: [bounds.w, bounds.h],
+            border_color: 0,
+            border_radius: [0.0; 4],
+            border_width: 0.0,
+            shadow_color: 0,
+            shadow_offset: [0.0; 2],
+            shadow_blur_radius: 0.0,
+        };
+
+        layer.quads.push(QuadSolid { color, quad });
+    }
+
     pub fn fill_text(&mut self, text: Text<'a>) {
         let (layer, transform) = self.current_mut();
         let bounds = text.bounds * transform;
@@ -311,6 +348,27 @@ impl<'a> RenderPass<'a> {
         layer.texts.push(Text {
             bounds,
             ..text
+        });
+    }
+
+    pub fn fill_simple_text(
+        &mut self,
+        content: impl Into<Cow<'a, str>>,
+        bounds: Rect,
+        size: f32,
+        color: Color,
+        family: FontFamily<'static>, // FIXME: Use 'a lifetime here?
+    ) {
+        let (layer, transform) = self.current_mut();
+        let bounds = bounds * transform;
+
+        layer.texts.push(Text {
+            content: content.into(),
+            bounds,
+            size,
+            color,
+            font_family: family,
+            ..Default::default()
         });
     }
 
