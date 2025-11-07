@@ -28,7 +28,7 @@ impl SimpleApp for MyApp {
         cx.window.request_redraw();
     }
 
-    fn window_desc(&self) -> WindowDescriptor {
+    fn window_desc(&self) -> WindowDescriptor<'_> {
         WindowDescriptor {
             title: "Bog - Quickstart Example",
             ..Default::default()

@@ -88,7 +88,7 @@ impl SimpleApp for App {
         }
     }
 
-    fn window_desc(&self) -> WindowDescriptor {
+    fn window_desc(&self) -> WindowDescriptor<'_> {
         WindowDescriptor {
             title: "Bog - Demo App",
             inner_size: vec2(1200.0, 800.0),

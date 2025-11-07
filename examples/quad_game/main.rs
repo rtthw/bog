@@ -207,7 +207,7 @@ impl SimpleApp for App {
         }
     }
 
-    fn window_desc(&self) -> WindowDescriptor {
+    fn window_desc(&self) -> WindowDescriptor<'_> {
         WindowDescriptor {
             title: "Bog - Quad Game Example",
             maximized: true,

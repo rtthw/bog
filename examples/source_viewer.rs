@@ -120,7 +120,7 @@ impl SimpleApp for App {
         }
     }
 
-    fn window_desc(&self) -> WindowDescriptor {
+    fn window_desc(&self) -> WindowDescriptor<'_> {
         WindowDescriptor {
             title: "Bog - Source Viewer Example",
             inner_size: Vec2::new(1200.0, 800.0),
