@@ -10,10 +10,15 @@ use crate::{render::gpu, window::rwh};
 
 type Result<T> = core::result::Result<T, GraphicsError>;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Clone, Debug, thiserror::Error)]
 pub enum GraphicsError {
+    /// Failed to create a rendering surface.
     #[error("create surface error")]
     CreateSurfaceError(#[from] gpu::CreateSurfaceError),
+    /// Failed to get a compatible graphics adapter for the graphics instance.
+    #[error("request adapter error")]
+    RequestAdapterError(#[from] gpu::RequestAdapterError),
+    /// Failed to get a compatible GPU for the chosen graphics adapter.
     #[error("request device error")]
     RequestDeviceError(#[from] gpu::RequestDeviceError),
 }
@@ -55,7 +60,8 @@ impl<'w> WindowGraphics<'w> {
         gpu::TextureFormat,
         gpu::Backend,
     )>
-    where W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
+    where
+        W: rwh::HasWindowHandle + rwh::HasDisplayHandle + Send + Sync + 'w,
     {
         let backends = desc.backend_override.unwrap_or({
             #[cfg(not(target_arch = "wasm32"))]
@@ -88,8 +94,7 @@ impl<'w> WindowGraphics<'w> {
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: desc.force_fallback_adapter,
             })
-            .await
-            .unwrap(); // TODO: Remove unwrap.
+            .await?;
 
         let backend = adapter.get_info().backend;
 
