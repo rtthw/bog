@@ -1,14 +1,10 @@
 //! X11-specific windowing types
 
-
-
 use core::{num::NonZeroU32, ptr::NonNull};
 use std::sync::Arc;
 
 use winit::raw_window_handle::*;
 use x11rb::xcb_ffi::XCBConnection;
-
-
 
 #[derive(Clone, Debug)]
 pub struct X11Window {
@@ -40,9 +36,7 @@ impl X11Window {
 
 impl HasWindowHandle for X11Window {
     fn window_handle(&self) -> Result<WindowHandle<'_>, winit::raw_window_handle::HandleError> {
-        Ok(unsafe {
-            WindowHandle::borrow_raw(RawWindowHandle::Xcb(self.window))
-        })
+        Ok(unsafe { WindowHandle::borrow_raw(RawWindowHandle::Xcb(self.window)) })
     }
 }
 

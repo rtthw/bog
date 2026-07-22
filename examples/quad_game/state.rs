@@ -1,9 +1,4 @@
-
-
-
 use bog_core::{MouseButtonMask, Vec2};
-
-
 
 pub struct State {
     pub screen_size: Vec2,

@@ -1,12 +1,8 @@
 //! Layer types
 
-
-
 use bog_core::{Mat4, Rect};
 
 use crate::{Image, QuadSolid, Text};
-
-
 
 /// Rendering layer.
 #[derive(Debug)]
@@ -53,8 +49,6 @@ impl<'a> Layer<'a> {
         self.texts.clear();
     }
 }
-
-
 
 /// The render pass is the primary way in which things are drawn to the screen with the GPU.
 pub struct RenderPass<'a> {
@@ -110,7 +104,8 @@ impl<'a> RenderPass<'a> {
     }
 
     pub fn push_transformation(&mut self, transformation: Mat4) {
-        self.transformations.push(self.transformation() * transformation);
+        self.transformations
+            .push(self.transformation() * transformation);
     }
 
     pub fn pop_transformation(&mut self) {

@@ -1,11 +1,7 @@
 //! No Hash Map
 
-
-
 use core::hash::{BuildHasherDefault, Hash};
 use hashbrown::{Equivalent, HashMap};
-
-
 
 /// A [`HashMap`] that doesn't hash.
 #[derive(Clone, Debug)]
@@ -70,36 +66,54 @@ impl<K: Eq + Hash, V> NoHashMap<K, V> {
     }
 }
 
-
-
 // ---
-
-
 
 #[derive(Clone, Copy, Debug, Default)]
 struct NoHashHasher(u64);
 
 impl core::hash::Hasher for NoHashHasher {
     fn write(&mut self, _: &[u8]) {
-        panic!("invalid use of NoHashHasher, please ensure your NoHashMap's key type can be represented as a u64")
+        panic!(
+            "invalid use of NoHashHasher, please ensure your NoHashMap's key type can be represented as a u64"
+        )
     }
 
-    fn write_u8(&mut self, n: u8)       { self.0 = u64::from(n) }
-    fn write_u16(&mut self, n: u16)     { self.0 = u64::from(n) }
-    fn write_u32(&mut self, n: u32)     { self.0 = u64::from(n) }
-    fn write_u64(&mut self, n: u64)     { self.0 = n }
-    fn write_usize(&mut self, n: usize) { self.0 = n as u64 }
+    fn write_u8(&mut self, n: u8) {
+        self.0 = u64::from(n)
+    }
+    fn write_u16(&mut self, n: u16) {
+        self.0 = u64::from(n)
+    }
+    fn write_u32(&mut self, n: u32) {
+        self.0 = u64::from(n)
+    }
+    fn write_u64(&mut self, n: u64) {
+        self.0 = n
+    }
+    fn write_usize(&mut self, n: usize) {
+        self.0 = n as u64
+    }
 
-    fn write_i8(&mut self, n: i8)       { self.0 = n as u64 }
-    fn write_i16(&mut self, n: i16)     { self.0 = n as u64 }
-    fn write_i32(&mut self, n: i32)     { self.0 = n as u64 }
-    fn write_i64(&mut self, n: i64)     { self.0 = n as u64 }
-    fn write_isize(&mut self, n: isize) { self.0 = n as u64 }
+    fn write_i8(&mut self, n: i8) {
+        self.0 = n as u64
+    }
+    fn write_i16(&mut self, n: i16) {
+        self.0 = n as u64
+    }
+    fn write_i32(&mut self, n: i32) {
+        self.0 = n as u64
+    }
+    fn write_i64(&mut self, n: i64) {
+        self.0 = n as u64
+    }
+    fn write_isize(&mut self, n: isize) {
+        self.0 = n as u64
+    }
 
-    fn finish(&self) -> u64 { self.0 }
+    fn finish(&self) -> u64 {
+        self.0
+    }
 }
-
-
 
 #[cfg(test)]
 mod tests {

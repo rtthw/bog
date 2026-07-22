@@ -1,14 +1,10 @@
 //! Text rendering functionality
 
-
-
 use core::hash::Hash as _;
 
 use bog_core::{Rect, Vec2};
 
 use crate::{FontFamily, Text, TextSlant};
-
-
 
 pub struct TextManager {
     pub(crate) cache: TextCache,
@@ -45,7 +41,8 @@ impl TextManager {
         }
 
         let layer = &mut self.layers[self.prepare_layer];
-        let keys = texts.iter()
+        let keys = texts
+            .iter()
             .map(|t| {
                 let key = TextCacheKey::from(t);
                 let (hash, _entry) = self.cache.allocate(&mut pipeline.font_system, key);
@@ -73,15 +70,19 @@ impl TextManager {
             }
         });
 
-        if layer.renderer.prepare(
-            device,
-            queue,
-            &mut pipeline.font_system,
-            &mut pipeline.atlas,
-            &mut pipeline.viewport,
-            text_areas,
-            &mut pipeline.swash_cache,
-        ).is_ok() {
+        if layer
+            .renderer
+            .prepare(
+                device,
+                queue,
+                &mut pipeline.font_system,
+                &mut pipeline.atlas,
+                &mut pipeline.viewport,
+                text_areas,
+                &mut pipeline.swash_cache,
+            )
+            .is_ok()
+        {
             self.prepare_layer += 1;
         }
     }
@@ -95,7 +96,9 @@ impl TextManager {
     ) {
         if let Some(layer) = self.layers.get(layer) {
             render_pass.set_scissor_rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            layer.renderer.render(&pipeline.atlas, &pipeline.viewport, render_pass)
+            layer
+                .renderer
+                .render(&pipeline.atlas, &pipeline.viewport, render_pass)
                 .unwrap();
         }
     }
@@ -131,11 +134,7 @@ impl TextPipeline {
     }
 }
 
-
-
 // --- Caching
-
-
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct TextCacheKey<'a> {
@@ -197,8 +196,7 @@ impl TextCache {
         &mut self,
         font_system: &mut glyphon::FontSystem,
         key: TextCacheKey<'a>,
-    ) -> (u64, &mut TextCacheEntry)
-    {
+    ) -> (u64, &mut TextCacheEntry) {
         let hash = key.hash(rustc_hash::FxHasher::default());
         if let Some(hash) = self.aliases.get(&hash) {
             let _ = self.recently_used.insert(*hash);
@@ -238,11 +236,7 @@ impl TextCache {
             let (bounds, has_rtl) = measure_glyphon_buffer(&buffer);
 
             if has_rtl {
-                buffer.set_size(
-                    font_system,
-                    Some(bounds.x),
-                    Some(bounds.y),
-                );
+                buffer.set_size(font_system, Some(bounds.x), Some(bounds.y));
             }
 
             let _ = entry.insert(TextCacheEntry {
@@ -272,24 +266,26 @@ impl TextCache {
     }
 
     fn trim(&mut self) {
-        self.entries.retain(|key, _| self.recently_used.contains(key));
-        self.aliases.retain(|_, value| self.recently_used.contains(value));
+        self.entries
+            .retain(|key, _| self.recently_used.contains(key));
+        self.aliases
+            .retain(|_, value| self.recently_used.contains(value));
 
         self.recently_used.clear();
     }
 }
 
 fn measure_glyphon_buffer(buffer: &glyphon::Buffer) -> (Vec2, bool) {
-    let (width, height, has_rtl) = buffer.layout_runs().fold(
-        (0.0, 0.0, false),
-        |(width, height, has_rtl), run| {
-            (
-                run.line_w.max(width),
-                height + run.line_height,
-                has_rtl || run.rtl,
-            )
-        },
-    );
+    let (width, height, has_rtl) =
+        buffer
+            .layout_runs()
+            .fold((0.0, 0.0, false), |(width, height, has_rtl), run| {
+                (
+                    run.line_w.max(width),
+                    height + run.line_height,
+                    has_rtl || run.rtl,
+                )
+            });
 
     (Vec2::new(width, height), has_rtl)
 }

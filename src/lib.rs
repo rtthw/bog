@@ -1,7 +1,5 @@
 //! Bog
 
-
-
 #[cfg(feature = "app")]
 pub mod app;
 pub mod graphics;
@@ -10,8 +8,6 @@ pub mod ui;
 
 pub use bog_render as render;
 pub use bog_window as window;
-
-
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -27,63 +23,24 @@ pub enum Error {
     WindowManagerError(#[from] window::WindowManagerError),
 }
 
-
-
 pub mod prelude {
     #[cfg(feature = "app")]
-    pub use crate::app::{
-        AppContext,
-        SimpleApp,
-        run_simple_app,
-    };
+    pub use crate::app::{AppContext, SimpleApp, run_simple_app};
     #[cfg(feature = "ui")]
-    pub use crate::ui::{
-        Axis,
-        Element,
-        Event,
-        EventMask,
-        Length,
-        Style,
-        UserInterface,
-    };
+    pub use crate::ui::{Axis, Element, Event, EventMask, Length, Style, UserInterface};
     pub use crate::{
-        Error,
-        graphics::{
-            GraphicsDescriptor,
-            GraphicsError,
-            WindowGraphics,
-        },
-        Result,
+        Error, Result,
+        graphics::{GraphicsDescriptor, GraphicsError, WindowGraphics},
     };
 
     pub use bog_core::*;
 
     pub use bog_render::{
-        Border,
-        FontFamily,
-        Image,
-        ImageFilterMethod,
-        ImageHandle,
-        Layer,
-        Quad,
-        RasterImage,
-        Renderer,
-        RenderPass,
-        Shadow,
-        Text,
-        TextSlant,
-        Viewport,
+        Border, FontFamily, Image, ImageFilterMethod, ImageHandle, Layer, Quad, RasterImage,
+        RenderPass, Renderer, Shadow, Text, TextSlant, Viewport,
     };
     pub use bog_window::{
-        App,
-        AppEvent,
-        CursorIcon,
-        Window,
-        WindowDescriptor,
-        WindowError,
-        WindowingSystem,
-        WindowingSystemProxy,
-        WindowManager,
-        WindowManagerError,
+        App, AppEvent, CursorIcon, Window, WindowDescriptor, WindowError, WindowManager,
+        WindowManagerError, WindowingSystem, WindowingSystemProxy,
     };
 }

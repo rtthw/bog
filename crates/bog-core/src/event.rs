@@ -1,10 +1,6 @@
 //! Event types
 
-
-
 use crate::KeyCode;
-
-
 
 /// An event that can be passed from a windowing system to a window controller.
 #[derive(Clone, Copy, Debug)]
@@ -22,36 +18,21 @@ pub enum WindowEvent {
 #[derive(Clone, Copy, Debug)]
 pub enum InputEvent {
     /// This area was resized to these proportions, in physical pixels.
-    Resize {
-        width: u32,
-        height: u32,
-    },
+    Resize { width: u32, height: u32 },
     /// This area gained the user's focus.
     FocusIn,
     /// This area lost the user's focus.
     FocusOut,
     /// A [key](KeyCode) was pressed down while this area had the user's focus.
-    KeyDown {
-        code: KeyCode,
-        repeat: bool,
-    },
+    KeyDown { code: KeyCode, repeat: bool },
     /// A [key](KeyCode) was released while this area had the user's focus.
-    KeyUp {
-        code: KeyCode,
-    },
+    KeyUp { code: KeyCode },
     /// The user's mouse pointer moved while over this area.
-    MouseMove {
-        x: f32,
-        y: f32,
-    },
+    MouseMove { x: f32, y: f32 },
     /// A button on the user's mouse was pressed down while this area had the user's focus.
-    MouseDown {
-        button: MouseButton,
-    },
+    MouseDown { button: MouseButton },
     /// A button on the user's mouse was released while this area had the user's focus.
-    MouseUp {
-        button: MouseButton,
-    },
+    MouseUp { button: MouseButton },
     /// The user's mouse pointer entered this area.
     MouseEnter,
     /// The user's mouse pointer left this area.
@@ -85,12 +66,6 @@ pub enum MouseButton {
 /// A mouse wheel or trackpad scroll.
 #[derive(Clone, Copy, Debug)]
 pub enum WheelMovement {
-    Lines {
-        x: f32,
-        y: f32,
-    },
-    Pixels {
-        x: f32,
-        y: f32,
-    },
+    Lines { x: f32, y: f32 },
+    Pixels { x: f32, y: f32 },
 }

@@ -1,13 +1,8 @@
-
-
-
 use std::sync::Arc;
 
 use bog_core::{Mat4, Rect};
 
-use crate::{buffer::Buffer, Image, ImageFilterMethod, ImageHandle};
-
-
+use crate::{Image, ImageFilterMethod, ImageHandle, buffer::Buffer};
 
 pub struct ImageManager {
     pub layers: Vec<ImageLayer>,
@@ -39,9 +34,7 @@ impl ImageManager {
         for image in images {
             match &image {
                 Image::Raster(image, bounds) => {
-                    if let Some(atlas_entry) =
-                        cache.upload_raster(device, encoder, &image.handle)
-                    {
+                    if let Some(atlas_entry) = cache.upload_raster(device, encoder, &image.handle) {
                         add_instances(
                             [bounds.x, bounds.y],
                             [bounds.w, bounds.h],
@@ -50,17 +43,12 @@ impl ImageManager {
                             image.snap,
                             atlas_entry,
                             match image.filter_method {
-                                ImageFilterMethod::Nearest => {
-                                    nearest_instances
-                                }
-                                ImageFilterMethod::Linear => {
-                                    linear_instances
-                                }
+                                ImageFilterMethod::Nearest => nearest_instances,
+                                ImageFilterMethod::Linear => linear_instances,
                             },
                         );
                     }
-                }
-                // TODO: SVG
+                } // TODO: SVG
             }
         }
 
@@ -103,12 +91,7 @@ impl ImageManager {
         if let Some(layer) = self.layers.get(layer) {
             render_pass.set_pipeline(&pipeline.raw);
 
-            render_pass.set_scissor_rect(
-                bounds.x,
-                bounds.y,
-                bounds.w,
-                bounds.h,
-            );
+            render_pass.set_scissor_rect(bounds.x, bounds.y, bounds.w, bounds.h);
 
             render_pass.set_bind_group(1, cache.bind_group(), &[]);
 
@@ -120,8 +103,6 @@ impl ImageManager {
         self.prepare_layer = 0;
     }
 }
-
-
 
 pub struct ImageLayer {
     uniforms: wgpu::Buffer,
@@ -180,7 +161,8 @@ impl ImageLayer {
         )
         .copy_from_slice(bytes);
 
-        self.nearest.upload(device, encoder, belt, nearest_instances);
+        self.nearest
+            .upload(device, encoder, belt, nearest_instances);
         self.linear.upload(device, encoder, belt, linear_instances);
     }
 
@@ -209,13 +191,11 @@ impl Data {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(
-                        wgpu::BufferBinding {
-                            buffer: uniforms,
-                            offset: 0,
-                            size: None,
-                        },
-                    ),
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: uniforms,
+                        offset: 0,
+                        size: None,
+                    }),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
@@ -267,8 +247,6 @@ impl Data {
     }
 }
 
-
-
 fn add_instances(
     image_position: [f32; 2],
     image_size: [f32; 2],
@@ -318,8 +296,7 @@ fn add_instances(
                 ];
 
                 add_instance(
-                    position, center, size, rotation, opacity, snap,
-                    allocation, instances,
+                    position, center, size, rotation, opacity, snap, allocation, instances,
                 );
             }
         }
@@ -347,10 +324,7 @@ fn add_instance(
         _size: size,
         _rotation: rotation,
         _opacity: opacity,
-        _position_in_atlas: [
-            x as f32 / ATLAS_SIZE as f32,
-            y as f32 / ATLAS_SIZE as f32,
-        ],
+        _position_in_atlas: [x as f32 / ATLAS_SIZE as f32, y as f32 / ATLAS_SIZE as f32],
         _size_in_atlas: [
             width as f32 / ATLAS_SIZE as f32,
             height as f32 / ATLAS_SIZE as f32,
@@ -362,14 +336,9 @@ fn add_instance(
     instances.push(instance);
 }
 
-
-
 // ---
 
-
-
-#[derive(Clone, Copy, Debug)]
-#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Instance {
     _position: [f32; 2],
@@ -387,8 +356,7 @@ impl Instance {
     pub const INITIAL: usize = 20;
 }
 
-#[derive(Clone, Copy, Debug)]
-#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Uniforms {
     transform: [f32; 16],
@@ -397,9 +365,6 @@ struct Uniforms {
     // this uses a mat4x4<f32> which aligns to 16, so align to that
     _padding: [f32; 3],
 }
-
-
-
 
 #[derive(Debug, Clone)]
 pub struct ImagePipeline {
@@ -412,11 +377,7 @@ pub struct ImagePipeline {
 }
 
 impl ImagePipeline {
-    pub fn new(
-        device: &wgpu::Device,
-        format: wgpu::TextureFormat,
-        backend: wgpu::Backend,
-    ) -> Self {
+    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, backend: wgpu::Backend) -> Self {
         let nearest_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -447,7 +408,7 @@ impl ImagePipeline {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: wgpu::BufferSize::new(
-                            core::mem::size_of::<Uniforms>() as u64,
+                            core::mem::size_of::<Uniforms>() as u64
                         ),
                     },
                     count: None,
@@ -455,9 +416,7 @@ impl ImagePipeline {
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(
-                        wgpu::SamplerBindingType::Filtering,
-                    ),
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
             ],
@@ -469,9 +428,7 @@ impl ImagePipeline {
                 binding: 0,
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float {
-                        filterable: true,
-                    },
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
                     view_dimension: wgpu::TextureViewDimension::D2Array,
                     multisampled: false,
                 },
@@ -487,9 +444,9 @@ impl ImagePipeline {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("bog::shader::image"),
-            source: gpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
-                include_str!("shaders/image.wgsl"),
-            )),
+            source: gpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "shaders/image.wgsl"
+            ))),
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -522,8 +479,7 @@ impl ImagePipeline {
                         8 => Uint32,
                     ),
                 }],
-                compilation_options:
-                    wgpu::PipelineCompilationOptions::default(),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -544,8 +500,7 @@ impl ImagePipeline {
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
-                compilation_options:
-                    wgpu::PipelineCompilationOptions::default(),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -576,8 +531,6 @@ impl ImagePipeline {
         ImageCache::new(device, self.backend, self.texture_layout.clone())
     }
 }
-
-
 
 pub struct ImageCache {
     atlas: ImageAtlas,
@@ -618,11 +571,7 @@ impl ImageCache {
     }
 }
 
-
-
 // ---
-
-
 
 const ATLAS_SIZE: u32 = 2048;
 
@@ -673,15 +622,14 @@ impl ImageAtlas {
             ..Default::default()
         });
 
-        let texture_bind_group =
-            device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("bog::image texture atlas bind group"),
-                layout: &texture_layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                }],
-            });
+        let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bog::image texture atlas bind group"),
+            layout: &texture_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&texture_view),
+            }],
+        });
 
         ImageAtlas {
             backend,
@@ -732,9 +680,8 @@ impl ImageAtlas {
         for row in 0..height as usize {
             let offset = row * padded_width;
 
-            padded_data[offset..offset + 4 * width as usize].copy_from_slice(
-                &data[row * 4 * width as usize..(row + 1) * 4 * width as usize],
-            );
+            padded_data[offset..offset + 4 * width as usize]
+                .copy_from_slice(&data[row * 4 * width as usize..(row + 1) * 4 * width as usize]);
         }
 
         match &entry {
@@ -958,12 +905,7 @@ impl ImageAtlas {
         );
     }
 
-    fn grow(
-        &mut self,
-        amount: usize,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-    ) {
+    fn grow(&mut self, amount: usize, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
         if amount == 0 {
             return;
         }
@@ -1043,15 +985,11 @@ impl ImageAtlas {
             layout: &self.texture_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::TextureView(
-                    &self.texture_view,
-                ),
+                resource: wgpu::BindingResource::TextureView(&self.texture_view),
             }],
         });
     }
 }
-
-
 
 enum AtlasLayer {
     Empty,
@@ -1099,13 +1037,8 @@ struct Fragment {
 
 #[derive(Debug)]
 enum Allocation {
-    Partial {
-        layer: usize,
-        region: Region,
-    },
-    Full {
-        layer: usize,
-    },
+    Partial { layer: usize, region: Region },
+    Full { layer: usize },
 }
 
 impl Allocation {
@@ -1138,9 +1071,8 @@ struct Allocator {
 
 impl Allocator {
     fn new(size: u32) -> Allocator {
-        let raw = guillotiere::AtlasAllocator::new(
-            guillotiere::Size::new(size as i32, size as i32),
-        );
+        let raw =
+            guillotiere::AtlasAllocator::new(guillotiere::Size::new(size as i32, size as i32));
 
         Allocator {
             raw,
@@ -1149,8 +1081,9 @@ impl Allocator {
     }
 
     fn allocate(&mut self, width: u32, height: u32) -> Option<Region> {
-        let allocation =
-            self.raw.allocate(guillotiere::Size::new(width as i32, height as i32))?;
+        let allocation = self
+            .raw
+            .allocate(guillotiere::Size::new(width as i32, height as i32))?;
 
         self.allocations += 1;
 
@@ -1191,11 +1124,7 @@ impl Region {
     }
 }
 
-
-
 // ---
-
-
 
 #[derive(Default)]
 struct RasterCache {
@@ -1285,8 +1214,6 @@ impl RasterCache {
     }
 }
 
-
-
 #[derive(Debug)]
 enum RasterImageMemory {
     Host(::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>),
@@ -1306,37 +1233,24 @@ impl RasterImageMemory {
     }
 }
 
-
-
 // ---
-
-
 
 // TODO: Handle EXIF orientation.
 fn load_image(
     handle: &ImageHandle,
-) -> ::image::ImageResult<::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>>
-{
+) -> ::image::ImageResult<::image::ImageBuffer<::image::Rgba<u8>, Vec<u8>>> {
     let (width, height, pixels) = match handle {
         ImageHandle::Path(_, path) => {
             let image = ::image::open(path)?;
             let rgba = image.into_rgba8();
 
-            (
-                rgba.width(),
-                rgba.height(),
-                rgba.into_raw(),
-            )
+            (rgba.width(), rgba.height(), rgba.into_raw())
         }
         ImageHandle::Bytes(_, bytes) => {
             let image = ::image::load_from_memory(bytes)?;
             let rgba = image.into_rgba8();
 
-            (
-                rgba.width(),
-                rgba.height(),
-                rgba.into_raw(),
-            )
+            (rgba.width(), rgba.height(), rgba.into_raw())
         }
     };
 
@@ -1344,9 +1258,7 @@ fn load_image(
         Ok(image)
     } else {
         Err(::image::error::ImageError::Limits(
-            ::image::error::LimitError::from_kind(
-                ::image::error::LimitErrorKind::DimensionError,
-            ),
+            ::image::error::LimitError::from_kind(::image::error::LimitErrorKind::DimensionError),
         ))
     }
 }

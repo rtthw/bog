@@ -1,16 +1,9 @@
-
-
-
 use core::num::NonZeroU64;
-
-
 
 pub const MAX_WRITE_SIZE: usize = 100 * 1024;
 
-const MAX_WRITE_SIZE_U64: NonZeroU64 = NonZeroU64::new(MAX_WRITE_SIZE as u64)
-    .expect("MAX_WRITE_SIZE must be non-zero");
-
-
+const MAX_WRITE_SIZE_U64: NonZeroU64 =
+    NonZeroU64::new(MAX_WRITE_SIZE as u64).expect("MAX_WRITE_SIZE must be non-zero");
 
 #[derive(Debug)]
 pub struct Buffer<T> {
@@ -88,9 +81,7 @@ impl<T: bytemuck::Pod> Buffer<T> {
                 MAX_WRITE_SIZE_U64,
                 device,
             )
-            .copy_from_slice(
-                &bytes[bytes_written..bytes_written + MAX_WRITE_SIZE],
-            );
+            .copy_from_slice(&bytes[bytes_written..bytes_written + MAX_WRITE_SIZE]);
 
             bytes_written += MAX_WRITE_SIZE;
         }
@@ -107,7 +98,8 @@ impl<T: bytemuck::Pod> Buffer<T> {
             (offset + bytes_written) as u64,
             bytes_left,
             device,
-        ).copy_from_slice(&bytes[bytes_written..]);
+        )
+        .copy_from_slice(&bytes[bytes_written..]);
 
         self.offsets.push(offset as u64);
 
@@ -141,8 +133,6 @@ impl<T: bytemuck::Pod> Buffer<T> {
 fn next_copy_size<T>(amount: usize) -> u64 {
     let align_mask = gpu::COPY_BUFFER_ALIGNMENT - 1;
 
-    (((core::mem::size_of::<T>() * amount).next_power_of_two() as u64
-        + align_mask)
-        & !align_mask)
+    (((core::mem::size_of::<T>() * amount).next_power_of_two() as u64 + align_mask) & !align_mask)
         .max(gpu::COPY_BUFFER_ALIGNMENT)
 }

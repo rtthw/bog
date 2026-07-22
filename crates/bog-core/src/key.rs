@@ -1,25 +1,25 @@
 //! Key event types
 
-
-
 /// A key up/down change.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum KeyUpdate {
-    Down {
-        code: KeyCode,
-        repeat: bool,
-    },
-    Up {
-        code: KeyCode,
-    },
+    Down { code: KeyCode, repeat: bool },
+    Up { code: KeyCode },
 }
-
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct KeyCode(pub u8);
 
-impl From<u8> for KeyCode { fn from(value: u8) -> Self { Self(value) } }
-impl Into<u8> for KeyCode { fn into(self) -> u8 { self.0 } }
+impl From<u8> for KeyCode {
+    fn from(value: u8) -> Self {
+        Self(value)
+    }
+}
+impl Into<u8> for KeyCode {
+    fn into(self) -> u8 {
+        self.0
+    }
+}
 
 macro_rules! define_keycodes {
     ($($name:ident $val:literal,)*) => {
@@ -251,8 +251,6 @@ impl KeyCode {
     }
 }
 
-
-
 /// A virtual, more easily understandable version of a [`KeyCode`].
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Key {
@@ -304,8 +302,6 @@ impl From<(KeyCode, bool)> for Key {
     }
 }
 
-
-
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ControlKey {
     Escape,
@@ -332,8 +328,6 @@ pub enum ModifierKey {
     Alt,
     Super,
 }
-
-
 
 #[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
 pub struct ModifierMask(u8);

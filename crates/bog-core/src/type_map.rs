@@ -1,15 +1,14 @@
 //! Type map
 
-
-
-use core::{any::TypeId, hash::{BuildHasherDefault, Hasher}};
+use core::{
+    any::TypeId,
+    hash::{BuildHasherDefault, Hasher},
+};
 
 use hashbrown::hash_map::Drain;
 
-
-pub type TypeMapEntry<'a, V>
-    = hashbrown::hash_map::Entry<'a, TypeId, V, BuildHasherDefault<TypeIdHasher>>;
-
+pub type TypeMapEntry<'a, V> =
+    hashbrown::hash_map::Entry<'a, TypeId, V, BuildHasherDefault<TypeIdHasher>>;
 
 /// A map that can store homogenous values for any number of types.
 pub struct TypeMap<V> {
@@ -98,7 +97,6 @@ impl<V> TypeMap<V> {
     }
 }
 
-
 /// A hashless hasher designed specifically with [`TypeId`]s in mind.
 #[derive(Default)]
 pub struct TypeIdHasher {
@@ -125,8 +123,6 @@ impl Hasher for TypeIdHasher {
         self.hash
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

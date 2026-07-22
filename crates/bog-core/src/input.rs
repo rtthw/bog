@@ -1,12 +1,10 @@
 //! Input handling
 
-
-
 use std::time::Instant;
 
-use crate::{key::ModifierKey, vec2, InputEvent, Key, KeyCode, MouseButton, Rect, Vec2, WheelMovement};
-
-
+use crate::{
+    InputEvent, Key, KeyCode, MouseButton, Rect, Vec2, WheelMovement, key::ModifierKey, vec2,
+};
 
 pub struct EventParser {
     key: KeyEventParser,
@@ -34,26 +32,44 @@ impl EventParser {
             InputEvent::FocusOut => {
                 vec![Input::Focus { focus: false }]
             }
-            InputEvent::KeyDown { code, repeat } => {
-                self.key.handle_key_down(code, repeat).into_iter().map(Input::Key).collect()
-            }
-            InputEvent::KeyUp { code } => {
-                self.key.handle_key_up(code).into_iter().map(Input::Key).collect()
-            }
-            InputEvent::MouseMove { x, y } => {
-                self.mouse.handle_mouse_move(vec2(x, y)).into_iter().map(Input::Mouse).collect()
-            }
-            InputEvent::MouseDown { button } => {
-                self.mouse.handle_mouse_down(button).into_iter().map(Input::Mouse).collect()
-            }
-            InputEvent::MouseUp { button } => {
-                self.mouse.handle_mouse_up(button).into_iter().map(Input::Mouse).collect()
-            }
-            InputEvent::WheelMove(movement) => {
-                self.mouse.handle_wheel_move(movement).into_iter().map(Input::Mouse).collect()
-            }
-            InputEvent::MouseEnter => { Vec::new() } // TODO
-            InputEvent::MouseLeave => { Vec::new() } // TODO
+            InputEvent::KeyDown { code, repeat } => self
+                .key
+                .handle_key_down(code, repeat)
+                .into_iter()
+                .map(Input::Key)
+                .collect(),
+            InputEvent::KeyUp { code } => self
+                .key
+                .handle_key_up(code)
+                .into_iter()
+                .map(Input::Key)
+                .collect(),
+            InputEvent::MouseMove { x, y } => self
+                .mouse
+                .handle_mouse_move(vec2(x, y))
+                .into_iter()
+                .map(Input::Mouse)
+                .collect(),
+            InputEvent::MouseDown { button } => self
+                .mouse
+                .handle_mouse_down(button)
+                .into_iter()
+                .map(Input::Mouse)
+                .collect(),
+            InputEvent::MouseUp { button } => self
+                .mouse
+                .handle_mouse_up(button)
+                .into_iter()
+                .map(Input::Mouse)
+                .collect(),
+            InputEvent::WheelMove(movement) => self
+                .mouse
+                .handle_wheel_move(movement)
+                .into_iter()
+                .map(Input::Mouse)
+                .collect(),
+            InputEvent::MouseEnter => Vec::new(), // TODO
+            InputEvent::MouseLeave => Vec::new(), // TODO
         }
     }
 
@@ -68,7 +84,11 @@ impl EventParser {
     }
 
     pub fn update_areas(&mut self, new_root_area: InputArea) -> Vec<Input> {
-        self.mouse.update_areas(new_root_area).into_iter().map(Input::Mouse).collect()
+        self.mouse
+            .update_areas(new_root_area)
+            .into_iter()
+            .map(Input::Mouse)
+            .collect()
     }
 
     pub fn for_each_area(&self, func: &mut impl FnMut(&InputArea)) {
@@ -114,10 +134,18 @@ impl KeyEventParser {
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) -> Vec<KeyInput> {
         let key = Key::from((code, self.shift_down));
         match key {
-            Key::Modifier(ModifierKey::Control) => { self.control_down = true; }
-            Key::Modifier(ModifierKey::Shift) => { self.shift_down = true; }
-            Key::Modifier(ModifierKey::Alt) => { self.alt_down = true; }
-            Key::Modifier(ModifierKey::Super) => { self.super_down = true; }
+            Key::Modifier(ModifierKey::Control) => {
+                self.control_down = true;
+            }
+            Key::Modifier(ModifierKey::Shift) => {
+                self.shift_down = true;
+            }
+            Key::Modifier(ModifierKey::Alt) => {
+                self.alt_down = true;
+            }
+            Key::Modifier(ModifierKey::Super) => {
+                self.super_down = true;
+            }
             _ => {}
         }
         // let repeat = !self.codes_down.insert(code) || repeat;
@@ -129,15 +157,23 @@ impl KeyEventParser {
     pub fn handle_key_up(&mut self, code: KeyCode) -> Vec<KeyInput> {
         let key = Key::from((code, self.shift_down));
         match key {
-            Key::Modifier(ModifierKey::Control) => { self.control_down = false; }
-            Key::Modifier(ModifierKey::Shift) => { self.shift_down = false; }
-            Key::Modifier(ModifierKey::Alt) => { self.alt_down = false; }
-            Key::Modifier(ModifierKey::Super) => { self.super_down = false; }
+            Key::Modifier(ModifierKey::Control) => {
+                self.control_down = false;
+            }
+            Key::Modifier(ModifierKey::Shift) => {
+                self.shift_down = false;
+            }
+            Key::Modifier(ModifierKey::Alt) => {
+                self.alt_down = false;
+            }
+            Key::Modifier(ModifierKey::Super) => {
+                self.super_down = false;
+            }
             _ => {}
         }
         let valid = self.codes_down.remove(&code);
 
-        vec![KeyInput::Release{ key, valid }]
+        vec![KeyInput::Release { key, valid }]
     }
 }
 
@@ -227,14 +263,17 @@ impl MouseEventParser {
             _ => {}
         }
 
-        self.hovered.clone()
+        self.hovered
+            .clone()
             .into_iter()
             .map(|name| MouseInput::Press { area: name, button })
             .collect()
     }
 
     pub fn handle_mouse_up(&mut self, button: MouseButton) -> Vec<MouseInput> {
-        let mut inputs: Vec<MouseInput> = self.hovered.clone()
+        let mut inputs: Vec<MouseInput> = self
+            .hovered
+            .clone()
             .into_iter()
             .map(|name| MouseInput::Release { area: name, button })
             .collect();
@@ -268,7 +307,8 @@ impl MouseEventParser {
 
     pub fn handle_wheel_move(&mut self, movement: WheelMovement) -> Vec<MouseInput> {
         match movement {
-            WheelMovement::Lines { y, .. } => { // TODO: Horizontal mouse scrolling.
+            WheelMovement::Lines { y, .. } => {
+                // TODO: Horizontal mouse scrolling.
                 if y.is_sign_negative() {
                     vec![MouseInput::ScrollDown { lines: y.abs() }]
                 } else {
@@ -303,8 +343,6 @@ impl MouseEventParser {
     }
 }
 
-
-
 #[derive(Clone, Debug)]
 pub enum Input {
     /// A key input occurred.
@@ -312,27 +350,17 @@ pub enum Input {
     /// A mouse input occurred.
     Mouse(MouseInput),
     /// The root area was resized to `new_size`.
-    Resize {
-        new_size: Vec2,
-    },
+    Resize { new_size: Vec2 },
     /// The root area gained/lost focus.
-    Focus {
-        focus: bool,
-    },
+    Focus { focus: bool },
 }
 
 #[derive(Clone, Debug)]
 pub enum KeyInput {
     /// A key down event.
-    Press {
-        key: Key,
-        repeat: bool,
-    },
+    Press { key: Key, repeat: bool },
     /// A key up event.
-    Release{
-        key: Key,
-        valid: bool,
-    },
+    Release { key: Key, valid: bool },
     /// A valid key up event after a valid key down event.
     FullPress(Key),
 }
@@ -387,8 +415,6 @@ pub enum MouseInput {
     },
 }
 
-
-
 #[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
 pub struct MouseButtonMask(u8);
 
@@ -436,11 +462,7 @@ impl MouseButtonMask {
     }
 }
 
-
-
 // ---
-
-
 
 pub struct InputArea {
     rect: Rect,
@@ -481,11 +503,7 @@ impl InputArea {
             return vec![];
         }
 
-        fn inner(
-            current: &InputArea,
-            list: &mut Vec<&'static str>,
-            point: Vec2,
-        ) {
+        fn inner(current: &InputArea, list: &mut Vec<&'static str>, point: Vec2) {
             for child_area in current.children.iter() {
                 if !child_area.rect.contains(point) {
                     continue;
@@ -516,8 +534,6 @@ impl InputArea {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use crate::vec2;
@@ -530,15 +546,13 @@ mod tests {
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 
-        let root = InputArea::new(root, "root")
-            .with_children(vec![
-                InputArea::new(left, "left"),
-                InputArea::new(right, "right")
-                    .with_children(vec![
-                        InputArea::new(top, "top"),
-                        InputArea::new(bottom, "bottom"),
-                    ]),
-            ]);
+        let root = InputArea::new(root, "root").with_children(vec![
+            InputArea::new(left, "left"),
+            InputArea::new(right, "right").with_children(vec![
+                InputArea::new(top, "top"),
+                InputArea::new(bottom, "bottom"),
+            ]),
+        ]);
 
         assert!(root.list_under(vec2(2.0, 30.0)) == vec!["root", "left"]);
         assert!(root.list_under(vec2(19.0, 3.0)) == vec!["root", "left"]);
@@ -553,21 +567,21 @@ mod tests {
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 
-        let root = InputArea::new(root, "root")
-            .with_children(vec![
-                InputArea::new(left, "left"),
-                InputArea::new(right, "right")
-                    .with_children(vec![
-                        InputArea::new(top, "top"),
-                        InputArea::new(bottom, "bottom"),
-                    ]),
-            ]);
+        let root = InputArea::new(root, "root").with_children(vec![
+            InputArea::new(left, "left"),
+            InputArea::new(right, "right").with_children(vec![
+                InputArea::new(top, "top"),
+                InputArea::new(bottom, "bottom"),
+            ]),
+        ]);
 
         let mut mouse_parser = MouseEventParser::new(root);
         assert_eq!(
             mouse_parser.handle_mouse_move(vec2(2.0, 30.0)),
             vec![
-                MouseInput::Movement { delta: vec2(2.0, 30.0) },
+                MouseInput::Movement {
+                    delta: vec2(2.0, 30.0)
+                },
                 MouseInput::Enter { area: "root" },
                 MouseInput::Enter { area: "left" },
             ],
@@ -575,7 +589,9 @@ mod tests {
         assert_eq!(
             mouse_parser.handle_mouse_move(vec2(20.0, 3.0)),
             vec![
-                MouseInput::Movement { delta: vec2(18.0, -27.0) },
+                MouseInput::Movement {
+                    delta: vec2(18.0, -27.0)
+                },
                 MouseInput::Leave { area: "left" },
                 MouseInput::Enter { area: "right" },
                 MouseInput::Enter { area: "top" },
@@ -589,15 +605,13 @@ mod tests {
         let (left, right) = root.split_portion_h(0.5);
         let (top, bottom) = right.split_portion_v(0.5);
 
-        let root = InputArea::new(root, "root")
-            .with_children(vec![
-                InputArea::new(left, "left"),
-                InputArea::new(right, "right")
-                    .with_children(vec![
-                        InputArea::new(top, "top"),
-                        InputArea::new(bottom, "bottom"),
-                    ]),
-            ]);
+        let root = InputArea::new(root, "root").with_children(vec![
+            InputArea::new(left, "left"),
+            InputArea::new(right, "right").with_children(vec![
+                InputArea::new(top, "top"),
+                InputArea::new(bottom, "bottom"),
+            ]),
+        ]);
 
         let mut areas = Vec::with_capacity(5);
         root.crawl(&mut |area| {

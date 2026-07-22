@@ -1,10 +1,6 @@
 //! Unit map type
 
-
-
 use core::any::{Any, TypeId};
-
-
 
 /// A map that can store any value for any number of single types.
 #[derive(Default)]

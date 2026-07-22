@@ -1,12 +1,8 @@
 //! Primitive types for custom shaders
 
-
-
 use bog_core::{Rect, UnitMap};
 
 use crate::Viewport;
-
-
 
 pub trait Primitive: core::fmt::Debug + Send + Sync + 'static {
     fn prepare(

@@ -1,9 +1,4 @@
-
-
-
 use bog::prelude::*;
-
-
 
 fn main() -> Result<()> {
     run_simple_app(None, MyApp)

@@ -1,11 +1,6 @@
-
-
-
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 
 use bog::prelude::*;
-
-
 
 fn main() -> Result<()> {
     let (request_sender, request_receiver) = channel::<Request>();
@@ -29,13 +24,9 @@ fn main() -> Result<()> {
 
         // If this point is reached, that means the channel disconnected (app closed).
     });
-    std::thread::spawn(move || {
-        main_loop(request_sender, response_receiver)
-    });
+    std::thread::spawn(move || main_loop(request_sender, response_receiver));
 
-    window_system.run_app(&mut LoopStyleApp {
-        response_sender,
-    })?;
+    window_system.run_app(&mut LoopStyleApp { response_sender })?;
 
     Ok(())
 }
@@ -43,12 +34,10 @@ fn main() -> Result<()> {
 #[allow(unused_variables, unused_assignments)]
 fn main_loop(requests: Sender<Request>, responses: Receiver<Response>) {
     requests
-        .send(Request::CreateWindow(
-            WindowDescriptor {
-                title: "Bog - Loop Style App Example",
-                ..Default::default()
-            }
-        ))
+        .send(Request::CreateWindow(WindowDescriptor {
+            title: "Bog - Loop Style App Example",
+            ..Default::default()
+        }))
         .unwrap();
 
     let mut window: Option<Window> = None;
@@ -66,8 +55,6 @@ fn main_loop(requests: Sender<Request>, responses: Receiver<Response>) {
     }
 }
 
-
-
 enum Request {
     CreateWindow(WindowDescriptor<'static>),
 }
@@ -75,8 +62,6 @@ enum Request {
 enum Response {
     WindowCreated(Window),
 }
-
-
 
 struct LoopStyleApp {
     response_sender: Sender<Response>,
@@ -94,11 +79,11 @@ impl App for LoopStyleApp {
                         .send(Response::WindowCreated(window.clone()))
                         .unwrap();
                 }
-            }
+            },
             AppEvent::Window { id: _, event } => match event {
                 WindowEvent::CloseRequest => wm.exit(),
                 _ => {}
-            }
+            },
             _ => {} // TODO: Handle more events and send more responses.
         }
     }

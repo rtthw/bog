@@ -1,9 +1,4 @@
-
-
-
 use bog::prelude::*;
-
-
 
 fn main() -> Result<()> {
     let ps = syntect::parsing::SyntaxSet::load_defaults_newlines();
@@ -15,24 +10,25 @@ fn main() -> Result<()> {
     let syntax = ps.find_syntax_by_extension("rs").unwrap();
     let mut h = syntect::easy::HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
     for line in syntect::util::LinesWithEndings::from(&text) {
-        let ranges: Vec<(syntect::highlighting::Style, &str)> = h.highlight_line(line, &ps)
-            .unwrap();
+        let ranges: Vec<(syntect::highlighting::Style, &str)> =
+            h.highlight_line(line, &ps).unwrap();
         // let escaped = syntect::util::as_24_bit_terminal_escaped(&ranges[..], true);
         // print!("{}", escaped);
         lines.push(ranges);
     }
 
-    run_simple_app(None, App {
-        lines,
-        cell_bounds: Vec2::new(0.0, 1.0), // Height cannot be 0.
-        scroll_offset: 0,
-        mouse_pos: Vec2::ZERO,
-    })?;
+    run_simple_app(
+        None,
+        App {
+            lines,
+            cell_bounds: Vec2::new(0.0, 1.0), // Height cannot be 0.
+            scroll_offset: 0,
+            mouse_pos: Vec2::ZERO,
+        },
+    )?;
 
     Ok(())
 }
-
-
 
 struct App {
     lines: Vec<Vec<(syntect::highlighting::Style, &'static str)>>,
@@ -70,7 +66,12 @@ impl SimpleApp for App {
         pass.start_layer(cx.renderer.viewport_rect());
         let height = cx.renderer.viewport_rect().h / self.cell_bounds.y;
         let mut y_offset = 0.0;
-        for line_ranges in self.lines.iter().skip(self.scroll_offset).take(height.ceil() as _) {
+        for line_ranges in self
+            .lines
+            .iter()
+            .skip(self.scroll_offset)
+            .take(height.ceil() as _)
+        {
             let mut x_offset = 0.0;
             for (style, text) in line_ranges.iter() {
                 let width = self.cell_bounds.x * text.chars().count() as f32;
@@ -113,7 +114,8 @@ impl SimpleApp for App {
                 self.mouse_pos = vec2(x, y);
             }
             InputEvent::WheelMove(WheelMovement::Lines { y, .. }) => {
-                self.scroll_offset = self.scroll_offset
+                self.scroll_offset = self
+                    .scroll_offset
                     .saturating_add_signed(3 * -y.round() as isize);
             }
             _ => {}

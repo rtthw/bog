@@ -1,12 +1,8 @@
 //! Graphics module
 
-
-
 use bog_core::Vec2;
 
 use crate::{render::gpu, window::rwh};
-
-
 
 type Result<T> = core::result::Result<T, GraphicsError>;
 
@@ -22,8 +18,6 @@ pub enum GraphicsError {
     #[error("request device error")]
     RequestDeviceError(#[from] gpu::RequestDeviceError),
 }
-
-
 
 pub struct GraphicsDescriptor {
     /// Override the GPU backend selection.
@@ -43,8 +37,6 @@ impl Default for GraphicsDescriptor {
     }
 }
 
-
-
 // NOTE: Window must be dropped after the other surface fields.
 pub struct WindowGraphics<'w> {
     surface: gpu::Surface<'w>,
@@ -53,7 +45,10 @@ pub struct WindowGraphics<'w> {
 
 // Constructors.
 impl<'w> WindowGraphics<'w> {
-    pub async fn from_window<W>(window: W, desc: GraphicsDescriptor) -> Result<(
+    pub async fn from_window<W>(
+        window: W,
+        desc: GraphicsDescriptor,
+    ) -> Result<(
         Self,
         gpu::Device,
         gpu::Queue,
@@ -99,19 +94,17 @@ impl<'w> WindowGraphics<'w> {
         let backend = adapter.get_info().backend;
 
         let (device, queue) = adapter
-            .request_device(
-                &gpu::DeviceDescriptor {
-                    label: None,
-                    required_features: gpu::Features::empty(),
-                    required_limits: if cfg!(target_arch = "wasm32") {
-                        gpu::Limits::downlevel_webgl2_defaults()
-                    } else {
-                        gpu::Limits::default()
-                    },
-                    memory_hints: Default::default(),
-                    trace: gpu::Trace::Off,
+            .request_device(&gpu::DeviceDescriptor {
+                label: None,
+                required_features: gpu::Features::empty(),
+                required_limits: if cfg!(target_arch = "wasm32") {
+                    gpu::Limits::downlevel_webgl2_defaults()
+                } else {
+                    gpu::Limits::default()
                 },
-            )
+                memory_hints: Default::default(),
+                trace: gpu::Trace::Off,
+            })
             .await?;
 
         let surface_caps = surface.get_capabilities(&adapter);
@@ -133,10 +126,7 @@ impl<'w> WindowGraphics<'w> {
         };
 
         Ok((
-            Self {
-                surface,
-                config,
-            },
+            Self { surface, config },
             device,
             queue,
             surface_format,
@@ -160,7 +150,10 @@ impl<'w> WindowGraphics<'w> {
     }
 
     pub fn screen_size(&self) -> Vec2 {
-        Vec2::new(self.surface_config().width as f32, self.surface_config().height as f32)
+        Vec2::new(
+            self.surface_config().width as f32,
+            self.surface_config().height as f32,
+        )
     }
 }
 

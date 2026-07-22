@@ -1,12 +1,8 @@
 //! Rectangle type
 
-
-
 use glam::Vec3Swizzles as _;
 
-use crate::{vec3, Mat4, Vec2};
-
-
+use crate::{Mat4, Vec2, vec3};
 
 /// A rectangular area.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -193,7 +189,12 @@ impl Rect<f32> {
         let x = self.x + ((self.w - width).max(0.0) / 2.0);
         let y = self.y + ((self.h - height).max(0.0) / 2.0);
 
-        Self { x, y, w: width.min(self.w), h: height.min(self.h) }
+        Self {
+            x,
+            y,
+            w: width.min(self.w),
+            h: height.min(self.h),
+        }
     }
 
     /// Split this rectangle into `count` rows with the same height.
@@ -204,13 +205,11 @@ impl Rect<f32> {
 
         let row_height = self.h / count as f32;
         (0..count)
-            .map(|i| {
-                Self {
-                    x: self.x,
-                    y: row_height * i as f32,
-                    w: self.w,
-                    h: row_height,
-                }
+            .map(|i| Self {
+                x: self.x,
+                y: row_height * i as f32,
+                w: self.w,
+                h: row_height,
             })
             .collect()
     }
@@ -223,13 +222,11 @@ impl Rect<f32> {
 
         let col_width = self.w / count as f32;
         (0..count)
-            .map(|i| {
-                Self {
-                    x: col_width * i as f32,
-                    y: self.y,
-                    w: col_width,
-                    h: self.h,
-                }
+            .map(|i| Self {
+                x: col_width * i as f32,
+                y: self.y,
+                w: col_width,
+                h: self.h,
             })
             .collect()
     }
@@ -237,8 +234,18 @@ impl Rect<f32> {
     /// Split this rectangle horizontally at the provided length.
     pub const fn split_len_h(&self, len: f32) -> (Self, Self) {
         (
-            Self { x: self.x, y: self.y, w: len, h: self.h },
-            Self { x: self.x + len, y: self.y, w: self.w - len, h: self.h },
+            Self {
+                x: self.x,
+                y: self.y,
+                w: len,
+                h: self.h,
+            },
+            Self {
+                x: self.x + len,
+                y: self.y,
+                w: self.w - len,
+                h: self.h,
+            },
         )
     }
 
@@ -255,8 +262,18 @@ impl Rect<f32> {
     /// Split this rectangle vertically at the provided length.
     pub const fn split_len_v(&self, len: f32) -> (Self, Self) {
         (
-            Self { x: self.x, y: self.y, w: self.w, h: len },
-            Self { x: self.x, y: self.y + len, w: self.w, h: self.h - len },
+            Self {
+                x: self.x,
+                y: self.y,
+                w: self.w,
+                h: len,
+            },
+            Self {
+                x: self.x,
+                y: self.y + len,
+                w: self.w,
+                h: self.h - len,
+            },
         )
     }
 
@@ -308,13 +325,17 @@ impl core::ops::Mul<Mat4> for Rect<f32> {
         let size = self.size();
 
         Self::new(
-            transform.transform_point3(vec3(pos.x, pos.y, 0.0)).xy().into(),
-            transform.transform_vector3(vec3(size.x, size.y, 0.0)).xy().into(),
+            transform
+                .transform_point3(vec3(pos.x, pos.y, 0.0))
+                .xy()
+                .into(),
+            transform
+                .transform_vector3(vec3(size.x, size.y, 0.0))
+                .xy()
+                .into(),
         )
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

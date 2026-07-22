@@ -1,9 +1,4 @@
-
-
-
 use bog::prelude::*;
-
-
 
 pub const GRAY_0: Color = Color::new(13, 13, 23, 255); // 0d0d17
 pub const GRAY_1: Color = Color::new(29, 29, 39, 255); // 1d1d27
@@ -16,13 +11,9 @@ pub const GRAY_7: Color = Color::new(139, 139, 149, 255); // 8b8b95
 pub const GRAY_8: Color = Color::new(163, 163, 173, 255); // a3a3ad
 pub const GRAY_9: Color = Color::new(191, 191, 197, 255); // bfbfc5
 
-
-
 fn main() -> Result<()> {
     let root = Element::new(Widget::Null)
-        .style(Style::new()
-            .horizontal()
-            .background_color(GRAY_1))
+        .style(Style::new().horizontal().background_color(GRAY_1))
         .children(vec![
             Element::new(Widget::SidePanel)
                 .style(Style::new().width(Length::Portion(0.2)))
@@ -32,12 +23,13 @@ fn main() -> Result<()> {
                 .event_mask(EventMask::CLICK | EventMask::FOCUS),
         ]);
 
-    run_simple_app(None, App {
-        ui: UserInterface::new(root, Rect::new(vec2(0.0, 0.0), vec2(1200.0, 800.0))),
-    })
+    run_simple_app(
+        None,
+        App {
+            ui: UserInterface::new(root, Rect::new(vec2(0.0, 0.0), vec2(1200.0, 800.0))),
+        },
+    )
 }
-
-
 
 struct App {
     ui: UserInterface<Widget>,

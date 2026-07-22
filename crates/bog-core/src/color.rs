@@ -1,7 +1,5 @@
 //! Color type
 
-
-
 /// A 32-bit color value.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Color {
@@ -46,38 +44,24 @@ impl Color {
 
     /// Alter this color's red channel value.
     pub const fn with_red(self, red: u8) -> Self {
-        Self {
-            r: red,
-            ..self
-        }
+        Self { r: red, ..self }
     }
 
     /// Alter this color's green channel value.
     pub const fn with_green(self, green: u8) -> Self {
-        Self {
-            g: green,
-            ..self
-        }
+        Self { g: green, ..self }
     }
 
     /// Alter this color's blue channel value.
     pub const fn with_blue(self, blue: u8) -> Self {
-        Self {
-            b: blue,
-            ..self
-        }
+        Self { b: blue, ..self }
     }
 
     /// Alter this color's alpha channel value.
     pub const fn with_alpha(self, alpha: u8) -> Self {
-        Self {
-            a: alpha,
-            ..self
-        }
+        Self { a: alpha, ..self }
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -85,7 +69,12 @@ mod tests {
 
     #[test]
     fn color_converts_to_u32() {
-        let color = Color { r: 0x11, g: 0x22, b: 0x33, a: 0x44 };
+        let color = Color {
+            r: 0x11,
+            g: 0x22,
+            b: 0x33,
+            a: 0x44,
+        };
         let num = color.to_u32();
 
         assert_eq!(num, 0x11223344);
@@ -96,6 +85,14 @@ mod tests {
         let num: u32 = 0x11223344;
         let color = Color::from_u32(num);
 
-        assert_eq!(color, Color { r: 0x11, g: 0x22, b: 0x33, a: 0x44 });
+        assert_eq!(
+            color,
+            Color {
+                r: 0x11,
+                g: 0x22,
+                b: 0x33,
+                a: 0x44
+            }
+        );
     }
 }

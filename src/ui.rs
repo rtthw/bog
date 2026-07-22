@@ -1,12 +1,11 @@
 //! User interfacing
 
-
-
 use std::{collections::VecDeque, time::Instant};
 
-use bog_core::{vec2, Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect, Vec2, WheelMovement};
-
-
+use bog_core::{
+    Color, ControlKey, InputEvent, Key, KeyCode, ModifierKey, ModifierMask, MouseButton, Rect,
+    Vec2, WheelMovement, vec2,
+};
 
 #[derive(Debug)]
 #[non_exhaustive]
@@ -104,8 +103,6 @@ pub enum Event {
     },
 }
 
-
-
 #[derive(Clone, Copy, Default, Eq, Hash, PartialEq)]
 pub struct EventMask(u8);
 
@@ -149,8 +146,6 @@ impl EventMask {
         self.contains(Self::FOCUS)
     }
 }
-
-
 
 slotmap::new_key_type! { pub struct Node; }
 
@@ -199,7 +194,11 @@ impl<T> UserInterface<T> {
             let child_areas = resolve_layout(
                 area,
                 child_orientation,
-                element.children.iter().map(|c| Sizing::from(&c.style)).collect(),
+                element
+                    .children
+                    .iter()
+                    .map(|c| Sizing::from(&c.style))
+                    .collect(),
             );
 
             let mut element_children = Vec::with_capacity(element.children.len());
@@ -233,7 +232,13 @@ impl<T> UserInterface<T> {
 
         let mut focus = None;
 
-        set_initial_focus(root_node, &mut focus, &mut elements, &mut children, &mut parents);
+        set_initial_focus(
+            root_node,
+            &mut focus,
+            &mut elements,
+            &mut children,
+            &mut parents,
+        );
 
         Self {
             settings: Settings::default(),
@@ -450,8 +455,11 @@ impl<T> UserInterface<T> {
                 // Handled by mouse move.
             }
             InputEvent::MouseLeave => {
-                self.events.extend(self.mouse_over.drain(..)
-                    .map(|node| Event::MouseLeave { node }));
+                self.events.extend(
+                    self.mouse_over
+                        .drain(..)
+                        .map(|node| Event::MouseLeave { node }),
+                );
             }
             InputEvent::MouseDown { button } => {
                 self.handle_mouse_down(button);
@@ -497,17 +505,28 @@ impl<T> UserInterface<T> {
             let child_areas = resolve_layout(
                 area,
                 elements[node].style.orient_children,
-                children[node].iter().map(|c| Sizing::from(&elements[*c].style)).collect(),
+                children[node]
+                    .iter()
+                    .map(|c| Sizing::from(&elements[*c].style))
+                    .collect(),
             );
 
-            for (child_node, child_area) in children[node].clone().into_iter()
+            for (child_node, child_area) in children[node]
+                .clone()
+                .into_iter()
                 .zip(child_areas.into_iter())
             {
                 inner(child_node, child_area, events, elements, children);
             }
         }
 
-        inner(self.root, area, &mut self.events, &mut self.elements, &mut self.children);
+        inner(
+            self.root,
+            area,
+            &mut self.events,
+            &mut self.elements,
+            &mut self.children,
+        );
     }
 
     pub fn handle_mouse_move(&mut self, position: Vec2) {
@@ -537,7 +556,13 @@ impl<T> UserInterface<T> {
         }
 
         let mut new_mouse_over = Vec::new();
-        inner(self.root, position, &mut new_mouse_over, &mut self.elements, &mut self.children);
+        inner(
+            self.root,
+            position,
+            &mut new_mouse_over,
+            &mut self.elements,
+            &mut self.children,
+        );
 
         if self.mouse_over != new_mouse_over {
             for node in &self.mouse_over {
@@ -559,7 +584,9 @@ impl<T> UserInterface<T> {
             return;
         }
 
-        if let Some(node) = self.mouse_over.iter()
+        if let Some(node) = self
+            .mouse_over
+            .iter()
             .rev()
             .find(|node| self.elements[**node].event_mask.clickable())
         {
@@ -567,7 +594,11 @@ impl<T> UserInterface<T> {
                 MouseButton::Left => {
                     let now = Instant::now();
                     self.events.push_back(Event::Click { node: *node });
-                    if self.last_left_click_node.as_ref().is_some_and(|n| n == node) {
+                    if self
+                        .last_left_click_node
+                        .as_ref()
+                        .is_some_and(|n| n == node)
+                    {
                         if now.duration_since(self.last_left_click_time).as_secs_f32()
                             < self.settings.double_click_time
                         {
@@ -582,7 +613,9 @@ impl<T> UserInterface<T> {
                 _ => {}
             }
         }
-        if let Some(node) = self.mouse_over.iter()
+        if let Some(node) = self
+            .mouse_over
+            .iter()
             .rev()
             .find(|node| self.elements[**node].event_mask.focusable())
         {
@@ -625,22 +658,20 @@ impl<T> UserInterface<T> {
 
     pub fn handle_key_down(&mut self, code: KeyCode, repeat: bool) {
         match Key::from((code, self.key_modifiers.has_shift())) {
-            Key::Modifier(mod_key) => {
-                match mod_key {
-                    ModifierKey::Control => {
-                        self.key_modifiers.insert(ModifierMask::CTRL);
-                    }
-                    ModifierKey::Shift => {
-                        self.key_modifiers.insert(ModifierMask::SHIFT);
-                    }
-                    ModifierKey::Alt => {
-                        self.key_modifiers.insert(ModifierMask::ALT);
-                    }
-                    ModifierKey::Super => {
-                        self.key_modifiers.insert(ModifierMask::SUPER);
-                    }
+            Key::Modifier(mod_key) => match mod_key {
+                ModifierKey::Control => {
+                    self.key_modifiers.insert(ModifierMask::CTRL);
                 }
-            }
+                ModifierKey::Shift => {
+                    self.key_modifiers.insert(ModifierMask::SHIFT);
+                }
+                ModifierKey::Alt => {
+                    self.key_modifiers.insert(ModifierMask::ALT);
+                }
+                ModifierKey::Super => {
+                    self.key_modifiers.insert(ModifierMask::SUPER);
+                }
+            },
             Key::Char(ch) => {
                 // TODO: Keybinds?
                 if let Some(node) = self.focus() {
@@ -649,7 +680,8 @@ impl<T> UserInterface<T> {
             }
             Key::Control(key) => {
                 if let Some(node) = self.focus() {
-                    self.events.push_back(Event::ControlKeyPress { node, key, repeat });
+                    self.events
+                        .push_back(Event::ControlKeyPress { node, key, repeat });
                 }
             }
             _ => {}
@@ -658,28 +690,24 @@ impl<T> UserInterface<T> {
 
     pub fn handle_key_up(&mut self, code: KeyCode) {
         match Key::from((code, self.key_modifiers.has_shift())) {
-            Key::Modifier(mod_key) => {
-                match mod_key {
-                    ModifierKey::Control => {
-                        self.key_modifiers.remove(ModifierMask::CTRL);
-                    }
-                    ModifierKey::Shift => {
-                        self.key_modifiers.remove(ModifierMask::SHIFT);
-                    }
-                    ModifierKey::Alt => {
-                        self.key_modifiers.remove(ModifierMask::ALT);
-                    }
-                    ModifierKey::Super => {
-                        self.key_modifiers.remove(ModifierMask::SUPER);
-                    }
+            Key::Modifier(mod_key) => match mod_key {
+                ModifierKey::Control => {
+                    self.key_modifiers.remove(ModifierMask::CTRL);
                 }
-            }
+                ModifierKey::Shift => {
+                    self.key_modifiers.remove(ModifierMask::SHIFT);
+                }
+                ModifierKey::Alt => {
+                    self.key_modifiers.remove(ModifierMask::ALT);
+                }
+                ModifierKey::Super => {
+                    self.key_modifiers.remove(ModifierMask::SUPER);
+                }
+            },
             _ => {}
         }
     }
 }
-
-
 
 /// User interface settings.
 pub struct Settings {
@@ -702,8 +730,6 @@ impl Default for Settings {
         }
     }
 }
-
-
 
 pub struct Element<T> {
     pub data: T,
@@ -742,8 +768,6 @@ impl<T> Element<T> {
         self
     }
 }
-
-
 
 /// Styling for [`Element`]s within a [`UserInterface`].
 pub struct Style {
@@ -850,12 +874,22 @@ pub struct Edges {
 impl Edges {
     #[inline]
     pub const fn all(size: f32) -> Self {
-        Self { left: size, right: size, top: size, bottom: size }
+        Self {
+            left: size,
+            right: size,
+            top: size,
+            bottom: size,
+        }
     }
 
     #[inline]
     pub const fn two_value(left_right: f32, top_bottom: f32) -> Self {
-        Self { left: left_right, right: left_right, top: top_bottom, bottom: top_bottom }
+        Self {
+            left: left_right,
+            right: left_right,
+            top: top_bottom,
+            bottom: top_bottom,
+        }
     }
 }
 
@@ -898,11 +932,7 @@ impl Length {
     }
 }
 
-
-
 // ---
-
-
 
 #[derive(Clone, Debug, Default)]
 struct Sizing {
@@ -931,15 +961,24 @@ fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect
 
     let mut sizes = [0.0].repeat(lengths.len());
     let mut remaining = main_axis_length;
-    let auto_count: usize = lengths.iter()
+    let auto_count: usize = lengths
+        .iter()
         .fold(0, |acc, len| if len.is_auto() { acc + 1 } else { acc });
 
-    for (i, exact) in lengths.iter().enumerate().filter_map(|(i, s)| Some((i, s.exact()?))) {
+    for (i, exact) in lengths
+        .iter()
+        .enumerate()
+        .filter_map(|(i, s)| Some((i, s.exact()?)))
+    {
         sizes[i] = exact;
         remaining -= exact;
     }
 
-    for (i, portion) in lengths.iter().enumerate().filter_map(|(i, s)| Some((i, s.portion()?))) {
+    for (i, portion) in lengths
+        .iter()
+        .enumerate()
+        .filter_map(|(i, s)| Some((i, s.portion()?)))
+    {
         let size = main_axis_length * portion;
         sizes[i] = size;
         remaining -= size;
@@ -951,7 +990,8 @@ fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect
     }
 
     let mut size_acc = 0.0;
-    sizes.into_iter()
+    sizes
+        .into_iter()
         .map(|size| {
             let rect = match axis {
                 Axis::Horizontal => Rect::new(
@@ -970,8 +1010,6 @@ fn resolve_layout(available: Rect, axis: Axis, sizings: Vec<Sizing>) -> Vec<Rect
         .collect()
 }
 
-
-
 struct ElementInfo<T> {
     data: T,
     area: Rect,
@@ -987,8 +1025,7 @@ impl<T> ElementInfo<T> {
 
     #[inline]
     fn border_position(&self) -> Vec2 {
-        self.area.position()
-            + vec2(self.style.margin.left, self.style.margin.top)
+        self.area.position() + vec2(self.style.margin.left, self.style.margin.top)
     }
 
     #[inline]
@@ -1006,8 +1043,6 @@ impl<T> ElementInfo<T> {
             + vec2(self.style.padding.left, self.style.padding.top)
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -1041,7 +1076,8 @@ mod tests {
             resolve_layout(
                 Rect::at_origin(vec2(length, 0.0)),
                 Axis::Horizontal,
-                sizings.into_iter()
+                sizings
+                    .into_iter()
                     .map(|s| Sizing {
                         width: *s,
                         height: Length::Auto,
@@ -1049,18 +1085,23 @@ mod tests {
                     })
                     .collect(),
             )
-                .into_iter()
-                // NOTE: This is needed to account for floating point precision.
-                .map(|r| r.with_size(vec2(
+            .into_iter()
+            // NOTE: This is needed to account for floating point precision.
+            .map(|r| {
+                r.with_size(vec2(
                     (r.size().x * 10.0).round() / 10.0,
                     (r.size().y * 10.0).round() / 10.0,
-                )))
-                .map(|r| r.size().x)
-                .collect()
+                ))
+            })
+            .map(|r| r.size().x)
+            .collect()
         };
 
         assert_eq!(
-            round_sizes(12.0, &[Length::Auto, Length::Exact(4.0), Length::Portion(0.5)]),
+            round_sizes(
+                12.0,
+                &[Length::Auto, Length::Exact(4.0), Length::Portion(0.5)]
+            ),
             vec![2.0, 4.0, 6.0],
         );
         assert_eq!(
@@ -1072,7 +1113,14 @@ mod tests {
             vec![4.0, 4.0, 4.0],
         );
         assert_eq!(
-            round_sizes(12.0, &[Length::Portion(0.4), Length::Portion(0.3), Length::Portion(0.2)]),
+            round_sizes(
+                12.0,
+                &[
+                    Length::Portion(0.4),
+                    Length::Portion(0.3),
+                    Length::Portion(0.2)
+                ]
+            ),
             vec![4.8, 3.6, 2.4],
         );
     }

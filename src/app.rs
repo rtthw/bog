@@ -1,19 +1,13 @@
 //! Application
 
-
-
-use bog_core::{InputEvent, vec2, WindowEvent};
-use bog_render::{gpu, RenderPass, Renderer, Viewport};
-use bog_window::{
-    App, AppEvent, Window, WindowDescriptor, WindowManager, WindowingSystem
-};
+use bog_core::{InputEvent, WindowEvent, vec2};
+use bog_render::{RenderPass, Renderer, Viewport, gpu};
+use bog_window::{App, AppEvent, Window, WindowDescriptor, WindowManager, WindowingSystem};
 
 use crate::{
-    graphics::{GraphicsDescriptor, WindowGraphics},
     Result,
+    graphics::{GraphicsDescriptor, WindowGraphics},
 };
-
-
 
 pub fn run_simple_app<A, E>(existing_system: Option<WindowingSystem<E>>, app: A) -> Result<()>
 where
@@ -39,8 +33,6 @@ where
     Ok(())
 }
 
-
-
 /// A convenience trait for creating single-window programs.
 #[allow(unused_variables)]
 pub trait SimpleApp {
@@ -50,7 +42,9 @@ pub trait SimpleApp {
     fn render<'a>(&'a mut self, cx: AppContext, pass: &mut RenderPass<'a>);
     fn input(&mut self, cx: AppContext, input: InputEvent) {}
     fn event(&mut self, cx: AppContext, event: Self::CustomEvent) {}
-    fn on_close(&mut self, cx: AppContext) -> bool { true }
+    fn on_close(&mut self, cx: AppContext) -> bool {
+        true
+    }
     fn window_desc(&self) -> WindowDescriptor<'_>;
 }
 
@@ -70,7 +64,10 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
     fn on_event(&mut self, wm: WindowManager, event: AppEvent<E>) {
         match event {
             AppEvent::Custom(event) => {
-                let AppState::Active { window, renderer, .. } = &mut self.state else {
+                let AppState::Active {
+                    window, renderer, ..
+                } = &mut self.state
+                else {
                     return;
                 };
                 self.app.event(AppContext { window, renderer }, event);
@@ -85,15 +82,19 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
                 let AppState::Suspended(window) = &mut self.state else {
                     return;
                 };
-                let window = window.take().unwrap_or_else(|| {
-                    wm.create_window(self.app.window_desc()).unwrap()
-                });
+                let window = window
+                    .take()
+                    .unwrap_or_else(|| wm.create_window(self.app.window_desc()).unwrap());
                 let (graphics, device, queue, format, backend) = pollster::block_on(async {
                     WindowGraphics::from_window(window.clone(), GraphicsDescriptor::default()).await
-                }).unwrap();
+                })
+                .unwrap();
                 let mut renderer = Renderer::new(device, queue, format, backend);
 
-                self.app.startup(AppContext { window: &window, renderer: &mut renderer });
+                self.app.startup(AppContext {
+                    window: &window,
+                    renderer: &mut renderer,
+                });
 
                 self.state = AppState::Active {
                     window,
@@ -104,8 +105,12 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
             }
             AppEvent::Window { id: _, event } => {
                 let AppState::Active {
-                    window, graphics, viewport, renderer
-                } = &mut self.state else {
+                    window,
+                    graphics,
+                    viewport,
+                    renderer,
+                } = &mut self.state
+                else {
                     return;
                 };
 
@@ -119,7 +124,9 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
                         let mut pass = RenderPass::new();
                         self.app.render(AppContext { window, renderer }, &mut pass);
                         let texture = graphics.get_current_texture();
-                        let target = texture.texture.create_view(&gpu::TextureViewDescriptor::default());
+                        let target = texture
+                            .texture
+                            .create_view(&gpu::TextureViewDescriptor::default());
                         renderer.render(&mut pass, &target, &viewport);
                         texture.present();
                     }
@@ -138,7 +145,7 @@ impl<A: SimpleApp<CustomEvent = E>, E: 'static> App for AppRunner<A, E> {
                         other => {
                             self.app.input(AppContext { window, renderer }, other);
                         }
-                    }
+                    },
                 }
             }
         }

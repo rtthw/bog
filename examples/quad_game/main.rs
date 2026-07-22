@@ -1,6 +1,3 @@
-
-
-
 mod process;
 mod state;
 
@@ -11,8 +8,6 @@ use bog::prelude::*;
 use process::*;
 use state::*;
 
-
-
 const PLAYER_WIDTH: f32 = 20.0;
 const PLAYER_HEIGHT: f32 = 40.0;
 const BACKGROUND_COLOR: Color = Color::new(29, 29, 39, 255);
@@ -20,32 +15,30 @@ const TEXT_COLOR: Color = Color::new(163, 163, 173, 255);
 const SHADOW_COLOR: Color = Color::new(13, 13, 23, 155);
 const HEADER_TEXT_SIZE: f32 = 30.0;
 
-
 fn main() -> Result<()> {
-    run_simple_app(None, App {
-        state: State {
-            screen_size: vec2(1280.0, 720.0),
-            screen_offset: Vec2::ZERO,
-            input: InputState {
-                mouse_pos: Vec2::ZERO,
-                mouse_buttons_down: MouseButtonMask::empty(),
+    run_simple_app(
+        None,
+        App {
+            state: State {
+                screen_size: vec2(1280.0, 720.0),
+                screen_offset: Vec2::ZERO,
+                input: InputState {
+                    mouse_pos: Vec2::ZERO,
+                    mouse_buttons_down: MouseButtonMask::empty(),
+                },
+                player: PlayerState {
+                    position: Vec2::ZERO,
+                    move_speed: 100.0,
+                },
             },
-            player: PlayerState {
-                position: Vec2::ZERO,
-                move_speed: 100.0,
+            process: Game {
+                menu: None,
+                player_movement: PlayerMovement { target: None },
             },
+            last_frame_time: Instant::now(),
         },
-        process: Game {
-            menu: None,
-            player_movement: PlayerMovement {
-                target: None,
-            },
-        },
-        last_frame_time: Instant::now(),
-    })
+    )
 }
-
-
 
 struct App {
     state: State,
@@ -168,28 +161,46 @@ impl SimpleApp for App {
             }
             InputEvent::MouseDown { button } => match button {
                 MouseButton::Left => {
-                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::LEFT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .insert(MouseButtonMask::LEFT);
                 }
                 MouseButton::Right => {
-                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::RIGHT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .insert(MouseButtonMask::RIGHT);
                 }
                 MouseButton::Middle => {
-                    self.state.input.mouse_buttons_down.insert(MouseButtonMask::LEFT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .insert(MouseButtonMask::LEFT);
                 }
                 _ => {}
-            }
+            },
             InputEvent::MouseUp { button } => match button {
                 MouseButton::Left => {
-                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::LEFT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .remove(MouseButtonMask::LEFT);
                 }
                 MouseButton::Right => {
-                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::RIGHT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .remove(MouseButtonMask::RIGHT);
                 }
                 MouseButton::Middle => {
-                    self.state.input.mouse_buttons_down.remove(MouseButtonMask::LEFT);
+                    self.state
+                        .input
+                        .mouse_buttons_down
+                        .remove(MouseButtonMask::LEFT);
                 }
                 _ => {}
-            }
+            },
             InputEvent::KeyDown { code, .. } => match code {
                 KeyCode::C_SPACE => {
                     self.process.menu = match self.process.menu {
@@ -202,7 +213,7 @@ impl SimpleApp for App {
                     self.process.menu = Some(Menu::Start);
                 }
                 _ => {}
-            }
+            },
             _ => {}
         }
     }
@@ -216,8 +227,6 @@ impl SimpleApp for App {
     }
 }
 
-
-
 struct Game {
     menu: Option<Menu>,
     player_movement: PlayerMovement,
@@ -230,8 +239,6 @@ impl Process for Game {
         }
     }
 }
-
-
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Menu {

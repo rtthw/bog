@@ -1,7 +1,5 @@
 //! Bog Render
 
-
-
 pub extern crate wgpu as gpu;
 
 mod buffer;
@@ -23,9 +21,7 @@ pub use layer::*;
 pub use types::*;
 pub use viewport::*;
 
-use bog_core::{vec2, vec3, Color, Mat4, Rect, Vec2, Vec3};
-
-
+use bog_core::{Color, Mat4, Rect, Vec2, Vec3, vec2, vec3};
 
 pub struct Renderer {
     device: gpu::Device,
@@ -80,11 +76,11 @@ impl Renderer {
     ) -> gpu::SubmissionIndex {
         // 1. Prepare.
         let scale_factor = viewport.scale_factor as f32;
-        let mut encoder = self.device.create_command_encoder(
-            &gpu::CommandEncoderDescriptor {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&gpu::CommandEncoderDescriptor {
                 label: Some("bog::encoder"),
-            },
-        );
+            });
         for layer in render_pass.iter_mut() {
             if !layer.quads.is_empty() {
                 self.quad_manager.prepare(
@@ -212,10 +208,13 @@ impl Renderer {
     }
 
     pub fn resize(&mut self, viewport_size: Vec2) {
-        self.text_pipeline.viewport.update(&self.queue, glyphon::Resolution {
-            width: viewport_size.x as u32,
-            height: viewport_size.y as u32,
-        });
+        self.text_pipeline.viewport.update(
+            &self.queue,
+            glyphon::Resolution {
+                width: viewport_size.x as u32,
+                height: viewport_size.y as u32,
+            },
+        );
     }
 
     /// The viewport's current [`Rect`].
@@ -227,33 +226,53 @@ impl Renderer {
     }
 
     pub fn load_font(&mut self, bytes: impl Into<Vec<u8>>) {
-        self.text_pipeline.font_system.db_mut().load_font_data(bytes.into());
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .load_font_data(bytes.into());
     }
 
     pub fn set_serif_family<S: Into<String>>(&mut self, name: impl Into<String>) {
-        self.text_pipeline.font_system.db_mut().set_serif_family(name);
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .set_serif_family(name);
     }
 
     pub fn set_sans_serif_family<S: Into<String>>(&mut self, name: impl Into<String>) {
-        self.text_pipeline.font_system.db_mut().set_sans_serif_family(name);
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .set_sans_serif_family(name);
     }
 
     pub fn set_cursive_family<S: Into<String>>(&mut self, name: impl Into<String>) {
-        self.text_pipeline.font_system.db_mut().set_cursive_family(name);
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .set_cursive_family(name);
     }
 
     pub fn set_fantasy_family<S: Into<String>>(&mut self, name: impl Into<String>) {
-        self.text_pipeline.font_system.db_mut().set_fantasy_family(name);
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .set_fantasy_family(name);
     }
 
     pub fn set_monospace_family(&mut self, name: impl Into<String>) {
-        self.text_pipeline.font_system.db_mut().set_monospace_family(name);
+        self.text_pipeline
+            .font_system
+            .db_mut()
+            .set_monospace_family(name);
     }
 
     /// Returns the minimum bounds required by the given [`Text`].
     pub fn measure_text(&mut self, text: &Text) -> Vec2 {
         let key = TextCacheKey::from(text);
-        let (_hash, entry) = self.text_manager.cache
+        let (_hash, entry) = self
+            .text_manager
+            .cache
             .allocate(&mut self.text_pipeline.font_system, key);
 
         entry.min_bounds
@@ -298,7 +317,11 @@ impl<'a> RenderPass<'a> {
     }
 
     pub fn start_translation_2d(&mut self, translation: Vec2) {
-        self.push_transformation(Mat4::from_translation(vec3(translation.x, translation.y, 0.0)));
+        self.push_transformation(Mat4::from_translation(vec3(
+            translation.x,
+            translation.y,
+            0.0,
+        )));
     }
 
     pub fn end_transform(&mut self) {
@@ -345,10 +368,7 @@ impl<'a> RenderPass<'a> {
         let (layer, transform) = self.current_mut();
         let bounds = text.bounds * transform;
 
-        layer.texts.push(Text {
-            bounds,
-            ..text
-        });
+        layer.texts.push(Text { bounds, ..text });
     }
 
     pub fn fill_simple_text(

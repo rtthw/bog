@@ -2,14 +2,13 @@
 //!
 //! This is a collection of types to be used with the renderer.
 
-
-
-use std::{hash::{Hash as _, Hasher as _}, path::{Path, PathBuf}};
+use std::{
+    hash::{Hash as _, Hasher as _},
+    path::{Path, PathBuf},
+};
 
 use bog_core::{Color, Rect, Vec2};
 pub use bytes::Bytes;
-
-
 
 /// A renderable piece of text.
 #[derive(Clone, Debug)]
@@ -63,8 +62,6 @@ pub enum TextSlant {
     Oblique,
 }
 
-
-
 /// A renderable rectangle that can have a fill [`Color`], [`Border`], and [`Shadow`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Quad {
@@ -99,8 +96,6 @@ impl Quad {
         }
     }
 }
-
-
 
 /// The border of a [`Quad`].
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -138,8 +133,6 @@ impl Border {
     }
 }
 
-
-
 /// The border of a [`Quad`].
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Shadow {
@@ -175,8 +168,6 @@ impl Shadow {
         }
     }
 }
-
-
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Image {

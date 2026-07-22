@@ -2,8 +2,6 @@
 
 // #![no_std]
 
-
-
 mod color;
 mod event;
 mod input;
@@ -13,12 +11,11 @@ mod rect;
 mod type_map;
 mod unit_map;
 
-
 pub use color::Color;
 pub use event::{InputEvent, MouseButton, WheelMovement, WindowEvent};
 pub use input::{
-    EventParser, Input, InputArea, KeyEventParser, KeyInput,
-    MouseButtonMask, MouseEventParser, MouseInput,
+    EventParser, Input, InputArea, KeyEventParser, KeyInput, MouseButtonMask, MouseEventParser,
+    MouseInput,
 };
 pub use key::{ControlKey, Key, KeyCode, KeyUpdate, ModifierKey, ModifierMask};
 pub use nohash_map::NoHashMap;
@@ -26,17 +23,11 @@ pub use rect::Rect;
 pub use type_map::{TypeIdHasher, TypeMap, TypeMapEntry};
 pub use unit_map::UnitMap;
 
-
-
 // ---
-
-
 
 pub type Vec2 = glam::Vec2;
 pub type Vec3 = glam::Vec3;
 pub type Vec4 = glam::Vec4;
-
-
 
 #[inline]
 pub fn vec2(x: f32, y: f32) -> Vec2 {
@@ -53,13 +44,9 @@ pub fn vec4(x: f32, y: f32, z: f32, w: f32) -> Vec4 {
     Vec4::new(x, y, z, w)
 }
 
-
-
 pub type Mat2 = glam::Mat2;
 pub type Mat3 = glam::Mat3;
 pub type Mat4 = glam::Mat4;
-
-
 
 #[inline]
 pub fn mat3_translation(translation: Vec2) -> Mat3 {

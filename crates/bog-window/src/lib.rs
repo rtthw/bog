@@ -4,23 +4,19 @@
 
 // #![no_std]
 
-
-
 #[cfg(feature = "x11")]
 pub mod x11;
 
 use std::sync::Arc;
 
 use bog_core::{InputEvent, KeyCode, MouseButton, WheelMovement, WindowEvent};
-use bog_core::{vec2, Vec2};
+use bog_core::{Vec2, vec2};
 
 pub use winit::raw_window_handle as rwh;
 pub use winit::{
     error::{EventLoopError as WindowManagerError, OsError as WindowError},
     window::{Cursor, CursorIcon, CustomCursor},
 };
-
-
 
 /// A reference to a managed window.
 ///
@@ -99,8 +95,6 @@ impl Window {
     }
 }
 
-
-
 /// A reference to a physical monitor display.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Monitor(winit::monitor::MonitorHandle);
@@ -132,8 +126,6 @@ impl Monitor {
         Vec2::new(x, y)
     }
 }
-
-
 
 #[derive(Clone, Copy, Debug)]
 pub enum AppEvent<CustomEvent: 'static = ()> {
@@ -195,22 +187,26 @@ where
     ) {
         match cause {
             winit::event::StartCause::Init => {
-                self.client.on_event(WindowManager { event_loop }, AppEvent::Init);
+                self.client
+                    .on_event(WindowManager { event_loop }, AppEvent::Init);
             }
             _ => {}
         }
     }
 
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.client.on_event(WindowManager { event_loop }, AppEvent::Resume)
+        self.client
+            .on_event(WindowManager { event_loop }, AppEvent::Resume)
     }
 
     fn suspended(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.client.on_event(WindowManager { event_loop }, AppEvent::Suspend)
+        self.client
+            .on_event(WindowManager { event_loop }, AppEvent::Suspend)
     }
 
     fn user_event(&mut self, event_loop: &winit::event_loop::ActiveEventLoop, event: E) {
-        self.client.on_event(WindowManager { event_loop }, AppEvent::Custom(event));
+        self.client
+            .on_event(WindowManager { event_loop }, AppEvent::Custom(event));
     }
 
     fn window_event(
@@ -222,13 +218,14 @@ where
         if let Some(event) = translate_window_event(event) {
             self.client.on_event(
                 WindowManager { event_loop },
-                AppEvent::Window { id: id.into(), event },
+                AppEvent::Window {
+                    id: id.into(),
+                    event,
+                },
             );
         }
     }
 }
-
-
 
 fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<WindowEvent> {
     match window_event {
@@ -239,13 +236,11 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
             let (width, height) = new_size.into();
             Some(WindowEvent::Input(InputEvent::Resize { width, height }))
         }
-        winit::event::WindowEvent::Focused(focused) => {
-            Some(if focused {
-                WindowEvent::Input(InputEvent::FocusIn)
-            } else {
-                WindowEvent::Input(InputEvent::FocusOut)
-            })
-        }
+        winit::event::WindowEvent::Focused(focused) => Some(if focused {
+            WindowEvent::Input(InputEvent::FocusIn)
+        } else {
+            WindowEvent::Input(InputEvent::FocusOut)
+        }),
 
         winit::event::WindowEvent::KeyboardInput { event, .. } => {
             let winit::event::KeyEvent {
@@ -259,14 +254,9 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
                     let code = translate_winit_keycode(key_code)?;
 
                     Some(if state.is_pressed() {
-                        WindowEvent::Input(InputEvent::KeyDown {
-                            code,
-                            repeat,
-                        })
+                        WindowEvent::Input(InputEvent::KeyDown { code, repeat })
                     } else {
-                        WindowEvent::Input(InputEvent::KeyUp {
-                            code,
-                        })
+                        WindowEvent::Input(InputEvent::KeyUp { code })
                     })
                 }
                 winit::keyboard::PhysicalKey::Unidentified(_native_key_code) => {
@@ -300,14 +290,15 @@ fn translate_window_event(window_event: winit::event::WindowEvent) -> Option<Win
             })
         }
         // TODO: Handle touch inputs.
-        winit::event::WindowEvent::MouseWheel { delta, phase: _, .. } => {
+        winit::event::WindowEvent::MouseWheel {
+            delta, phase: _, ..
+        } => {
             let movement = match delta {
-                winit::event::MouseScrollDelta::LineDelta(x, y) => {
-                    WheelMovement::Lines { x, y }
-                }
-                winit::event::MouseScrollDelta::PixelDelta(pos) => {
-                    WheelMovement::Pixels { x: pos.x as _, y: pos.y as _ }
-                }
+                winit::event::MouseScrollDelta::LineDelta(x, y) => WheelMovement::Lines { x, y },
+                winit::event::MouseScrollDelta::PixelDelta(pos) => WheelMovement::Pixels {
+                    x: pos.x as _,
+                    y: pos.y as _,
+                },
             };
             Some(WindowEvent::Input(InputEvent::WheelMove(movement)))
         }
@@ -410,8 +401,6 @@ const fn translate_winit_mousebutton(winit_button: winit::event::MouseButton) ->
     }
 }
 
-
-
 /// A reference to the platform's windowing system.
 ///
 /// The windowing system for a platform is responsible for creating, destroying, and positioning
@@ -436,7 +425,7 @@ impl<E: 'static> WindowingSystem<E> {
     /// Create a [`WindowingSystemProxy`].
     pub fn create_proxy(&self) -> WindowingSystemProxy<E> {
         WindowingSystemProxy {
-            event_loop: self.event_loop.create_proxy()
+            event_loop: self.event_loop.create_proxy(),
         }
     }
 
@@ -461,8 +450,6 @@ impl<E: 'static> WindowingSystemProxy<E> {
     }
 }
 
-
-
 /// A reference to the platform's window manager.
 ///
 /// Not to be confused with the [`WindowingSystem`], the window manager is responsible for the
@@ -481,17 +468,20 @@ impl<'a> WindowManager<'a> {
     /// This could return an error if the platform does not support windowing, there is no
     /// available memory for the window, or the platform denies the request.
     pub fn create_window(&self, desc: WindowDescriptor) -> Result<Window, WindowError> {
-        let inner = self.event_loop.create_window(winit::window::WindowAttributes::default()
-            .with_title(desc.title)
-            .with_inner_size(
-                winit::dpi::LogicalSize::new(desc.inner_size.x as f64, desc.inner_size.y as f64)
-            )
-            .with_active(desc.active)
-            .with_maximized(desc.maximized)
-            .with_visible(desc.visible)
-            .with_transparent(desc.transparent)
-            .with_blur(desc.blurred)
-            .with_decorations(desc.decorated))?;
+        let inner = self.event_loop.create_window(
+            winit::window::WindowAttributes::default()
+                .with_title(desc.title)
+                .with_inner_size(winit::dpi::LogicalSize::new(
+                    desc.inner_size.x as f64,
+                    desc.inner_size.y as f64,
+                ))
+                .with_active(desc.active)
+                .with_maximized(desc.maximized)
+                .with_visible(desc.visible)
+                .with_transparent(desc.transparent)
+                .with_blur(desc.blurred)
+                .with_decorations(desc.decorated),
+        )?;
 
         Ok(Window(Arc::new(inner)))
     }
@@ -504,16 +494,18 @@ impl<'a> WindowManager<'a> {
     /// Get the user's primary [`Monitor`]. If the user hasn't explicitly defined one, this returns
     /// `None`.
     pub fn primary_monitor(&self) -> Option<Monitor> {
-        self.event_loop.primary_monitor().map(|monitor_handle| Monitor(monitor_handle))
+        self.event_loop
+            .primary_monitor()
+            .map(|monitor_handle| Monitor(monitor_handle))
     }
 
     /// Get an iterator over the available [`Monitor`]s for a user's system.
     pub fn available_monitors(&self) -> impl Iterator<Item = Monitor> {
-        self.event_loop.available_monitors().map(|monitor_handle| Monitor(monitor_handle))
+        self.event_loop
+            .available_monitors()
+            .map(|monitor_handle| Monitor(monitor_handle))
     }
 }
-
-
 
 /// The initial description of a [`Window`] used by [`WindowManager::create_window`].
 #[derive(Clone, Copy, Debug, PartialEq)]

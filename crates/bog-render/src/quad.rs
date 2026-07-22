@@ -1,10 +1,6 @@
 //! Quad rendering
 
-
-
 use bog_core::{Mat4, Rect};
-
-
 
 pub struct QuadManager {
     pub layers: Vec<QuadLayer>,
@@ -32,7 +28,8 @@ impl QuadManager {
         debug_assert!(!quads.is_empty());
 
         if self.layers.len() <= self.prepare_layer {
-            self.layers.push(QuadLayer::new(device, &pipeline.constants_layout));
+            self.layers
+                .push(QuadLayer::new(device, &pipeline.constants_layout));
         }
 
         let layer = &mut self.layers[self.prepare_layer];
@@ -116,7 +113,8 @@ impl QuadLayer {
             0,
             (bytes.len() as u64).try_into().expect("sized uniforms"),
             device,
-        ).copy_from_slice(bytes);
+        )
+        .copy_from_slice(bytes);
 
         let _ = self.instance_buffer.resize(device, quads.len());
         let _ = self.instance_buffer.write(device, encoder, belt, 0, quads);
@@ -125,10 +123,7 @@ impl QuadLayer {
     }
 }
 
-
-
-#[derive(Clone, Copy, Debug)]
-#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 struct Uniforms {
     transform: [f32; 16],
@@ -146,8 +141,7 @@ impl Uniforms {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct QuadPrimitive {
     pub position: [f32; 2],
@@ -160,8 +154,7 @@ pub struct QuadPrimitive {
     pub shadow_blur_radius: f32,
 }
 
-#[derive(Clone, Copy, Debug)]
-#[derive(bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct QuadSolid {
     pub color: u32,
@@ -184,7 +177,7 @@ impl QuadPipeline {
                     ty: gpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
                     min_binding_size: gpu::BufferSize::new(
-                        core::mem::size_of::<Uniforms>() as gpu::BufferAddress,
+                        core::mem::size_of::<Uniforms>() as gpu::BufferAddress
                     ),
                 },
                 count: None,
@@ -199,9 +192,9 @@ impl QuadPipeline {
 
         let shader = device.create_shader_module(gpu::ShaderModuleDescriptor {
             label: Some("bog::shader::quad"),
-            source: gpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(
-                include_str!("shaders/quad.wgsl"),
-            )),
+            source: gpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "shaders/quad.wgsl"
+            ))),
         });
 
         let pipeline = device.create_render_pipeline(&gpu::RenderPipelineDescriptor {
@@ -255,8 +248,7 @@ impl QuadPipeline {
                     }),
                     write_mask: gpu::ColorWrites::ALL,
                 })],
-                compilation_options:
-                    gpu::PipelineCompilationOptions::default(),
+                compilation_options: gpu::PipelineCompilationOptions::default(),
             }),
             primitive: gpu::PrimitiveState {
                 topology: gpu::PrimitiveTopology::TriangleList,
