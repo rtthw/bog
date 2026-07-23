@@ -184,6 +184,55 @@ impl Rect<f32> {
         }
     }
 
+    /// Grow this rectangle by the provided margins.
+    pub const fn grow(self, margin_x: f32, margin_y: f32) -> Self {
+        let doubled_margin_horizontal = margin_x * 2.0;
+        let doubled_margin_vertical = margin_y * 2.0;
+
+        if self.w < doubled_margin_horizontal || self.h < doubled_margin_vertical {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x - margin_x,
+                y: self.y - margin_y,
+                w: self.w + doubled_margin_horizontal,
+                h: self.h + doubled_margin_vertical,
+            }
+        }
+    }
+
+    /// Grow this rectangle horizontally by the provided margin.
+    pub const fn grow_h(self, margin: f32) -> Self {
+        let doubled_margin = margin * 2.0;
+
+        if self.w < doubled_margin {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x - margin,
+                y: self.y,
+                w: self.w + doubled_margin,
+                h: self.h,
+            }
+        }
+    }
+
+    /// Grow this rectangle vertically by the provided margin.
+    pub const fn grow_v(self, margin: f32) -> Self {
+        let doubled_margin = margin * 2.0;
+
+        if self.h < doubled_margin {
+            Self::NONE
+        } else {
+            Self {
+                x: self.x,
+                y: self.y - margin,
+                w: self.w,
+                h: self.h + doubled_margin,
+            }
+        }
+    }
+
     /// Create a new rectangle centered inside this one with the provided width and height.
     pub const fn inner_centered(&self, width: f32, height: f32) -> Self {
         let x = self.x + ((self.w - width).max(0.0) / 2.0);
